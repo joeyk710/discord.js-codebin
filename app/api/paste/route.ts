@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
-import { createPaste, getPaste, getPublicPastes, type PasteData } from '@/lib/db'
+import { createPaste, getPaste, getPublicPastes } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,12 +13,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Generate unique ID
-    const id = nanoid(10)
-
     // Create paste in database
-    const paste = createPaste({
-      id,
+    const paste = await createPaste({
       code,
       title: title || 'Untitled',
       description: description || '',
@@ -27,14 +23,14 @@ export async function POST(request: NextRequest) {
     })
 
     return NextResponse.json({
-      id,
+      id: paste.id,
       success: true,
-      shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/paste/${id}`
+      shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/paste/${paste.id}`
     })
   } catch (error) {
     console.error('Error saving paste:', error)
     return NextResponse.json(
-      { error: 'Failed to save paste' },
+      { error: 'Failed to save paste', details: String(error) },
       { status: 500 }
     )
   }
@@ -48,7 +44,7 @@ export async function GET(request: NextRequest) {
 
     if (list) {
       // List all public pastes
-      const pastes = getPublicPastes(50, 0)
+      const pastes = await getPublicPastes(50, 0)
 
       return NextResponse.json({
         pastes: pastes.map(p => ({
@@ -69,7 +65,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const paste = getPaste(id)
+    const paste = await getPaste(id)
 
     if (!paste) {
       return NextResponse.json(
@@ -82,7 +78,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error retrieving paste:', error)
     return NextResponse.json(
-      { error: 'Failed to retrieve paste' },
+      { error: 'Failed to retrieve paste', details: String(error) },
       { status: 500 }
     )
   }

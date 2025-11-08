@@ -1,163 +1,128 @@
-import Database from 'better-sqlite3'
-import path from 'path'
+import { PrismaClient } from '@prisma/client'
 
-let db: Database.Database
+const globalForPrisma = global as unknown as { prisma: PrismaClient }
 
-function getDb() {
-    if (!db) {
-        const dbPath = path.join(process.cwd(), 'pastes.db')
-        db = new Database(dbPath)
+const prisma =
+  globalForPrisma.prisma ||
+  new PrismaClient({
+    log:
+      process.env.NODE_ENV === 'development'
+        ? ['query', 'error', 'warn']
+        : ['error'],
+  })
 
-        // Enable foreign keys
-        db.pragma('journal_mode = WAL')
-
-        // Create tables if they don't exist
-        db.exec(`
-      CREATE TABLE IF NOT EXISTS pastes (
-        id TEXT PRIMARY KEY,
-        code TEXT NOT NULL,
-        title TEXT,
-        description TEXT,
-        language TEXT NOT NULL DEFAULT 'javascript',
-        createdAt TEXT NOT NULL,
-        views INTEGER NOT NULL DEFAULT 0,
-        isPublic INTEGER NOT NULL DEFAULT 1
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_pastes_createdAt ON pastes(createdAt);
-      CREATE INDEX IF NOT EXISTS idx_pastes_isPublic ON pastes(isPublic);
-    `)
-    }
-    return db
-}
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
 
 export interface PasteData {
-    id: string
-    code: string
-    title?: string
-    description?: string
-    language: 'javascript' | 'typescript' | 'json'
-    createdAt: string
-    views: number
-    isPublic: boolean
+  id: string
+  code: string
+  title?: string | null
+  description?: string | null
+  language: string
+  createdAt: Date
+  views: number
+  isPublic: boolean
 }
 
-export function createPaste(paste: Omit<PasteData, 'createdAt' | 'views'>): PasteData {
-    const db = getDb()
-    const createdAt = new Date().toISOString()
+export async function createPaste(paste: Omit<PasteData, 'createdAt' | 'views' | 'id'>): Promise<PasteData> {
+  const created = await prisma.paste.create({
+    data: {
+      code: paste.code,
+      title: paste.title,
+      description: paste.description,
+      language: paste.language,
+      isPublic: paste.isPublic,
+    },
+  })
 
-    const stmt = db.prepare(`
-    INSERT INTO pastes (id, code, title, description, language, createdAt, views, isPublic)
-    VALUES (?, ?, ?, ?, ?, ?, 0, ?)
-  `)
-
-    stmt.run(
-        paste.id,
-        paste.code,
-        paste.title || null,
-        paste.description || null,
-        paste.language,
-        createdAt,
-        paste.isPublic ? 1 : 0
-    )
-
-    return {
-        ...paste,
-        createdAt,
-        views: 0,
-    }
+  return {
+    id: created.id,
+    code: created.code,
+    title: created.title,
+    description: created.description,
+    language: created.language,
+    createdAt: created.createdAt,
+    views: created.views,
+    isPublic: created.isPublic,
+  }
 }
 
-export function getPaste(id: string): PasteData | null {
-    const db = getDb()
+export async function getPaste(id: string): Promise<PasteData | null> {
+  const paste = await prisma.paste.findUnique({
+    where: { id },
+  })
 
-    const stmt = db.prepare('SELECT * FROM pastes WHERE id = ?')
-    const row = stmt.get(id) as any
+  if (!paste) return null
 
-    if (!row) return null
+  // Increment views
+  await prisma.paste.update({
+    where: { id },
+    data: { views: { increment: 1 } },
+  })
 
-    // Increment views
-    const updateStmt = db.prepare('UPDATE pastes SET views = views + 1 WHERE id = ?')
-    updateStmt.run(id)
-
-    return {
-        id: row.id,
-        code: row.code,
-        title: row.title,
-        description: row.description,
-        language: row.language,
-        createdAt: row.createdAt,
-        views: row.views + 1,
-        isPublic: row.isPublic === 1,
-    }
+  return {
+    id: paste.id,
+    code: paste.code,
+    title: paste.title,
+    description: paste.description,
+    language: paste.language,
+    createdAt: paste.createdAt,
+    views: paste.views + 1,
+    isPublic: paste.isPublic,
+  }
 }
 
-export function getPublicPastes(limit = 50, offset = 0): PasteData[] {
-    const db = getDb()
+export async function getPublicPastes(limit = 50, offset = 0): Promise<PasteData[]> {
+  const pastes = await prisma.paste.findMany({
+    where: { isPublic: true },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+    skip: offset,
+  })
 
-    const stmt = db.prepare(`
-    SELECT * FROM pastes
-    WHERE isPublic = 1
-    ORDER BY createdAt DESC
-    LIMIT ? OFFSET ?
-  `)
-
-    const rows = stmt.all(limit, offset) as any[]
-
-    return rows.map(row => ({
-        id: row.id,
-        code: row.code,
-        title: row.title,
-        description: row.description,
-        language: row.language,
-        createdAt: row.createdAt,
-        views: row.views,
-        isPublic: row.isPublic === 1,
-    }))
+  return pastes.map((p: typeof pastes[number]): PasteData => ({
+    id: p.id,
+    code: p.code,
+    title: p.title,
+    description: p.description,
+    language: p.language,
+    createdAt: p.createdAt,
+    views: p.views,
+    isPublic: p.isPublic,
+  }))
 }
 
-export function deletePaste(id: string): boolean {
-    const db = getDb()
+export async function deletePaste(id: string): Promise<boolean> {
+  const result = await prisma.paste.delete({
+    where: { id },
+  })
 
-    const stmt = db.prepare('DELETE FROM pastes WHERE id = ?')
-    const result = stmt.run(id)
-
-    return (result.changes ?? 0) > 0
+  return !!result
 }
 
-export function updatePaste(id: string, updates: Partial<Omit<PasteData, 'id' | 'createdAt' | 'views'>>): PasteData | null {
-    const db = getDb()
+export async function updatePaste(
+  id: string,
+  updates: Partial<Omit<PasteData, 'id' | 'createdAt' | 'views'>>
+): Promise<PasteData | null> {
+  const updated = await prisma.paste.update({
+    where: { id },
+    data: {
+      code: updates.code,
+      title: updates.title,
+      description: updates.description,
+      language: updates.language,
+      isPublic: updates.isPublic,
+    },
+  })
 
-    const fields: string[] = []
-    const values: any[] = []
-
-    if (updates.code !== undefined) {
-        fields.push('code = ?')
-        values.push(updates.code)
-    }
-    if (updates.title !== undefined) {
-        fields.push('title = ?')
-        values.push(updates.title)
-    }
-    if (updates.description !== undefined) {
-        fields.push('description = ?')
-        values.push(updates.description)
-    }
-    if (updates.language !== undefined) {
-        fields.push('language = ?')
-        values.push(updates.language)
-    }
-    if (updates.isPublic !== undefined) {
-        fields.push('isPublic = ?')
-        values.push(updates.isPublic ? 1 : 0)
-    }
-
-    if (fields.length === 0) return getPaste(id)
-
-    values.push(id)
-
-    const stmt = db.prepare(`UPDATE pastes SET ${fields.join(', ')} WHERE id = ?`)
-    stmt.run(...values)
-
-    return getPaste(id)
+  return {
+    id: updated.id,
+    code: updated.code,
+    title: updated.title,
+    description: updated.description,
+    language: updated.language,
+    createdAt: updated.createdAt,
+    views: updated.views,
+    isPublic: updated.isPublic,
+  }
 }
