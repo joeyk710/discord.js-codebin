@@ -27,10 +27,13 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    // Get the origin from the request headers
+    const origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'
+
     return NextResponse.json({
       id: paste.id,
       success: true,
-      shortUrl: `${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/paste/${paste.id}`
+      shortUrl: `${origin}/paste/${paste.id}`
     })
   } catch (error) {
     console.error('Error saving paste:', error)
