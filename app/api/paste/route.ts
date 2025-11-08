@@ -4,6 +4,15 @@ import { createPaste, getPaste, getPublicPastes } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
+    // Debug: Check if DATABASE_URL is set
+    if (!process.env.DATABASE_URL) {
+      console.error('DATABASE_URL environment variable is not set')
+      return NextResponse.json(
+        { error: 'Database not configured', details: 'DATABASE_URL environment variable is missing' },
+        { status: 500 }
+      )
+    }
+
     const { code, title, description, language = 'javascript', isPublic = true } = await request.json()
 
     if (!code || typeof code !== 'string') {
