@@ -1,0 +1,10 @@
+{
+  "id": "73yJ7c4wKH",
+  "code": "import { Client, Events, GatewayIntentBits } from 'discord.js';\n\nconst client = new Client({\n  intents: [GatewayIntentBits.Guilds]\n});\n\nclient.once(Events.ClientReady, () => {\n  console.log('Bot is online!');\n});\n\nclient.login(DISCORD_TOKEN);\n",
+  "title": "joey",
+  "description": "joey",
+  "language": "javascript",
+  "createdAt": "2025-11-08T04:23:23.596Z",
+  "views": 5,
+  "isPublic": true
+}

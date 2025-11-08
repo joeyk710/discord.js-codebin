@@ -1,18 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
-import { createPaste, getPaste, getPublicPastes } from '@/lib/db'
+import fs from 'fs/promises'
+import path from 'path'
+
+const DATA_DIR = path.join(process.cwd(), 'data', 'pastes')
+
+interface PasteData {
+  id: string
+  code: string
+  title?: string
+  description?: string
+  language: string
+  createdAt: string
+  views: number
+  isPublic: boolean
+}
+
+// Ensure data directory exists
+async function ensureDataDir() {
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true })
+  } catch (error) {
+    console.error('Error creating data directory:', error)
+  }
+}
+
+async function savePaste(paste: PasteData): Promise<void> {
+  await ensureDataDir()
+  const filePath = path.join(DATA_DIR, `${paste.id}.json`)
+  await fs.writeFile(filePath, JSON.stringify(paste, null, 2))
+}
+
+async function readPaste(id: string): Promise<PasteData | null> {
+  try {
+    const filePath = path.join(DATA_DIR, `${id}.json`)
+    const data = await fs.readFile(filePath, 'utf-8')
+    return JSON.parse(data)
+  } catch {
+    return null
+  }
+}
+
+async function incrementViews(id: string): Promise<void> {
+  const paste = await readPaste(id)
+  if (paste) {
+    paste.views += 1
+    await savePaste(paste)
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
-    // Debug: Check if DATABASE_URL is set
-    if (!process.env.DATABASE_URL) {
-      console.error('DATABASE_URL environment variable is not set')
-      return NextResponse.json(
-        { error: 'Database not configured', details: 'DATABASE_URL environment variable is missing' },
-        { status: 500 }
-      )
-    }
-
     const { code, title, description, language = 'javascript', isPublic = true } = await request.json()
 
     if (!code || typeof code !== 'string') {
@@ -22,14 +60,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create paste in database
-    const paste = await createPaste({
+    const id = nanoid(8)
+    const paste: PasteData = {
+      id,
       code,
       title: title || 'Untitled',
       description: description || '',
       language: language || 'javascript',
+      createdAt: new Date().toISOString(),
+      views: 0,
       isPublic,
-    })
+    }
+
+    await savePaste(paste)
 
     return NextResponse.json({
       id: paste.id,
@@ -39,7 +82,6 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error saving paste:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
-    console.error('Full error:', errorMessage)
     return NextResponse.json(
       { error: 'Failed to save paste', details: errorMessage },
       { status: 500 }
@@ -51,23 +93,6 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const list = searchParams.get('list')
-
-    if (list) {
-      // List all public pastes
-      const pastes = await getPublicPastes(50, 0)
-
-      return NextResponse.json({
-        pastes: pastes.map(p => ({
-          id: p.id,
-          title: p.title,
-          description: p.description,
-          language: p.language,
-          createdAt: p.createdAt,
-          views: p.views,
-        }))
-      })
-    }
 
     if (!id) {
       return NextResponse.json(
@@ -76,7 +101,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const paste = await getPaste(id)
+    const paste = await readPaste(id)
 
     if (!paste) {
       return NextResponse.json(
@@ -85,11 +110,16 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Increment views
+    await incrementViews(id)
+    paste.views += 1
+
     return NextResponse.json(paste)
   } catch (error) {
     console.error('Error retrieving paste:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
     return NextResponse.json(
-      { error: 'Failed to retrieve paste', details: String(error) },
+      { error: 'Failed to retrieve paste', details: errorMessage },
       { status: 500 }
     )
   }

@@ -1,13 +1,15 @@
 -- CreateTable
 CREATE TABLE "Paste" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL,
     "code" TEXT NOT NULL,
     "title" TEXT,
     "description" TEXT,
     "language" TEXT NOT NULL DEFAULT 'javascript',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "views" INTEGER NOT NULL DEFAULT 0,
-    "isPublic" BOOLEAN NOT NULL DEFAULT true
+    "isPublic" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "Paste_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
