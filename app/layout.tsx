@@ -15,6 +15,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'discord.js Bin Editor',
   description: 'Write and share discord.js code with intelligent suggestions',
+  icons: {
+    icon: '/djs.png',
+    apple: '/djs.png',
+  },
+  openGraph: {
+    title: 'discord.js Bin Editor',
+    description: 'Write and share discord.js code with intelligent suggestions',
+    images: ['/djs.png'],
+    url: 'https://discord-js-codebin.vercel.app',
+    type: 'website',
+  },
 }
 
 export default function RootLayout({
