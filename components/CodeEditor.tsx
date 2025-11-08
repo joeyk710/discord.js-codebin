@@ -53,6 +53,7 @@ export default function CodeEditor({ value, onChange }: CodeEditorProps) {
           acceptSuggestionOnEnter: 'off',
           suggest: { shareSuggestSelections: false },
           hover: { enabled: false },
+          bracketPairColorization: { enabled: true },
           guides: {
             bracketPairs: true,
             bracketPairsHorizontal: "active",
