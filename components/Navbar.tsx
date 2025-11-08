@@ -12,7 +12,7 @@ export default function Navbar({ onNew, onSaveShare, isSaving }: NavbarProps) {
             <div className="navbar-start w-full sm:w-auto">
                 <div className="flex items-center gap-2 sm:gap-3">
                     <img
-                        src="https://cdn.discordapp.com/avatars/348607796335607817/2d72562153c202e77c681f2a7efbe919.png?size=2048"
+                        src="/djs.png"
                         alt="discord.js"
                         className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg"
                     />
