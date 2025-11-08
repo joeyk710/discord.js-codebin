@@ -53,13 +53,12 @@ export default function CodeEditor({ value, onChange }: CodeEditorProps) {
           acceptSuggestionOnEnter: 'off',
           suggest: { shareSuggestSelections: false },
           hover: { enabled: false },
-          bracketPairColorization: { enabled: true },
           guides: {
             bracketPairs: true,
-            bracketPairsHorizontal: true,
+            bracketPairsHorizontal: "active",
             highlightActiveBracketPair: true,
           },
-          matchBrackets: 'always',
+          matchBrackets: 'near',
         }}
       />
     </div>

@@ -165,6 +165,7 @@ export default function EditorPage() {
       <main className="w-full px-2 sm:px-3 py-2 sm:py-4 flex-1 flex flex-col gap-2 sm:gap-4 overflow-hidden min-h-0">
         {/* Top Row: Action Buttons + Language/Tips (Left) */}
         <div className="flex gap-1 sm:gap-2 flex-wrap items-center">
+          <ThemeSwitcher />
           <button
             onClick={handleNew}
             className="btn btn-xs sm:btn-sm btn-ghost rounded-lg"
@@ -182,7 +183,6 @@ export default function EditorPage() {
             <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : '💾 Save & Share'}</span>
             <span className="sm:hidden">{isSaving ? '⏳' : '💾'}</span>
           </button>
-          <ThemeSwitcher />
 
           {/* Language Selector */}
           <div className="dropdown">

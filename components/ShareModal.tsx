@@ -120,7 +120,12 @@ export default function ShareModal({
                         <div className="modal-action gap-2 justify-between">
                             <button
                                 type="button"
-                                onClick={onClose}
+                                onClick={() => {
+                                    onClose()
+                                    if (shareModalRef.current) {
+                                        shareModalRef.current.checked = false
+                                    }
+                                }}
                                 className="btn btn-sm btn-ghost rounded-lg"
                             >
                                 Close
