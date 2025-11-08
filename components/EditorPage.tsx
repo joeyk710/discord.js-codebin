@@ -125,6 +125,13 @@ export default function EditorPage() {
       const data = await response.json()
 
       if (data.id) {
+        // Store paste ID in localStorage to mark it as owned by this user
+        const ownedPastes = JSON.parse(localStorage.getItem('ownedPastes') || '[]')
+        if (!ownedPastes.includes(data.id)) {
+          ownedPastes.push(data.id)
+          localStorage.setItem('ownedPastes', JSON.stringify(ownedPastes))
+        }
+
         const url = data.shortUrl || `${window.location.origin}/paste/${data.id}`
         setShareUrl(url)
         setIsPublic(metadata.isPublic)

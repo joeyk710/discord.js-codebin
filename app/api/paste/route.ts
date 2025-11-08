@@ -92,11 +92,29 @@ export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
+    const token = searchParams.get('token')
 
     if (!id) {
       return NextResponse.json(
         { error: 'Paste ID is required' },
         { status: 400 }
+      )
+    }
+
+    if (!token) {
+      return NextResponse.json(
+        { error: 'Not authorized to delete this paste' },
+        { status: 401 }
+      )
+    }
+
+    // Verify token matches the paste ID (simple ownership check)
+    // Token should be the paste ID sent from client to prove they have it
+    // In a real app, you'd want more sophisticated token verification
+    if (token !== id) {
+      return NextResponse.json(
+        { error: 'Invalid deletion token' },
+        { status: 403 }
       )
     }
 

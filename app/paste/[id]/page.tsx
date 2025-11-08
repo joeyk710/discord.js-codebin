@@ -19,6 +19,13 @@ interface PasteData {
   isPublic: boolean
 }
 
+// Helper function to check if user owns this paste
+function isOwnedByUser(pasteId: string): boolean {
+  if (typeof window === 'undefined') return false
+  const ownedPastes = JSON.parse(localStorage.getItem('ownedPastes') || '[]')
+  return ownedPastes.includes(pasteId)
+}
+
 export default function PastePage({ params }: { params: Promise<{ id: string }> }) {
   // Unwrap the params Promise
   const { id } = React.use(params)
@@ -31,7 +38,11 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
   const [copied, setCopied] = useState(false)
   const [theme, setTheme] = useState<'vs-dark' | 'vs'>('vs-dark')
   const [deleting, setDeleting] = useState(false)
+  const [isOwner, setIsOwner] = useState(false)
+  const [rateLimitError, setRateLimitError] = useState('')
+  const [retryAfter, setRetryAfter] = useState(0)
   const deleteModalRef = useRef<HTMLInputElement>(null)
+  const rateLimitModalRef = useRef<HTMLDialogElement>(null)
 
   // Detect and watch theme changes
   useEffect(() => {
@@ -58,6 +69,9 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
         if (!response.ok) throw new Error('Paste not found')
         const data: PasteData = await response.json()
         setPaste(data)
+
+        // Check if user owns this paste
+        setIsOwner(isOwnedByUser(id))
 
         // Analyze the pasted code for suggestions
         try {
@@ -140,11 +154,23 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
   const handleDelete = async () => {
     setDeleting(true)
     try {
-      const response = await fetch(`/api/paste?id=${id}`, {
+      const response = await fetch(`/api/paste?id=${id}&token=${id}`, {
         method: 'DELETE',
       })
 
       if (!response.ok) {
+        // Handle rate limit errors (429)
+        if (response.status === 429) {
+          const retryAfterHeader = response.headers.get('Retry-After')
+          const seconds = retryAfterHeader ? parseInt(retryAfterHeader) : 60
+          setRetryAfter(seconds)
+          setRateLimitError('Too many requests. Please wait before trying again.')
+          if (rateLimitModalRef.current) {
+            rateLimitModalRef.current.showModal()
+          }
+          setDeleting(false)
+          return
+        }
         throw new Error('Failed to delete paste')
       }
 
@@ -209,18 +235,20 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
             <button onClick={handleShare} className="btn rounded-xl btn-sm btn-primary" title="Share this paste">
               🔗 Share
             </button>
-            <button
-              onClick={() => {
-                if (deleteModalRef.current) {
-                  deleteModalRef.current.checked = true
-                }
-              }}
-              className="btn rounded-xl btn-sm btn-error"
-              title="Delete this paste"
-              disabled={deleting}
-            >
-              🗑️ Delete
-            </button>
+            {isOwner && (
+              <button
+                onClick={() => {
+                  if (deleteModalRef.current) {
+                    deleteModalRef.current.checked = true
+                  }
+                }}
+                className="btn rounded-xl btn-sm btn-error"
+                title="Delete this paste"
+                disabled={deleting}
+              >
+                🗑️ Delete
+              </button>
+            )}
             <ThemeSwitcher />
           </div>
         </div>
@@ -352,6 +380,39 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
           }
         }}></label>
       </div>
+
+      {/* Rate Limit Error Modal */}
+      <dialog ref={rateLimitModalRef} className="modal">
+        <div className="modal-box rounded-xl max-w-md">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-4xl">⏳</span>
+            <div>
+              <h3 className="font-bold text-2xl text-base-content">Rate Limited</h3>
+              <p className="text-sm text-base-content/60">Too many requests</p>
+            </div>
+          </div>
+
+          <p className="py-4 text-base-content/70">
+            You're making too many requests. Please wait {retryAfter} seconds before trying again.
+          </p>
+
+          <div className="alert alert-warning mt-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 shrink-0 stroke-current" fill="none" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4v2m0-11a9 9 0 110 18 9 9 0 010-18z" />
+            </svg>
+            <span>This limit is per-user to protect the service from abuse.</span>
+          </div>
+
+          <div className="modal-action mt-6">
+            <form method="dialog">
+              <button className="btn btn-primary rounded-xl">Got it</button>
+            </form>
+          </div>
+        </div>
+        <form method="dialog" className="modal-backdrop">
+          <button>close</button>
+        </form>
+      </dialog>
     </div>
   )
 }

@@ -10,9 +10,9 @@ const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 function getRateLimitKey(request: NextRequest, type: 'global' | 'api' | 'ip'): string {
   if (type === 'global') return 'global'
   if (type === 'ip') {
-    const ip = request.headers.get('x-forwarded-for') || 
-               request.headers.get('cf-connecting-ip') || 
-               'unknown'
+    const ip = request.headers.get('x-forwarded-for') ||
+      request.headers.get('cf-connecting-ip') ||
+      'unknown'
     return `ip:${ip}`
   }
   const ip = request.headers.get('cf-connecting-ip') || 'unknown'
@@ -63,10 +63,10 @@ export default async function proxy(request: NextRequest) {
   }
 
   // Ignore Next.js internals and static assets
-  const isAsset = pathname.startsWith('/_next') || 
-                  pathname.startsWith('/static') || 
-                  pathname.startsWith('/favicon.ico') ||
-                  /\.[a-zA-Z0-9]+$/.test(pathname)
+  const isAsset = pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.startsWith('/favicon.ico') ||
+    /\.[a-zA-Z0-9]+$/.test(pathname)
 
   if (isAsset) {
     return NextResponse.next()
@@ -81,37 +81,41 @@ export default async function proxy(request: NextRequest) {
   // API-specific rate limiting (stricter)
   if (pathname.startsWith('/api')) {
     const apiKey = getRateLimitKey(request, 'api')
-    
+
     // Different limits based on endpoint
     let limit = 100 // default per minute
-    
-    if (pathname.startsWith('/api/paste')) {
-      if (method === 'POST') {
-        limit = 10 // Create paste: 10 per minute per IP
-      } else if (method === 'DELETE') {
-        limit = 5 // Delete paste: 5 per minute per IP
-      } else {
-        limit = 50 // Get paste: 50 per minute per IP
-      }
-    } else if (pathname.startsWith('/api/docs')) {
-      limit = 20 // Docs endpoint: 20 per minute per IP
-    }
+    const isLocalhost = request.headers.get('host')?.startsWith('localhost')
 
-    if (!checkRateLimit(apiKey, limit, 60000)) {
-      return new NextResponse(
-        JSON.stringify({ error: 'Rate limit exceeded', retryAfter: 60 }),
-        { 
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': '60',
-          }
+    // Skip rate limiting in development
+    if (!isLocalhost) {
+      if (pathname.startsWith('/api/paste')) {
+        if (method === 'POST') {
+          limit = 10 // Create paste: 10 per minute per IP
+        } else if (method === 'DELETE') {
+          limit = 20 // Delete paste: 20 per minute per IP
+        } else {
+          limit = 50 // Get paste: 50 per minute per IP
         }
-      )
+      } else if (pathname.startsWith('/api/docs')) {
+        limit = 20 // Docs endpoint: 20 per minute per IP
+      }
+
+      if (!checkRateLimit(apiKey, limit, 60000)) {
+        return new NextResponse(
+          JSON.stringify({ error: 'Rate limit exceeded', retryAfter: 60 }),
+          {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': '60',
+            }
+          }
+        )
+      }
     }
 
     const response = NextResponse.next()
-    
+
     // API-specific security headers
     response.headers.set('X-Content-Type-Options', 'nosniff')
     response.headers.set('X-Frame-Options', 'DENY')
@@ -120,13 +124,13 @@ export default async function proxy(request: NextRequest) {
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()')
     response.headers.set('X-RateLimit-Limit', limit.toString())
     response.headers.set('X-RateLimit-Window', '60')
-    
+
     // Strict CSP for API
     response.headers.set(
       'Content-Security-Policy',
       "default-src 'none'; frame-ancestors 'none';"
     )
-    
+
     return response
   }
 
