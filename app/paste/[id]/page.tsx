@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Editor from '@monaco-editor/react'
 import SuggestionsPanel from '@/components/SuggestionsPanel'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 import { analyzeDiscordJsCode, type Suggestion } from '@/lib/analyzer'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 interface PasteData {
   id: string
@@ -21,6 +22,7 @@ interface PasteData {
 export default function PastePage({ params }: { params: Promise<{ id: string }> }) {
   // Unwrap the params Promise
   const { id } = React.use(params)
+  const router = useRouter()
 
   const [paste, setPaste] = useState<PasteData | null>(null)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
@@ -28,6 +30,8 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
   const [theme, setTheme] = useState<'vs-dark' | 'vs'>('vs-dark')
+  const [deleting, setDeleting] = useState(false)
+  const deleteModalRef = useRef<HTMLInputElement>(null)
 
   // Detect and watch theme changes
   useEffect(() => {
@@ -133,6 +137,26 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleDelete = async () => {
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/paste?id=${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete paste')
+      }
+
+      // Redirect to home page after successful deletion
+      router.push('/')
+    } catch (err) {
+      console.error('Error deleting paste:', err)
+      setError(err instanceof Error ? err.message : 'Error deleting paste')
+      setDeleting(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-base-100 flex items-center justify-center">
@@ -147,7 +171,7 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
         <div className="alert alert-error max-w-md">
           <span>{error || 'Paste not found'}</span>
         </div>
-        <Link href="/" className="btn btn-primary">
+        <Link href="/" className="btn rounded-xl btn-primary">
           ← Back to Editor
         </Link>
       </div>
@@ -160,7 +184,7 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
       <div className="bg-base-200 border-b border-base-300 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <Link href="/" className="btn btn-ghost btn-sm">
+            <Link href="/" className="btn rounded-xl btn-ghost btn-sm">
               ← Back
             </Link>
           </div>
@@ -174,16 +198,28 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
           <div className="flex-1 flex justify-end gap-2">
             <button
               onClick={handleCopyCode}
-              className="btn btn-sm btn-outline"
+              className="btn rounded-xl btn-sm btn-outline"
               title="Copy code to clipboard"
             >
               {copied ? '✓ Copied!' : '📋 Copy'}
             </button>
-            <button onClick={handleDownload} className="btn btn-sm btn-outline" title="Download as file">
+            <button onClick={handleDownload} className="btn rounded-xl btn-sm btn-outline" title="Download as file">
               ⬇️ Download
             </button>
-            <button onClick={handleShare} className="btn btn-sm btn-primary" title="Share this paste">
+            <button onClick={handleShare} className="btn rounded-xl btn-sm btn-primary" title="Share this paste">
               🔗 Share
+            </button>
+            <button
+              onClick={() => {
+                if (deleteModalRef.current) {
+                  deleteModalRef.current.checked = true
+                }
+              }}
+              className="btn rounded-xl btn-sm btn-error"
+              title="Delete this paste"
+              disabled={deleting}
+            >
+              🗑️ Delete
             </button>
             <ThemeSwitcher />
           </div>
@@ -259,6 +295,62 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
             discordjs.guide
           </a>
         </p>
+      </div>
+
+      {/* Delete Confirmation Modal */}
+      <input
+        ref={deleteModalRef}
+        type="checkbox"
+        id="delete_modal"
+        className="modal-toggle"
+      />
+      <div className="modal">
+        <div className="modal-box rounded-xl">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="text-4xl">🗑️</span>
+            <div>
+              <h3 className="font-bold text-2xl text-base-content">Delete Paste?</h3>
+              <p className="text-sm text-base-content/60">This cannot be undone</p>
+            </div>
+          </div>
+
+          <p className="py-4 text-base-content/70">
+            Are you sure you want to permanently delete this paste? This action cannot be undone.
+          </p>
+
+          <div className="modal-action gap-3">
+            <label
+              htmlFor="delete_modal"
+              className="btn btn-ghost rounded-xl"
+              onClick={() => {
+                if (deleteModalRef.current) {
+                  deleteModalRef.current.checked = false
+                }
+              }}
+            >
+              Cancel
+            </label>
+            <button
+              onClick={handleDelete}
+              className="btn btn-error rounded-xl gap-2"
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <span className="loading loading-spinner loading-sm"></span>
+                  Deleting...
+                </>
+              ) : (
+                <>🗑️ Delete Paste</>
+              )}
+            </button>
+          </div>
+        </div>
+        <label className="modal-backdrop" htmlFor="delete_modal" onClick={() => {
+          if (deleteModalRef.current) {
+            deleteModalRef.current.checked = false
+          }
+        }}></label>
       </div>
     </div>
   )

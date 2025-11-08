@@ -87,3 +87,34 @@ export async function GET(request: NextRequest) {
     )
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Paste ID is required' },
+        { status: 400 }
+      )
+    }
+
+    const paste = await prisma.paste.delete({
+      where: { id },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: 'Paste deleted successfully',
+      id: paste.id,
+    })
+  } catch (error) {
+    console.error('Error deleting paste:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    return NextResponse.json(
+      { error: 'Failed to delete paste', details: errorMessage },
+      { status: 500 }
+    )
+  }
+}

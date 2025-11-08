@@ -15,6 +15,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: 'discord.js Bin Editor',
   description: 'Write and share discord.js code with intelligent suggestions',
+  metadataBase: new URL('https://discord-js-codebin.vercel.app'),
   icons: {
     icon: '/djs.png',
     apple: '/djs.png',
