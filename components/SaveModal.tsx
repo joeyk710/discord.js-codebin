@@ -1,19 +1,16 @@
 'use client'
 
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useRef, useEffect } from 'react'
 
 interface SaveModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (metadata: { title: string; description: string; language: string; isPublic: boolean }) => void
+  onSave: (metadata: { isPublic: boolean }) => void
   isSaving: boolean
-  language: 'javascript' | 'typescript' | 'json'
 }
 
-export default function SaveModal({ isOpen, onClose, onSave, isSaving, language }: SaveModalProps) {
-  const [title, setTitle] = useState('Untitled')
-  const [description, setDescription] = useState('')
-  const [isPublic, setIsPublic] = useState(true)
+export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveModalProps) {
+  const [isPublic, setIsPublic] = React.useState(true)
   const saveModalRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -24,8 +21,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving, language 
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({ title, description, language, isPublic })
-    onClose()
+    onSave({ isPublic })
   }
 
   return (
@@ -107,4 +103,3 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving, language 
     </>
   )
 }
-

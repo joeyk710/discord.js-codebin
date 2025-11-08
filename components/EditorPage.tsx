@@ -5,6 +5,8 @@ import Navbar from './Navbar'
 import CodeEditor from './CodeEditor'
 import SuggestionsModal from './SuggestionsModal'
 import SaveModal from './SaveModal'
+import ShareModal from './ShareModal'
+import ThemeSwitcher from './ThemeSwitcher'
 import Footer from './Footer'
 import { analyzeDiscordJsCode, type Suggestion } from '@/lib/analyzer'
 
@@ -28,12 +30,23 @@ export default function EditorPage() {
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [shareUrl, setShareUrl] = useState('')
-  const [savedMessage, setSavedMessage] = useState('')
   const [showSaveModal, setShowSaveModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
   const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showMetadata, setShowMetadata] = useState(false)
   const [language, setLanguage] = useState<'javascript' | 'typescript' | 'json'>('javascript')
+  const [isPublic, setIsPublic] = useState(true)
+  const [isDesktop, setIsDesktop] = useState(false)
   const confirmModalRef = useRef<HTMLInputElement>(null)
+
+  // Initialize desktop state after hydration
+  useEffect(() => {
+    setIsDesktop(window.innerWidth >= 640)
+    const handleResize = () => setIsDesktop(window.innerWidth >= 640)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   // Analyze code with debounce
   useEffect(() => {
@@ -85,7 +98,6 @@ export default function EditorPage() {
 
   const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode)
-    setSavedMessage('')
   }, [])
 
   // Control confirmation modal
@@ -104,9 +116,9 @@ export default function EditorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code,
-          title: title || metadata.title || 'Untitled',
-          description: description || metadata.description || '',
-          language: metadata.language,
+          title: title || 'Untitled',
+          description: description || '',
+          language,
           isPublic: metadata.isPublic,
         }),
       })
@@ -115,14 +127,10 @@ export default function EditorPage() {
       if (data.id) {
         const url = data.shortUrl || `${window.location.origin}/paste/${data.id}`
         setShareUrl(url)
-        setSavedMessage('✅ Saved! Link copied to clipboard.')
-        navigator.clipboard.writeText(url)
-        setTimeout(() => setSavedMessage(''), 5000)
-      } else {
-        setSavedMessage('❌ Error saving paste')
+        setIsPublic(metadata.isPublic)
+        setShowShareModal(true)
       }
     } catch (error) {
-      setSavedMessage('❌ Error saving paste')
       console.error(error)
     } finally {
       setIsSaving(false)
@@ -136,121 +144,106 @@ export default function EditorPage() {
   const handleConfirmNew = () => {
     setShowConfirmModal(false)
     setCode(INITIAL_CODE)
-    setSavedMessage('')
     setShareUrl('')
   }
 
   return (
-    <div className="flex flex-col h-screen bg-base-100 m-3 rounded-2xl shadow-xl overflow-hidden">
+    <div className="flex flex-col h-screen bg-base-100 m-1 sm:m-3 rounded-2xl shadow-xl overflow-hidden">
       <Navbar
         onNew={handleNew}
         onSaveShare={() => setShowSaveModal(true)}
         isSaving={isSaving}
       />
 
-      <main className="w-full px-3 py-6 flex-1 flex flex-col lg:flex-row gap-8 overflow-hidden min-h-0">
-        {/* Metadata Section */}
-        <div className="w-full flex flex-col gap-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <main className="w-full px-2 sm:px-3 py-2 sm:py-4 flex-1 flex flex-col gap-2 sm:gap-4 overflow-hidden min-h-0">
+        {/* Top Row: Action Buttons + Language/Tips (Left) */}
+        <div className="flex gap-1 sm:gap-2 flex-wrap items-center">
+          <button
+            onClick={handleNew}
+            className="btn btn-xs sm:btn-sm btn-ghost rounded-lg"
+            title="Create new code snippet"
+          >
+            <span className="hidden sm:inline">➕ New</span>
+            <span className="sm:hidden">➕</span>
+          </button>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            disabled={isSaving}
+            className="btn btn-xs sm:btn-sm btn-primary rounded-lg"
+            title="Save and share your code"
+          >
+            <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : '💾 Save & Share'}</span>
+            <span className="sm:hidden">{isSaving ? '⏳' : '💾'}</span>
+          </button>
+          <ThemeSwitcher />
+
+          {/* Language Selector */}
+          <div className="dropdown">
+            <button tabIndex={0} className="btn btn-xs rounded-lg gap-1">
+              {language === 'javascript' && '📜 JS'}
+              {language === 'typescript' && '🔷 TS'}
+              {language === 'json' && '📋 JSON'}
+            </button>
+            <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-50 w-48 sm:w-52 p-2 shadow border border-base-300">
+              <li><a onClick={() => setLanguage('javascript')}>📜 JavaScript</a></li>
+              <li><a onClick={() => setLanguage('typescript')}>🔷 TypeScript</a></li>
+              <li><a onClick={() => setLanguage('json')}>📋 JSON</a></li>
+            </ul>
+          </div>
+          <button
+            onClick={() => setShowSuggestionsModal(true)}
+            className="btn btn-xs rounded-lg gap-1"
+            title="View tips and suggestions"
+          >
+            💡 Tips
+          </button>
+        </div>
+
+        {/* Code Editor - Full Width */}
+        <div className="flex-1 flex flex-col rounded-xl overflow-hidden border border-base-300 shadow-lg bg-base-100 min-h-64 w-full">
+          <div className="bg-base-200 px-3 sm:px-6 py-2 sm:py-3 border-b border-base-300 flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
+            <span className="text-lg sm:text-2xl flex-shrink-0">📝</span>
+            <span className="text-xs sm:text-sm font-medium text-base-content flex-shrink-0">
+              {code.split('\n').length} {code.split('\n').length === 1 ? 'line' : 'lines'}
+            </span>
             <input
               type="text"
-              placeholder="Snippet name (optional)"
+              placeholder="Snippet name"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input input-bordered rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="input input-xs sm:input-sm input-bordered rounded h-8 flex-1 min-w-32 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
             <input
               type="text"
-              placeholder="Brief description (optional)"
+              placeholder="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="input input-bordered rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+              className="input input-xs sm:input-sm input-bordered rounded h-8 flex-1 min-w-32 focus:outline-none focus:ring-2 focus:ring-primary/50"
             />
           </div>
-
-          {/* Language and Tips Row */}
-          <div className="flex gap-2">
-            <div className="dropdown">
-              <button tabIndex={0} className="btn btn-xs btn-ghost rounded-xl gap-1">
-                {language === 'javascript' && '📜 JS'}
-                {language === 'typescript' && '🔷 TS'}
-                {language === 'json' && '📋 JSON'}
-              </button>
-              <ul tabIndex={0} className="dropdown-content menu bg-base-100 rounded-box z-50 w-52 p-2 shadow border border-base-300">
-                <li><a onClick={() => setLanguage('javascript')}>📜 JavaScript</a></li>
-                <li><a onClick={() => setLanguage('typescript')}>🔷 TypeScript</a></li>
-                <li><a onClick={() => setLanguage('json')}>📋 JSON</a></li>
-              </ul>
-            </div>
-            <button
-              onClick={() => setShowSuggestionsModal(true)}
-              className="btn btn-xs btn-ghost rounded-xl gap-1"
-              title="View tips and suggestions"
-            >
-              💡 Tips & Suggestions
-            </button>
-          </div>
-
-          {/* Main content area */}
-          <div className="flex flex-col lg:flex-row gap-8 flex-1 min-h-0">
-            {/* Code Editor - Full Width */}
-            <div className="flex flex-col rounded-xl overflow-hidden border border-base-300 shadow-lg bg-base-100 flex-1 min-h-0 w-full">
-              <div className="bg-base-200 px-6 py-4 border-b border-base-300 flex items-center flex-shrink-0">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">📝</span>
-                  <span className="text-sm font-medium text-base-content">
-                    Code Editor • {code.split('\n').length} {code.split('\n').length === 1 ? 'line' : 'lines'}
-                  </span>
-                </div>
-              </div>
-              <div className="flex-1 overflow-hidden relative">
-                <div className="absolute inset-0">
-                  <CodeEditor value={code} onChange={handleCodeChange} />
-                </div>
-              </div>
+          <div className="flex-1 overflow-hidden relative">
+            <div className="absolute inset-0">
+              <CodeEditor value={code} onChange={handleCodeChange} />
             </div>
           </div>
         </div>
       </main>
-
-      {/* Messages */}
-      <div className="w-full px-4 pb-8 flex flex-col gap-4">
-        {savedMessage && (
-          <div className={`alert alert-${savedMessage.includes('✅') ? 'success' : 'error'} rounded-2xl shadow-lg`}>
-            <span className="text-base font-semibold">{savedMessage}</span>
-            {shareUrl && (
-              <div className="mt-3">
-                <div className="flex items-center gap-2 text-sm">
-                  <span>Share link:</span>
-                  <a
-                    href={shareUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="link link-primary font-mono text-xs"
-                  >
-                    {shareUrl.split('/paste/')[1]}
-                  </a>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(shareUrl)
-                    }}
-                    className="btn btn-xs btn-ghost rounded-xl"
-                  >
-                    📋 Copy
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
 
       <SaveModal
         isOpen={showSaveModal}
         onClose={() => setShowSaveModal(false)}
         onSave={handleSaveWithMetadata}
         isSaving={isSaving}
-        language={language}
+      />
+
+      <ShareModal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        shareUrl={shareUrl}
+        title={title}
+        description={description}
+        isPublic={isPublic}
+        onNew={handleNew}
       />
 
       <SuggestionsModal
@@ -272,6 +265,7 @@ export default function EditorPage() {
           <p className="py-4">Unsaved changes will be lost. Are you sure?</p>
           <div className="modal-action">
             <button
+              type="button"
               onClick={() => {
                 setShowConfirmModal(false)
                 if (confirmModalRef.current) {
@@ -293,16 +287,15 @@ export default function EditorPage() {
             </button>
           </div>
         </div>
-        <label
-          className="modal-backdrop"
-          htmlFor="confirm_modal"
-          onClick={() => setShowConfirmModal(false)}
-        ></label>
+        <label className="modal-backdrop" htmlFor="confirm_modal" onClick={() => {
+          setShowConfirmModal(false)
+          if (confirmModalRef.current) {
+            confirmModalRef.current.checked = false
+          }
+        }}></label>
       </div>
 
-      <div className="mt-auto -mx-3 -mb-3 rounded-b-2xl">
-        <Footer />
-      </div>
+      <Footer />
     </div>
   )
 }

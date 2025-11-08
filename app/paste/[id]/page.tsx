@@ -18,17 +18,39 @@ interface PasteData {
   isPublic: boolean
 }
 
-export default function PastePage({ params }: { params: { id: string } }) {
+export default function PastePage({ params }: { params: Promise<{ id: string }> }) {
+  // Unwrap the params Promise
+  const { id } = React.use(params)
+
   const [paste, setPaste] = useState<PasteData | null>(null)
   const [suggestions, setSuggestions] = useState<Suggestion[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [copied, setCopied] = useState(false)
+  const [theme, setTheme] = useState<'vs-dark' | 'vs'>('vs-dark')
+
+  // Detect and watch theme changes
+  useEffect(() => {
+    const updateTheme = () => {
+      const htmlTheme = document.documentElement.getAttribute('data-theme')
+      setTheme(htmlTheme === 'light' ? 'vs' : 'vs-dark')
+    }
+
+    updateTheme()
+
+    const observer = new MutationObserver(updateTheme)
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    })
+
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     const fetchPaste = async () => {
       try {
-        const response = await fetch(`/api/paste?id=${params.id}`)
+        const response = await fetch(`/api/paste?id=${id}`)
         if (!response.ok) throw new Error('Paste not found')
         const data: PasteData = await response.json()
         setPaste(data)
@@ -82,7 +104,7 @@ export default function PastePage({ params }: { params: { id: string } }) {
     }
 
     fetchPaste()
-  }, [params.id])
+  }, [id])
 
   const handleCopyCode = () => {
     if (paste) {
@@ -176,12 +198,30 @@ export default function PastePage({ params }: { params: { id: string } }) {
           <Editor
             language={paste.language === 'typescript' ? 'typescript' : 'javascript'}
             value={paste.code}
-            theme={typeof window !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark' ? 'vs-dark' : 'vs'}
+            theme={theme}
             options={{
               readOnly: true,
               minimap: { enabled: false },
               fontSize: 14,
-              fontFamily: 'Fira Code, monospace',
+              lineNumbers: 'on',
+              scrollBeyondLastLine: false,
+              automaticLayout: true,
+              tabSize: 2,
+              wordWrap: 'on',
+              quickSuggestions: false,
+              suggestOnTriggerCharacters: false,
+              acceptSuggestionOnCommitCharacter: false,
+              acceptSuggestionOnEnter: 'off',
+              suggest: { shareSuggestSelections: false },
+              hover: { enabled: false },
+              bracketPairColorization: { enabled: true },
+              guides: {
+                bracketPairs: true,
+                bracketPairsHorizontal: true,
+                highlightActiveBracketPair: true,
+              },
+              matchBrackets: 'always',
+              contextmenu: false,
             }}
             height="100%"
           />
