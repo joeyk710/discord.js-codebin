@@ -29,8 +29,10 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error saving paste:', error)
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error('Full error:', errorMessage)
     return NextResponse.json(
-      { error: 'Failed to save paste', details: String(error) },
+      { error: 'Failed to save paste', details: errorMessage },
       { status: 500 }
     )
   }
