@@ -1,53 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { nanoid } from 'nanoid'
-import fs from 'fs/promises'
-import path from 'path'
+import { PrismaClient } from '@prisma/client'
 
-const DATA_DIR = path.join(process.cwd(), 'data', 'pastes')
-
-interface PasteData {
-  id: string
-  code: string
-  title?: string
-  description?: string
-  language: string
-  createdAt: string
-  views: number
-  isPublic: boolean
-}
-
-// Ensure data directory exists
-async function ensureDataDir() {
-  try {
-    await fs.mkdir(DATA_DIR, { recursive: true })
-  } catch (error) {
-    console.error('Error creating data directory:', error)
-  }
-}
-
-async function savePaste(paste: PasteData): Promise<void> {
-  await ensureDataDir()
-  const filePath = path.join(DATA_DIR, `${paste.id}.json`)
-  await fs.writeFile(filePath, JSON.stringify(paste, null, 2))
-}
-
-async function readPaste(id: string): Promise<PasteData | null> {
-  try {
-    const filePath = path.join(DATA_DIR, `${id}.json`)
-    const data = await fs.readFile(filePath, 'utf-8')
-    return JSON.parse(data)
-  } catch {
-    return null
-  }
-}
-
-async function incrementViews(id: string): Promise<void> {
-  const paste = await readPaste(id)
-  if (paste) {
-    paste.views += 1
-    await savePaste(paste)
-  }
-}
+const prisma = new PrismaClient()
 
 export async function POST(request: NextRequest) {
   try {
@@ -61,18 +16,16 @@ export async function POST(request: NextRequest) {
     }
 
     const id = nanoid(8)
-    const paste: PasteData = {
-      id,
-      code,
-      title: title || 'Untitled',
-      description: description || '',
-      language: language || 'javascript',
-      createdAt: new Date().toISOString(),
-      views: 0,
-      isPublic,
-    }
-
-    await savePaste(paste)
+    const paste = await prisma.paste.create({
+      data: {
+        id,
+        code,
+        title: title || 'Untitled',
+        description: description || '',
+        language: language || 'javascript',
+        isPublic,
+      },
+    })
 
     return NextResponse.json({
       id: paste.id,
@@ -101,7 +54,9 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const paste = await readPaste(id)
+    const paste = await prisma.paste.findUnique({
+      where: { id },
+    })
 
     if (!paste) {
       return NextResponse.json(
@@ -111,10 +66,15 @@ export async function GET(request: NextRequest) {
     }
 
     // Increment views
-    await incrementViews(id)
-    paste.views += 1
+    await prisma.paste.update({
+      where: { id },
+      data: { views: { increment: 1 } },
+    })
 
-    return NextResponse.json(paste)
+    return NextResponse.json({
+      ...paste,
+      views: paste.views + 1,
+    })
   } catch (error) {
     console.error('Error retrieving paste:', error)
     const errorMessage = error instanceof Error ? error.message : String(error)
