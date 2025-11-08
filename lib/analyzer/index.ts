@@ -1,0 +1,35 @@
+/**
+ * Public API for the modular analyzer
+ * Simple and maintainable - dynamically extracts errors from discord.js source
+ */
+
+import { ModularAnalyzer } from './ModularAnalyzer'
+import { IntentsDetector } from './detectors/IntentsDetector'
+import { ErrorDetector } from './detectors/ErrorDetector'
+import type { Suggestion } from './types'
+
+// Export types
+export type { Suggestion, Detector } from './types'
+
+// Create singleton analyzer instance
+const analyzer = new ModularAnalyzer()
+
+// Register all detectors
+analyzer.addDetector(new IntentsDetector())
+analyzer.addDetector(new ErrorDetector())
+
+/**
+ * Main analysis function - analyze discord.js code
+ */
+export async function analyzeDiscordJsCode(code: string): Promise<Suggestion[]> {
+  const result = analyzer.analyze(code)
+  return result.suggestions
+}
+
+export default analyzeDiscordJsCode
+
+
+/**
+ * Export the analyzer for advanced usage
+ */
+export { ModularAnalyzer, IntentsDetector, ErrorDetector }
