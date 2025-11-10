@@ -6,10 +6,10 @@ interface ShareModalProps {
     isOpen: boolean
     onClose: () => void
     shareUrl: string
-    title: string
-    description: string
-    isPublic: boolean
-    onNew: () => void
+    title?: string
+    description?: string
+    isPublic?: boolean
+    onNew?: () => void
 }
 
 export default function ShareModal({
@@ -41,7 +41,7 @@ export default function ShareModal({
         if (shareModalRef.current) {
             shareModalRef.current.checked = false
         }
-        onNew()
+        onNew?.()
     }
 
     return (
@@ -97,7 +97,7 @@ export default function ShareModal({
                                 />
                                 <button
                                     onClick={handleCopyLink}
-                                    className="btn btn-sm btn-primary rounded-lg gap-1"
+                                    className="btn btn-sm btn-primary rounded-xl gap-1"
                                 >
                                     {copied ? '✅ Copied' : '📋 Copy'}
                                 </button>
@@ -109,7 +109,7 @@ export default function ShareModal({
                             href={shareUrl}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="btn btn-sm btn-ghost w-full rounded-lg gap-2"
+                            className="btn btn-sm btn-ghost w-full rounded-xl gap-2"
                         >
                             👁️ View Paste
                         </a>
@@ -126,14 +126,14 @@ export default function ShareModal({
                                         shareModalRef.current.checked = false
                                     }
                                 }}
-                                className="btn btn-sm btn-ghost rounded-lg"
+                                className="btn btn-sm btn-ghost rounded-xl"
                             >
                                 Close
                             </button>
                             <button
                                 type="button"
                                 onClick={handleNewPaste}
-                                className="btn btn-sm btn-primary rounded-lg gap-1"
+                                className="btn btn-sm btn-primary rounded-xl gap-1"
                             >
                                 ✨ New Paste
                             </button>

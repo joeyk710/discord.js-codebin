@@ -6,9 +6,10 @@ import Editor from '@monaco-editor/react'
 interface CodeEditorProps {
   value: string
   onChange: (value: string) => void
+  language?: string
 }
 
-export default function CodeEditor({ value, onChange }: CodeEditorProps) {
+export default function CodeEditor({ value, onChange, language = 'javascript' }: CodeEditorProps) {
   const [theme, setTheme] = useState<'vs-dark' | 'vs-light'>('vs-dark')
 
   useEffect(() => {
@@ -31,14 +32,43 @@ export default function CodeEditor({ value, onChange }: CodeEditorProps) {
     return () => observer.disconnect()
   }, [])
 
+  // Map language to Monaco language ID
+  const getMonacoLanguage = (lang: string) => {
+    const languageMap: { [key: string]: string } = {
+      'javascript': 'javascript',
+      'typescript': 'typescript',
+      'json': 'json',
+      'python': 'python',
+      'html': 'html',
+      'css': 'css',
+      'markdown': 'markdown',
+    }
+    return languageMap[lang.toLowerCase()] || 'javascript'
+  }
+
+  const handleBeforeMount = (monaco: any) => {
+    // Disable TypeScript diagnostics
+    monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: true,
+      noSyntaxValidation: true,
+    })
+
+    // Disable JavaScript diagnostics
+    monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
+      noSemanticValidation: true,
+      noSyntaxValidation: true,
+    })
+  }
+
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden border border-base-300">
       <Editor
         height="100%"
-        defaultLanguage="javascript"
+        language={getMonacoLanguage(language)}
         value={value}
         onChange={(newValue) => onChange(newValue || '')}
         theme={theme}
+        beforeMount={handleBeforeMount}
         options={{
           minimap: { enabled: false },
           fontSize: 14,
