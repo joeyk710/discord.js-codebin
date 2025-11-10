@@ -7,10 +7,10 @@ type RouteParams = {
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: RouteParams }
+    { params }: { params: Promise<RouteParams> }
 ) {
     try {
-        const { id } = params
+        const { id } = await params
         const { title, description, isPublic } = await request.json()
 
         const project = await prisma.project.update({
@@ -42,10 +42,10 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: RouteParams }
+    { params }: { params: Promise<RouteParams> }
 ) {
     try {
-        const { id } = params
+        const { id } = await params
         const { searchParams } = new URL(request.url)
         const token = searchParams.get('token')
 

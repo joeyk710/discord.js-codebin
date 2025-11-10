@@ -7,10 +7,10 @@ type RouteParams = {
 
 export async function POST(
     request: NextRequest,
-    { params }: { params: RouteParams }
+    { params }: { params: Promise<RouteParams> }
 ) {
     try {
-        const { id } = params
+        const { id } = await params
         const { path, code, language = 'javascript' } = await request.json()
 
         if (!path || !code) {
@@ -77,10 +77,10 @@ export async function POST(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: RouteParams }
+    { params }: { params: Promise<RouteParams> }
 ) {
     try {
-        const { id } = params
+        const { id } = await params
         const { searchParams } = new URL(request.url)
         const filePath = searchParams.get('path')
 
