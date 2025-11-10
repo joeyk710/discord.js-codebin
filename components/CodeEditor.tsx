@@ -60,6 +60,17 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
     })
   }
 
+  // Get responsive fontSize based on screen size
+  const getResponsiveFontSize = () => {
+    if (typeof window !== 'undefined') {
+      const width = window.innerWidth
+      if (width < 640) return 12 // sm
+      if (width < 1024) return 13 // md
+      return 14 // lg
+    }
+    return 14
+  }
+
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden border border-base-300">
       <Editor
@@ -71,7 +82,7 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
         beforeMount={handleBeforeMount}
         options={{
           minimap: { enabled: false },
-          fontSize: 14,
+          fontSize: getResponsiveFontSize(),
           lineNumbers: 'on',
           scrollBeyondLastLine: false,
           automaticLayout: true,

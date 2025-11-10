@@ -5,6 +5,14 @@ type RouteParams = {
     id: string
 }
 
+interface FileData {
+    id: string
+    path: string
+    name: string
+    code: string
+    language: string
+}
+
 export async function POST(
     request: NextRequest,
     { params }: { params: Promise<RouteParams> }
@@ -20,7 +28,7 @@ export async function POST(
             )
         }
 
-        // Verify project exists
+        // Verify project exists and get current files
         const project = await prisma.project.findUnique({
             where: { id },
         })
@@ -33,37 +41,43 @@ export async function POST(
         }
 
         const fileName = path.split('/').pop() || path
+        const files = ((project.files as unknown) as FileData[]) || []
 
-        // Use upsert to create or update file
-        const file = await prisma.projectFile.upsert({
-            where: {
-                projectId_path: {
-                    projectId: id,
-                    path,
-                },
-            },
-            create: {
-                projectId: id,
+        // Check if file already exists
+        const existingFileIndex = files.findIndex(f => f.path === path)
+
+        if (existingFileIndex >= 0) {
+            // Update existing file
+            files[existingFileIndex] = {
+                ...files[existingFileIndex],
+                code,
+                language,
+            }
+        } else {
+            // Add new file
+            files.push({
+                id: crypto.randomUUID(),
                 path,
                 name: fileName,
                 code,
                 language,
-            },
-            update: {
-                code,
-                language,
+            })
+        }
+
+        // Update project with new files array
+        const updatedProject = await prisma.project.update({
+            where: { id },
+            data: {
+                files: files as any,
+                updatedAt: new Date(),
             },
         })
 
-        // Update project updatedAt
-        await prisma.project.update({
-            where: { id },
-            data: { updatedAt: new Date() },
-        })
+        const updatedFile = files.find(f => f.path === path)
 
         return NextResponse.json({
             success: true,
-            file,
+            file: updatedFile,
         })
     } catch (error) {
         console.error('Error creating/updating file:', error)
@@ -91,10 +105,9 @@ export async function DELETE(
             )
         }
 
-        // Verify project exists
+        // Verify project exists and get current files
         const project = await prisma.project.findUnique({
             where: { id },
-            include: { projectFiles: true },
         })
 
         if (!project) {
@@ -104,33 +117,31 @@ export async function DELETE(
             )
         }
 
+        const files = (project.files as unknown as FileData[]) || []
+
         // Prevent deletion if it's the only file
-        if (project.projectFiles.length <= 1) {
+        if (files.length <= 1) {
             return NextResponse.json(
                 { error: 'Cannot delete the last file in a project' },
                 { status: 400 }
             )
         }
 
-        const deleted = await prisma.projectFile.delete({
-            where: {
-                projectId_path: {
-                    projectId: id,
-                    path: filePath,
-                },
-            },
-        })
+        // Remove the file
+        const updatedFiles = files.filter(f => f.path !== filePath)
 
-        // Update project updatedAt
-        await prisma.project.update({
+        // Update project
+        const updatedProject = await prisma.project.update({
             where: { id },
-            data: { updatedAt: new Date() },
+            data: {
+                files: updatedFiles as any,
+                updatedAt: new Date(),
+            },
         })
 
         return NextResponse.json({
             success: true,
             message: 'File deleted successfully',
-            fileId: deleted.id,
         })
     } catch (error) {
         console.error('Error deleting file:', error)

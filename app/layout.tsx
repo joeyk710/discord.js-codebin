@@ -37,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geist.variable} ${geistMono.variable} antialiased px-6 py-6 bg-base-100`}
+        className={`${geist.variable} ${geistMono.variable} antialiased px-2 py-2 sm:px-4 sm:py-4 md:px-6 md:py-6 bg-base-100`}
       >
         {children}
       </body>

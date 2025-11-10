@@ -21,9 +21,6 @@ export async function PUT(
                 ...(isPublic !== undefined && { isPublic }),
                 updatedAt: new Date(),
             },
-            include: {
-                projectFiles: true,
-            },
         })
 
         return NextResponse.json({

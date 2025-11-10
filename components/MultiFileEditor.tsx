@@ -266,32 +266,34 @@ export default function MultiFileEditor({
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {currentFile ? (
                         <>
-                            <div className="px-4 py-3 bg-base-200 border-b border-base-300 flex items-center justify-between gap-4">
-                                <div className="text-sm text-base-content/70 flex-1 truncate">
+                            <div className="px-2 sm:px-4 py-2 sm:py-3 bg-base-200 border-b border-base-300 flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
+                                <div className="text-xs sm:text-sm text-base-content/70 flex-1 truncate min-w-0">
                                     {currentFile.path}
                                 </div>
-                                <div className="flex items-center gap-2 flex-shrink-0">
+                                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap">
                                     <button
                                         onClick={() => setShowSuggestionsModal(true)}
                                         disabled={isAnalyzing || suggestions.length === 0}
-                                        className="btn btn-sm btn-outline rounded-xl gap-2"
+                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2"
                                         title="View code suggestions"
                                     >
                                         {isAnalyzing ? (
                                             <>
-                                                <span className="loading loading-spinner loading-sm"></span>
-                                                Analyzing...
+                                                <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
+                                                <span className="hidden sm:inline">Analyzing...</span>
                                             </>
                                         ) : (
                                             <>
-                                                💡 {suggestions.length > 0 ? suggestions.length : 'View'} Tips
+                                                <span>💡</span>
+                                                <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
                                             </>
                                         )}
                                     </button>
                                     <details className="dropdown dropdown-end flex-shrink-0">
-                                        <summary className="btn btn-sm btn-outline rounded-xl gap-2">
-                                            {currentFile.language.charAt(0).toUpperCase() + currentFile.language.slice(1)}
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <summary className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2">
+                                            <span className="hidden sm:inline">{currentFile.language.charAt(0).toUpperCase() + currentFile.language.slice(1)}</span>
+                                            <span className="sm:hidden">{currentFile.language.slice(0, 3).toUpperCase()}</span>
+                                            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                                             </svg>
                                         </summary>

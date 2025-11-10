@@ -34,17 +34,13 @@ export async function POST(request: NextRequest) {
                 title: title,
                 description: description || '',
                 isPublic: isPublic,
-                projectFiles: {
-                    create: files.map((file: any) => ({
-                        path: file.path,
-                        name: file.path.split('/').pop() || file.path,
-                        code: file.code,
-                        language: file.language || 'javascript',
-                    })),
-                },
-            },
-            include: {
-                projectFiles: true,
+                files: (files.map((file: any) => ({
+                    id: crypto.randomUUID(),
+                    path: file.path,
+                    name: file.path.split('/').pop() || file.path,
+                    code: file.code,
+                    language: file.language || 'javascript',
+                }))) as any,
             },
         })
 
@@ -80,11 +76,6 @@ export async function GET(request: NextRequest) {
 
         const project = await prisma.project.findUnique({
             where: { id },
-            include: {
-                projectFiles: {
-                    orderBy: { createdAt: 'asc' },
-                },
-            },
         })
 
         if (!project) {
