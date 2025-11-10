@@ -648,5 +648,18 @@ export function analyzeDiscordJsCode(code: string): Suggestion[] {
     }
   }
 
+  // Suggest using title and description for Discord embeds
+  if (code.includes('EmbedBuilder') || code.includes('embed')) {
+    if (!code.includes('.setTitle') && !code.includes('.setDescription')) {
+      suggestions.push({
+        type: 'suggestion',
+        message: 'Consider adding title and description to your embed for rich Discord embeds',
+        code: 'new EmbedBuilder()\n  .setTitle("Embed Title")\n  .setDescription("Embed description or content here")\n  .setColor(0x0099ff)',
+        details: 'Embeds with titles and descriptions provide better context in Discord messages and appear nicely in embeds and link previews',
+        docLink: 'https://discord.js.org/docs/packages/discord.js/14.24.2/EmbedBuilder:class',
+      })
+    }
+  }
+
   return suggestions
 }

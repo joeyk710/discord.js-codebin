@@ -43,6 +43,7 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
   const [retryAfter, setRetryAfter] = useState(0)
   const deleteModalRef = useRef<HTMLInputElement>(null)
   const rateLimitModalRef = useRef<HTMLDialogElement>(null)
+  const suggestionsModalRef = useRef<HTMLInputElement>(null)
 
   // Detect and watch theme changes
   useEffect(() => {
@@ -207,21 +208,24 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="min-h-screen bg-base-100 flex flex-col">
       {/* Header */}
-      <div className="bg-base-200 border-b border-base-300 px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex-1">
-            <Link href="/" className="btn rounded-xl btn-ghost btn-sm">
+      <div className="bg-base-200 border-b border-base-300 px-4 sm:px-6 py-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          {/* Back Button and Title */}
+          <div className="flex items-start gap-2">
+            <Link href="/" className="btn rounded-xl btn-ghost btn-sm mt-1 flex-shrink-0">
               ← Back
             </Link>
-          </div>
-          <div className="text-center flex-1">
-            <h1 className="text-2xl font-bold">{paste.title}</h1>
-            {paste.description && <p className="text-sm opacity-75 mt-1">{paste.description}</p>}
-            <div className="text-xs opacity-60 mt-2">
-              {new Date(paste.createdAt).toLocaleDateString()} • {paste.views} views • {paste.language}
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold">{paste.title}</h1>
+              {paste.description && <p className="text-xs sm:text-sm opacity-75 mt-1">{paste.description}</p>}
+              <div className="text-xs opacity-60 mt-1">
+                {new Date(paste.createdAt).toLocaleDateString()} • {paste.views} views • {paste.language}
+              </div>
             </div>
           </div>
-          <div className="flex-1 flex justify-end gap-2">
+
+          {/* Action Buttons */}
+          <div className="flex gap-2 flex-wrap justify-start sm:justify-end">
             <button
               onClick={handleCopyCode}
               className="btn rounded-xl btn-sm btn-outline"
@@ -255,9 +259,9 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
       </div>
 
       {/* Content */}
-      <div className="flex-1 flex gap-6 overflow-hidden p-6">
-        {/* Editor */}
-        <div className="flex-1 flex flex-col min-h-0 rounded-lg overflow-hidden border border-base-300">
+      <div className="flex-1 flex gap-6 overflow-hidden p-4 sm:p-6 flex-col lg:flex-row min-h-0">
+        {/* Editor - full width on mobile with fixed height, flex-1 on desktop */}
+        <div className="flex-1 flex flex-col min-h-0 rounded-lg overflow-hidden border border-base-300 h-96 lg:h-auto">
           <div className="bg-base-200 px-4 py-2 font-semibold text-sm">Code</div>
           <Editor
             language={paste.language === 'typescript' ? 'typescript' : 'javascript'}
@@ -291,8 +295,8 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
           />
         </div>
 
-        {/* Suggestions */}
-        <div className="w-96 flex-shrink-0 rounded-lg overflow-hidden border border-base-300 flex flex-col">
+        {/* Suggestions - hidden on mobile, shown in modal */}
+        <div className="hidden lg:flex w-96 flex-shrink-0 rounded-lg overflow-hidden border border-base-300 flex-col">
           <div className="bg-base-200 px-4 py-2 font-semibold text-sm">Analysis & Suggestions</div>
           <div className="flex-1 overflow-y-auto">
             {suggestions.length === 0 ? (
@@ -304,6 +308,47 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
             )}
           </div>
         </div>
+
+        {/* Mobile Suggestions Button */}
+        <div className="lg:hidden flex items-center justify-center py-4">
+          <label
+            htmlFor="suggestions_modal"
+            className="btn btn-primary rounded-xl gap-2"
+          >
+            💡 Analysis & Suggestions
+            {suggestions.length > 0 && (
+              <span className="badge badge-secondary">{suggestions.length}</span>
+            )}
+          </label>
+        </div>
+      </div>
+
+      {/* Mobile Suggestions Modal */}
+      <input
+        ref={suggestionsModalRef}
+        type="checkbox"
+        id="suggestions_modal"
+        className="modal-toggle"
+      />
+      <div className="modal" role="dialog">
+        <div className="modal-box rounded-xl w-11/12 max-h-96">
+          <h3 className="font-bold text-lg mb-4">Analysis & Suggestions</h3>
+          <div className="overflow-y-auto max-h-72">
+            {suggestions.length === 0 ? (
+              <div className="p-4 text-sm text-center opacity-60">
+                ✅ No issues found! Your code looks great.
+              </div>
+            ) : (
+              <SuggestionsPanel suggestions={suggestions} />
+            )}
+          </div>
+          <div className="modal-action">
+            <label htmlFor="suggestions_modal" className="btn btn-ghost rounded-xl">
+              Close
+            </label>
+          </div>
+        </div>
+        <label className="modal-backdrop" htmlFor="suggestions_modal"></label>
       </div>
 
       {/* Footer */}
