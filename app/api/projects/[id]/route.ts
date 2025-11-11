@@ -43,15 +43,6 @@ export async function DELETE(
 ) {
     try {
         const { id } = await params
-        const { searchParams } = new URL(request.url)
-        const token = searchParams.get('token')
-
-        if (!token || token !== id) {
-            return NextResponse.json(
-                { error: 'Not authorized to delete this project' },
-                { status: 403 }
-            )
-        }
 
         const project = await prisma.project.delete({
             where: { id },
