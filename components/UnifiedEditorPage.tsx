@@ -8,6 +8,7 @@ import ShareModal from './ShareModal'
 import ThemeSwitcher from './ThemeSwitcher'
 import Footer from './Footer'
 import Link from 'next/link'
+import { HomeIcon, ArrowUpTrayIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline'
 
 interface FileData {
     id: string
@@ -308,33 +309,36 @@ client.login(DISCORD_TOKEN);`
                 />
             )}
 
-            <main className="flex-1 overflow-hidden flex flex-col m-1 sm:m-3 min-h-0">
+            <main className="flex-1 overflow-y-auto flex flex-col m-1 sm:m-3 min-h-0">
                 <div className="flex-1 overflow-hidden rounded-2xl shadow-xl bg-base-100 flex flex-col min-h-0">
                     {/* Content Container */}
                     <div className="w-full px-2 sm:px-3 py-1 sm:py-2 flex-1 flex flex-col gap-1 sm:gap-4 overflow-hidden min-h-0">
                         {/* Top Row: Action Buttons */}
                         <div className="flex gap-1 sm:gap-2 flex-wrap items-center shrink-0">
                             <ThemeSwitcher />
-                            <Link href="/" className="btn btn-xs sm:btn-sm btn-ghost rounded-xl">
-                                <span className="hidden sm:inline">🏠 Home</span>
-                                <span className="sm:hidden">🏠</span>
+                            <Link href="/" className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center">
+                                <HomeIcon className="w-4 h-4 mr-2" />
+                                <span className="hidden sm:inline">Home</span>
+                                <span className="sm:hidden">Home</span>
                             </Link>
                             <button
                                 onClick={() => setShowSaveModal(true)}
                                 disabled={isSaving}
-                                className="btn btn-xs sm:btn-sm btn-primary rounded-xl"
+                                className="btn btn-xs sm:btn-sm btn-primary rounded-xl flex items-center gap-2"
                                 title="Save and share your project"
                             >
-                                <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : '💾 Save & Share'}</span>
-                                <span className="sm:hidden">{isSaving ? '⏳' : '💾'}</span>
+                                <ArrowUpTrayIcon className="w-4 h-4" />
+                                <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : 'Save & Share'}</span>
+                                <span className="sm:hidden">{isSaving ? '⏳' : 'Save'}</span>
                             </button>
                             <button
                                 onClick={() => setShowMetadataModal(true)}
-                                className="btn btn-xs sm:btn-sm btn-ghost rounded-xl"
+                                className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"
                                 title="Edit project metadata"
                             >
-                                <span className="hidden sm:inline">📋 Metadata</span>
-                                <span className="sm:hidden">📋</span>
+                                <ClipboardDocumentIcon className="w-4 h-4" />
+                                <span className="hidden sm:inline">Metadata</span>
+                                <span className="sm:hidden">Meta</span>
                             </button>
                         </div>
 
@@ -356,9 +360,10 @@ client.login(DISCORD_TOKEN);`
                         </div>
                     </div>
                 </div>
-            </main>
 
-            {!isEditorFullscreen && <Footer />}
+                {/* Footer - scrollable on mobile */}
+                {!isEditorFullscreen && <Footer />}
+            </main>
 
             {/* Fullscreen editor overlay */}
             {isEditorFullscreen && (

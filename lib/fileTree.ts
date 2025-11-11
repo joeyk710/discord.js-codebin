@@ -127,3 +127,67 @@ export function getLanguageIcon(language: string): string {
     }
     return icons[language.toLowerCase()] || '📄'
 }
+
+// Return a material icon filename (without extension) for languages that have icons in /public/material-icons
+export function getMaterialIconFilename(language: string): string | null {
+    if (!language) return null
+    const lang = language.toLowerCase()
+
+    const map: { [key: string]: string } = {
+        'javascript': 'javascript',
+        'typescript': 'typescript',
+        'json': 'json',
+        'markdown': 'markdown',
+        'html': 'html',
+        'css': 'css',
+        'python': 'python',
+        'java': 'java',
+        'c++': 'cpp',
+        'cpp': 'cpp',
+        'c#': 'csharp',
+        'csharp': 'csharp',
+        'ruby': 'ruby',
+        'php': 'php',
+        'sql': 'sql',
+        'yaml': 'yaml',
+        'xml': 'xml',
+        'go': 'go',
+        'rust': 'rust',
+        'swift': 'swift',
+        'kotlin': 'kotlin',
+        'scala': 'scala',
+        'r': 'r',
+        'matlab': 'matlab',
+        'objective-c': 'objective-c',
+        'objectivec': 'objective-c',
+        'groovy': 'groovy',
+        'clojure': 'clojure',
+        'haskell': 'haskell',
+        'elixir': 'elixir',
+        'erlang': 'erlang',
+        'ocaml': 'ocaml',
+        'scheme': 'scheme',
+        'lisp': 'lisp',
+        'lua': 'lua',
+        'perl': 'perl',
+        'powershell': 'powershell',
+        'pascal': 'pascal',
+        'cobol': 'cobol',
+        'fortran': 'fortran',
+        'ada': 'ada',
+        'prolog': 'prolog',
+        'dart': 'dart',
+        'solidity': 'solidity',
+        'webassembly': 'webassembly',
+        'scss': 'sass',
+        'sass': 'sass',
+        'less': 'less',
+        'toml': 'toml',
+        'graphql': 'graphql',
+        'dockerfile': 'docker',
+        'docker': 'docker',
+        'makefile': 'makefile',
+    }
+
+    return map[lang] ?? null
+}

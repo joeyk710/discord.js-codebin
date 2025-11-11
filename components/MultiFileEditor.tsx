@@ -1,10 +1,13 @@
 'use client'
 
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { Bars3Icon } from '@heroicons/react/24/outline'
 import CodeEditor from './CodeEditor'
 import FileTabs from './FileTabs'
 import FileTree from './FileTree'
 import SuggestionsModal from './SuggestionsModal'
+import LanguageSelectorModal from './LanguageSelectorModal'
+import { getMaterialIconFilename } from '@/lib/fileTree'
 import { buildFileTree, FileNode } from '@/lib/fileTree'
 import { analyzeDiscordJsCode, type Suggestion } from '@/lib/analyzer'
 
@@ -26,7 +29,10 @@ interface OpenFile {
     path: string
     name: string
     isDirty?: boolean
+    language?: string
 }
+
+const LANGUAGES = ['JavaScript', 'TypeScript', 'JSON', 'Python', 'HTML', 'CSS', 'Markdown']
 
 export default function MultiFileEditor({
     initialFiles,
@@ -35,7 +41,7 @@ export default function MultiFileEditor({
 }: MultiFileEditorProps) {
     const [files, setFiles] = useState<FileData[]>(initialFiles)
     const [openFiles, setOpenFiles] = useState<OpenFile[]>(
-        initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name }))
+        initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language }))
     )
     const [activeFile, setActiveFile] = useState<string>(initialFiles[0]?.path || '')
     const [fileTree, setFileTree] = useState<FileNode[]>([])
@@ -43,9 +49,12 @@ export default function MultiFileEditor({
     const [newFilePath, setNewFilePath] = useState('')
     const [suggestions, setSuggestions] = useState<Suggestion[]>([])
     const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
+    const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const newFileInputRef = useRef<HTMLInputElement>(null)
     const newFileModalRef = useRef<HTMLInputElement>(null)
+    const deleteErrorModalRef = useRef<HTMLDialogElement>(null)
+    const languageModalRef = useRef<HTMLDialogElement>(null)
 
     // Build file tree
     useEffect(() => {
@@ -109,8 +118,57 @@ export default function MultiFileEditor({
             'html': 'html',
             'css': 'css',
             'markdown': 'md',
+            'c++': 'cpp',
+            'c': 'c',
+            'c#': 'cs',
+            'php': 'php',
+            'ruby': 'rb',
+            'go': 'go',
+            'rust': 'rs',
+            'swift': 'swift',
+            'kotlin': 'kt',
+            'scala': 'scala',
+            'r': 'r',
+            'matlab': 'm',
+            'objective-c': 'm',
+            'groovy': 'groovy',
+            'clojure': 'clj',
+            'haskell': 'hs',
+            'elixir': 'ex',
+            'erlang': 'erl',
+            'f#': 'fs',
+            'ocaml': 'ml',
+            'scheme': 'scm',
+            'lisp': 'lisp',
+            'lua': 'lua',
+            'perl': 'pl',
+            'shell': 'sh',
+            'bash': 'sh',
+            'powershell': 'ps1',
+            'vb.net': 'vb',
+            'delphi': 'pas',
+            'pascal': 'pas',
+            'cobol': 'cob',
+            'fortran': 'f90',
+            'ada': 'adb',
+            'prolog': 'pl',
+            'dart': 'dart',
+            'solidity': 'sol',
+            'webassembly': 'wasm',
+            'scss': 'scss',
+            'sass': 'sass',
+            'less': 'less',
+            'xml': 'xml',
+            'yaml': 'yaml',
+            'toml': 'toml',
+            'sql': 'sql',
+            'graphql': 'graphql',
+            // special cases - no extension desired (Dockerfile/Makefile)
+            'dockerfile': '',
+            'makefile': '',
         }
-        return extensionMap[lang.toLowerCase()] || 'txt'
+
+        return extensionMap[lang.toLowerCase()] ?? 'txt'
     }
 
     // Get new file path with updated extension
@@ -120,6 +178,11 @@ export default function MultiFileEditor({
         const filename = lastSlashIndex > -1 ? path.substring(lastSlashIndex + 1) : path
         const nameWithoutExt = filename.includes('.') ? filename.substring(0, filename.lastIndexOf('.')) : filename
         const ext = getExtensionForLanguage(language)
+        if (!ext) {
+            // No extension (Dockerfile, Makefile, etc.) - return filename without extension
+            return `${dirname}${nameWithoutExt}`
+        }
+
         return `${dirname}${nameWithoutExt}.${ext}`
     }
 
@@ -129,7 +192,7 @@ export default function MultiFileEditor({
         if (!openFiles.find(f => f.path === path)) {
             const file = files.find(f => f.path === path)
             if (file) {
-                setOpenFiles([...openFiles, { path, name: file.name }])
+                setOpenFiles([...openFiles, { path, name: file.name, language: file.language }])
             }
         }
     }, [files, openFiles])
@@ -206,7 +269,10 @@ export default function MultiFileEditor({
     const handleDeleteFile = useCallback(
         (path: string) => {
             if (files.length <= 1) {
-                alert('Cannot delete the last file')
+                setShowDeleteErrorModal(true)
+                if (deleteErrorModalRef.current) {
+                    deleteErrorModalRef.current.showModal()
+                }
                 return
             }
 
@@ -239,6 +305,38 @@ export default function MultiFileEditor({
         [files, activeFile, openFiles]
     )
 
+    const handleLanguageSelect = useCallback(
+        (language: string) => {
+            if (!currentFile) return
+
+            const langValue = language.toLowerCase()
+            const updatedFiles = files.map(f =>
+                f.path === activeFile
+                    ? {
+                        ...f,
+                        language: langValue,
+                        path: getPathWithExtension(f.path, langValue),
+                        name: getPathWithExtension(f.path, langValue).split('/').pop() || f.name,
+                    }
+                    : f
+            )
+            setFiles(updatedFiles)
+
+            // Update active file path if it changed
+            const updatedFile = updatedFiles.find(f => f.id === currentFile.id)
+            if (updatedFile && updatedFile.path !== activeFile) {
+                setActiveFile(updatedFile.path)
+                // Update open files tab
+                setOpenFiles(openFiles.map(f =>
+                    f.path === activeFile
+                        ? { ...f, path: updatedFile.path, name: updatedFile.name, language: updatedFile.language }
+                        : f
+                ))
+            }
+        },
+        [currentFile, activeFile, files, openFiles]
+    )
+
     return (
         <div className="flex flex-col h-full w-full">
             <FileTabs
@@ -248,9 +346,107 @@ export default function MultiFileEditor({
                 onTabClose={handleTabClose}
             />
 
-            <div className="flex flex-1 overflow-hidden">
-                {/* File Tree Sidebar */}
-                <div className="hidden md:block w-64 min-w-64 border-r border-base-300">
+            {/* Drawer wrapper - mobile only */}
+            <div className="drawer md:hidden flex-1 overflow-hidden">
+                <input id="file-drawer" type="checkbox" className="drawer-toggle" />
+                <div className="drawer-content flex flex-1 overflow-hidden flex-col">
+                    {/* Editor */}
+                    <div className="flex-1 flex flex-col overflow-hidden w-full">
+                        {currentFile ? (
+                            <>
+                                <div className="px-2 sm:px-4 py-2 sm:py-3 bg-base-200 border-b border-base-300 flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <label htmlFor="file-drawer" className="btn btn-ghost btn-square p-0 w-9 h-9 flex-shrink-0 md:hidden flex items-center justify-center cursor-pointer">
+                                            <Bars3Icon className="w-5 h-5" />
+                                        </label>
+                                        <div className="text-xs sm:text-sm text-base-content/70 flex-1 truncate min-w-0">
+                                            {currentFile.path}
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap">
+                                        <button
+                                            onClick={() => setShowSuggestionsModal(true)}
+                                            disabled={isAnalyzing || suggestions.length === 0}
+                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2"
+                                            title="View code suggestions"
+                                        >
+                                            {isAnalyzing ? (
+                                                <>
+                                                    <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
+                                                    <span className="hidden sm:inline">Analyzing...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>💡</span>
+                                                    <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => languageModalRef.current?.showModal()}
+                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2 min-w-[44px] h-9 z-50 pointer-events-auto flex items-center"
+                                            aria-label={`Select language (${currentFile.language})`}
+                                            disabled={isReadOnly}
+                                        >
+                                            {/* tooltip only on the icon so the bubble won't overlap the label */}
+                                            {(() => {
+                                                const mapped = getMaterialIconFilename(currentFile.language) || null
+                                                if (mapped) {
+                                                    return (
+                                                        <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
+                                                            <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 pointer-events-auto" />
+                                                        </div>
+                                                    )
+                                                }
+                                                return (
+                                                    <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
+                                                        <span className="w-5 h-5 inline-flex items-center justify-center pointer-events-auto">🔤</span>
+                                                    </div>
+                                                )
+                                            })()}
+
+                                            <span className="hidden sm:inline">{currentFile.language.charAt(0).toUpperCase() + currentFile.language.slice(1)}</span>
+                                            <span className="sm:hidden ml-1">{currentFile.language.slice(0, 3).toUpperCase()}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="flex-1 overflow-hidden">
+                                    <CodeEditor
+                                        value={currentFile.code}
+                                        onChange={handleCodeChange}
+                                        language={currentFile.language}
+                                    />
+                                </div>
+                            </>
+                        ) : (
+                            <div className="flex items-center justify-center flex-1 text-base-content/50">
+                                <p>No file selected</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Drawer sidebar - mobile only */}
+                <div className="drawer-side md:hidden">
+                    <label htmlFor="file-drawer" className="drawer-overlay"></label>
+                    <div className="w-64 bg-base-100 border-r border-base-300 flex flex-col h-screen overflow-y-auto">
+                        <FileTree
+                            files={fileTree}
+                            activeFile={activeFile}
+                            onFileSelect={handleFileSelect}
+                            onAddFile={handleAddFile}
+                            onDeleteFile={handleDeleteFile}
+                            onRenameFile={handleRenameFile}
+                            isReadOnly={isReadOnly}
+                        />
+                    </div>
+                </div>
+            </div>
+
+            {/* Desktop sidebar + Editor layout */}
+            <div className="hidden md:flex flex-1 overflow-hidden">
+                {/* File Tree Sidebar - desktop only */}
+                <div className="w-64 min-w-64 border-r border-base-300">
                     <FileTree
                         files={fileTree}
                         activeFile={activeFile}
@@ -289,52 +485,30 @@ export default function MultiFileEditor({
                                             </>
                                         )}
                                     </button>
-                                    <details className="dropdown dropdown-end flex-shrink-0">
-                                        <summary className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2">
-                                            <span className="hidden sm:inline">{currentFile.language.charAt(0).toUpperCase() + currentFile.language.slice(1)}</span>
-                                            <span className="sm:hidden">{currentFile.language.slice(0, 3).toUpperCase()}</span>
-                                            <svg className="w-3 h-3 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                                            </svg>
-                                        </summary>
-                                        <ul className="dropdown-content menu bg-base-100 border border-base-300 rounded-lg z-[1] w-32 p-2 shadow">
-                                            {['JavaScript', 'TypeScript', 'JSON'].map((lang) => (
-                                                <li key={lang}>
-                                                    <button
-                                                        onClick={() => {
-                                                            const langValue = lang.toLowerCase()
-                                                            const updatedFiles = files.map(f =>
-                                                                f.path === activeFile
-                                                                    ? {
-                                                                        ...f,
-                                                                        language: langValue,
-                                                                        path: getPathWithExtension(f.path, langValue),
-                                                                        name: getPathWithExtension(f.path, langValue).split('/').pop() || f.name,
-                                                                    }
-                                                                    : f
-                                                            )
-                                                            setFiles(updatedFiles)
-                                                            // Update active file path if it changed
-                                                            const updatedFile = updatedFiles.find(f => f.id === files.find(f => f.path === activeFile)?.id)
-                                                            if (updatedFile && updatedFile.path !== activeFile) {
-                                                                setActiveFile(updatedFile.path)
-                                                                // Update open files tab
-                                                                setOpenFiles(openFiles.map(f =>
-                                                                    f.path === activeFile
-                                                                        ? { ...f, path: updatedFile.path, name: updatedFile.name }
-                                                                        : f
-                                                                ))
-                                                            }
-                                                        }}
-                                                        disabled={isReadOnly}
-                                                        className={currentFile.language === lang.toLowerCase() ? 'active' : ''}
-                                                    >
-                                                        {lang}
-                                                    </button>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </details>
+                                    <button
+                                        onClick={() => languageModalRef.current?.showModal()}
+                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2 min-w-[44px] h-9 z-50 pointer-events-auto flex items-center"
+                                        aria-label={`Select language (${currentFile.language})`}
+                                        disabled={isReadOnly}
+                                    >
+                                        {(() => {
+                                            const mapped = getMaterialIconFilename(currentFile.language) || null
+                                            if (mapped) {
+                                                return (
+                                                    <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
+                                                        <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 pointer-events-auto" />
+                                                    </div>
+                                                )
+                                            }
+                                            return (
+                                                <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
+                                                    <span className="w-5 h-5 inline-flex items-center justify-center pointer-events-auto">🔤</span>
+                                                </div>
+                                            )
+                                        })()}
+
+                                        <span className="hidden sm:inline">{currentFile.language.toUpperCase()}</span>
+                                    </button>
                                 </div>
                             </div>
                             <div className="flex-1 overflow-hidden">
@@ -411,6 +585,27 @@ export default function MultiFileEditor({
                 onClose={() => setShowSuggestionsModal(false)}
                 suggestions={suggestions}
             />
+
+            {/* Language Selector Modal */}
+            <LanguageSelectorModal
+                ref={languageModalRef}
+                onClose={() => languageModalRef.current?.close()}
+                onSelect={handleLanguageSelect}
+                currentLanguage={currentFile?.language || 'javascript'}
+            />
+
+            {/* Delete Error Modal */}
+            <dialog ref={deleteErrorModalRef} className="modal">
+                <div className="modal-box rounded-2xl">
+                    <h3 className="font-bold text-lg">Cannot Delete File</h3>
+                    <p className="py-4">You cannot delete the last file. Every project must have at least one file.</p>
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn btn-primary rounded-xl">OK</button>
+                        </form>
+                    </div>
+                </div>
+            </dialog>
         </div>
     )
 }

@@ -1,7 +1,11 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
-import { FileNode, getLanguageIcon } from '@/lib/fileTree'
+import { FileNode, getLanguageIcon, getMaterialIconFilename } from '@/lib/fileTree'
+
+const MATERIAL_ICON_LANGS = new Set([
+    'javascript', 'typescript', 'python', 'java', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'scala', 'r', 'matlab', 'objective-c', 'groovy', 'clojure', 'haskell', 'elixir', 'erlang', 'ocaml', 'scheme', 'lisp', 'lua', 'perl', 'powershell', 'pascal', 'cobol', 'fortran', 'ada', 'prolog', 'dart', 'solidity', 'webassembly', 'html', 'css', 'sass', 'less', 'json', 'xml', 'yaml', 'toml', 'markdown', 'graphql', 'docker', 'makefile'
+])
 
 interface FileTreeProps {
     files: FileNode[]
@@ -52,7 +56,15 @@ function FileTreeNode({
     if (isFile && isRenaming) {
         return (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}>
-                <span className="w-4 text-center">{getLanguageIcon(node.language || 'javascript')}</span>
+                {/* Icon left of editable filename */}
+                {(() => {
+                    const lang = (node.language || 'javascript').toLowerCase()
+                    const mapped = lang === 'c++' || lang === 'cpp' ? 'cpp' : lang === 'c#' || lang === 'csharp' ? 'csharp' : lang === 'objectivec' ? 'objective-c' : lang === 'dockerfile' ? 'docker' : lang
+                    if (MATERIAL_ICON_LANGS.has(mapped)) {
+                        return <img src={`/material-icons/${mapped}.svg`} alt={node.language} className="w-4 h-4" />
+                    }
+                    return <span className="w-4 text-center">{getLanguageIcon(node.language || 'javascript')}</span>
+                })()}
                 <input
                     type="text"
                     value={newName}
@@ -92,18 +104,34 @@ function FileTreeNode({
                         }}
                         className="p-0 w-4 h-4 flex items-center justify-center hover:bg-base-300 rounded transition-transform duration-200"
                         style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                        title={expanded ? 'Collapse' : 'Expand'}
                     >
                         ▶
                     </button>
                 )}
-                {isFile && <span className="w-4 text-center">{getLanguageIcon(node.language || 'javascript')}</span>}
+                {isFile && (
+                    <div className="mr-2">
+                        {(() => {
+                            const lang = (node.language || 'javascript').toLowerCase()
+                            const mapped = lang === 'c++' || lang === 'cpp' ? 'cpp' : lang === 'c#' || lang === 'csharp' ? 'csharp' : lang === 'objectivec' ? 'objective-c' : lang === 'dockerfile' ? 'docker' : lang
+                            if (MATERIAL_ICON_LANGS.has(mapped)) {
+                                return (
+                                    <img src={`/material-icons/${mapped}.svg`} alt={node.language} className="w-4 h-4" title={node.language} />
+                                )
+                            }
+                            return (
+                                <span className="w-4 text-center" title={node.language}>{getLanguageIcon(node.language || 'javascript')}</span>
+                            )
+                        })()}
+                    </div>
+                )}
 
                 <span className="flex-1 text-left text-sm truncate">
                     {node.name}
                 </span>
 
                 {!isReadOnly && isFile && (
-                    <div className="flex items-center gap-1 opacity-0 hover:opacity-100">
+                    <div className="flex items-center gap-1">
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
