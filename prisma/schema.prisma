@@ -14,11 +14,13 @@ model Paste {
   description String?
   language    String   @default("javascript")
   createdAt   DateTime @default(now())
+  expiresAt   DateTime  @default(dbgenerated("now() + interval '7 days'")) // Default 7-day expiration
   views       Int      @default(0)
   isPublic    Boolean  @default(true)
 
   @@index([createdAt])
   @@index([isPublic])
+  @@index([expiresAt])
 }
 
 model Project {
@@ -30,7 +32,9 @@ model Project {
   updatedAt   DateTime @updatedAt
   views       Int      @default(0)
   isPublic    Boolean  @default(true)
+  expiresAt   DateTime? // Optional expiration date for project
 
   @@index([createdAt])
   @@index([isPublic])
+  @@index([expiresAt])
 }

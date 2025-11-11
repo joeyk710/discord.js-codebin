@@ -4,13 +4,23 @@ import { prisma } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, title, description, language = 'javascript', isPublic = true } = await request.json()
+    const { code, title, description, language = 'javascript', isPublic = true, expirationMinutes } = await request.json()
 
     if (!code || typeof code !== 'string') {
       return NextResponse.json(
         { error: 'Invalid code provided' },
         { status: 400 }
       )
+    }
+
+    // Calculate expiration date
+    let expiresAt = new Date()
+    if (expirationMinutes && expirationMinutes >= 5) {
+      // Use provided expiration (capped at reasonable max)
+      expiresAt.setMinutes(expiresAt.getMinutes() + Math.min(expirationMinutes, 10080)) // Max 7 days
+    } else {
+      // Default to 7 days if not specified
+      expiresAt.setDate(expiresAt.getDate() + 7)
     }
 
     const id = nanoid(8)
@@ -22,6 +32,7 @@ export async function POST(request: NextRequest) {
         description: description || '',
         language: language || 'javascript',
         isPublic,
+        expiresAt,
       },
     })
 
@@ -62,6 +73,14 @@ export async function GET(request: NextRequest) {
     if (!paste) {
       return NextResponse.json(
         { error: 'Paste not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if paste has expired
+    if (paste.expiresAt && new Date() > paste.expiresAt) {
+      return NextResponse.json(
+        { error: 'This paste has expired' },
         { status: 404 }
       )
     }

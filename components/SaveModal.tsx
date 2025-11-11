@@ -1,16 +1,19 @@
 'use client'
 
 import React, { useRef, useEffect } from 'react'
+import ExpirationInput from './ExpirationInput'
 
 interface SaveModalProps {
   isOpen: boolean
   onClose: () => void
-  onSave: (metadata: { isPublic: boolean }) => void
+  onSave: (metadata: { isPublic: boolean; expirationMinutes?: number }) => void
   isSaving: boolean
 }
 
 export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveModalProps) {
   const [isPublic, setIsPublic] = React.useState(true)
+  const [expirationMinutes, setExpirationMinutes] = React.useState<number | null>(null)
+  const [expirationError, setExpirationError] = React.useState<string>('')
   const saveModalRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -21,7 +24,15 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    onSave({ isPublic })
+
+    // Validate expiration
+    if (expirationMinutes !== null && expirationMinutes < 5) {
+      setExpirationError('Minimum expiration is 5 minutes')
+      return
+    }
+
+    setExpirationError('')
+    onSave({ isPublic, expirationMinutes: expirationMinutes || undefined })
   }
 
   return (
@@ -33,7 +44,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
         className="modal-toggle"
       />
       <div className="modal">
-        <div className="modal-box w-full sm:max-w-md">
+        <div className="modal-box w-full sm:max-w-xl max-h-[90vh] overflow-y-auto">
           <div className="flex items-center gap-3 mb-6">
             <span className="text-4xl">💾</span>
             <div>
@@ -61,6 +72,13 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
                   : '🔒 Only shareable via direct link'}
               </p>
             </div>
+
+            {/* Expiration Section */}
+            <ExpirationInput
+              value={expirationMinutes}
+              onChange={setExpirationMinutes}
+              error={expirationError}
+            />
 
             <div className="modal-action gap-3">
               <button

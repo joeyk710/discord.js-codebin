@@ -22,6 +22,7 @@ export interface PasteData {
   description?: string | null
   language: string
   createdAt: Date
+  expiresAt: Date
   views: number
   isPublic: boolean
 }
@@ -34,6 +35,7 @@ export async function createPaste(paste: Omit<PasteData, 'createdAt' | 'views' |
       description: paste.description,
       language: paste.language,
       isPublic: paste.isPublic,
+      expiresAt: paste.expiresAt,
     },
   })
 
@@ -44,6 +46,7 @@ export async function createPaste(paste: Omit<PasteData, 'createdAt' | 'views' |
     description: created.description,
     language: created.language,
     createdAt: created.createdAt,
+    expiresAt: created.expiresAt,
     views: created.views,
     isPublic: created.isPublic,
   }
@@ -69,6 +72,7 @@ export async function getPaste(id: string): Promise<PasteData | null> {
     description: paste.description,
     language: paste.language,
     createdAt: paste.createdAt,
+    expiresAt: paste.expiresAt,
     views: paste.views + 1,
     isPublic: paste.isPublic,
   }
@@ -89,6 +93,7 @@ export async function getPublicPastes(limit = 50, offset = 0): Promise<PasteData
     description: p.description,
     language: p.language,
     createdAt: p.createdAt,
+    expiresAt: p.expiresAt,
     views: p.views,
     isPublic: p.isPublic,
   }))
@@ -124,6 +129,7 @@ export async function updatePaste(
     description: updated.description,
     language: updated.language,
     createdAt: updated.createdAt,
+    expiresAt: updated.expiresAt,
     views: updated.views,
     isPublic: updated.isPublic,
   }

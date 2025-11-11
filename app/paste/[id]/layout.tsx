@@ -7,6 +7,7 @@ interface PasteData {
     description: string
     language: string
     createdAt: string
+    expiresAt: string
     views: number
     isPublic: boolean
 }

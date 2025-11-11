@@ -92,10 +92,17 @@ client.login(DISCORD_TOKEN);`,
     const restoreDraftDialogRef = useRef<HTMLDialogElement>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [shareUrl, setShareUrl] = useState('')
+    const [expirationDays, setExpirationDays] = useState<number | null>(null)
     const [showSaveModal, setShowSaveModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
     const [showMetadataModal, setShowMetadataModal] = useState(false)
+    const [showLeaveModal, setShowLeaveModal] = useState(false)
+    const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null)
+    const [showRefreshWarning, setShowRefreshWarning] = useState(false)
     const metadataModalRef = useRef<HTMLInputElement>(null)
+    const leaveModalRef = useRef<HTMLDialogElement>(null)
+    const refreshModalRef = useRef<HTMLDialogElement>(null)
+    const [isEditorFullscreen, setIsEditorFullscreen] = useState(false)
 
     // Only initialize on client side to prevent hydration mismatch
     useEffect(() => {
@@ -121,19 +128,59 @@ client.login(DISCORD_TOKEN);`,
         }
     }, [showRestoreDraftModal, isMounted])
 
-    // Warn before unload if there are unsaved files
+    // Warn before unload if there are unsaved files using daisyUI modal
     useEffect(() => {
-        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-            // Always show warning if there are multiple files or if code has been modified
-            if (files.length > 1 || files[0]?.code !== '') {
-                e.preventDefault()
-                e.returnValue = ''
+        // Track if user has unsaved changes
+        const hasUnsavedChanges = files.length > 1 || files[0]?.code !== ''
+
+        // Intercept keyboard shortcuts (Cmd+R, Ctrl+R, F5, etc)
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (hasUnsavedChanges) {
+                // F5 or Cmd+R or Ctrl+R or Ctrl+Shift+R
+                if (
+                    e.key === 'F5' ||
+                    (e.metaKey && e.key === 'r') ||
+                    (e.ctrlKey && e.key === 'r') ||
+                    (e.ctrlKey && e.shiftKey && e.key === 'r')
+                ) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    setShowRefreshWarning(true)
+                }
             }
         }
 
-        window.addEventListener('beforeunload', handleBeforeUnload)
-        return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+        // Show daisyUI modal for client-side navigation only (back button)
+        const handleNavigation = (e: PopStateEvent) => {
+            if (hasUnsavedChanges) {
+                setPendingNavigation(() => () => {
+                    window.removeEventListener('popstate', handleNavigation)
+                    window.history.forward()
+                })
+                if (leaveModalRef.current) {
+                    leaveModalRef.current.showModal()
+                }
+                e.preventDefault()
+            }
+        }
+
+        window.addEventListener('keydown', handleKeyDown, true)
+        window.addEventListener('popstate', handleNavigation)
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown, true)
+            window.removeEventListener('popstate', handleNavigation)
+        }
     }, [files])
+
+    // Sync refresh modal state with ref
+    useEffect(() => {
+        if (!isMounted || !refreshModalRef.current) return
+        if (showRefreshWarning) {
+            refreshModalRef.current.showModal()
+        } else {
+            refreshModalRef.current.close()
+        }
+    }, [showRefreshWarning, isMounted])
 
     // Auto-save draft to cookie whenever files or metadata change
     // Only save if there's meaningful content (modified code or custom title)
@@ -182,6 +229,13 @@ client.login(DISCORD_TOKEN);`
         setIsSaving(true)
         setShowSaveModal(false)
         try {
+            // Convert expirationMinutes to expirationDays for projects
+            let expirationDaysToSend: number | undefined = undefined
+            if (metadata.expirationMinutes) {
+                // Convert minutes to days (1440 minutes = 1 day)
+                expirationDaysToSend = Math.ceil(metadata.expirationMinutes / 1440)
+            }
+
             const response = await fetch('/api/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -194,6 +248,7 @@ client.login(DISCORD_TOKEN);`
                         language: f.language,
                     })),
                     isPublic: metadata.isPublic,
+                    expirationDays: expirationDaysToSend || expirationDays,
                 }),
             })
             const data = await response.json()
@@ -246,15 +301,17 @@ client.login(DISCORD_TOKEN);`
 
     return (
         <div className="flex flex-col h-screen bg-base-100">
-            <Navbar
-                onSaveShare={() => setShowSaveModal(true)}
-                isSaving={isSaving}
-            />
+            {!isEditorFullscreen && (
+                <Navbar
+                    onSaveShare={() => setShowSaveModal(true)}
+                    isSaving={isSaving}
+                />
+            )}
 
             <main className="flex-1 overflow-hidden flex flex-col m-1 sm:m-3">
                 <div className="flex-1 overflow-hidden rounded-2xl shadow-xl bg-base-100 flex flex-col">
                     {/* Content Container */}
-                    <div className="w-full px-2 sm:px-3 py-2 sm:py-4 flex-1 flex flex-col gap-2 sm:gap-4 overflow-hidden min-h-0">
+                    <div className="w-full px-2 sm:px-3 py-1 sm:py-2 flex-1 flex flex-col gap-2 sm:gap-4 overflow-hidden min-h-0">
                         {/* Top Row: Action Buttons */}
                         <div className="flex gap-1 sm:gap-2 flex-wrap items-center">
                             <ThemeSwitcher />
@@ -282,7 +339,40 @@ client.login(DISCORD_TOKEN);`
                         </div>
 
                         {/* Editor */}
-                        <div className="flex-1 overflow-hidden rounded-xl border border-base-300">
+                        <div className="flex-1 overflow-hidden rounded-xl border border-base-300 h-[calc(100vh-24px)] relative">
+                            <MultiFileEditor
+                                initialFiles={files}
+                                onFilesChange={handleFilesChange}
+                            />
+                            {/* Fullscreen toggle */}
+                            <button
+                                aria-label="Toggle fullscreen editor"
+                                onClick={() => setIsEditorFullscreen(true)}
+                                className="absolute top-3 right-3 btn btn-xs btn-ghost rounded-full text-2xl"
+                                title="Open editor fullscreen"
+                            >
+                                ⤢
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+
+            {!isEditorFullscreen && <Footer />}
+
+            {/* Fullscreen editor overlay */}
+            {isEditorFullscreen && (
+                <div className="fixed inset-0 z-50 bg-base-100 p-2 sm:p-6">
+                    <div className="flex flex-col h-full">
+                        <div className="flex items-center justify-end gap-2 mb-2">
+                            <button
+                                onClick={() => setIsEditorFullscreen(false)}
+                                className="btn btn-sm btn-ghost rounded-xl"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-hidden rounded-lg border border-base-300">
                             <MultiFileEditor
                                 initialFiles={files}
                                 onFilesChange={handleFilesChange}
@@ -290,9 +380,7 @@ client.login(DISCORD_TOKEN);`
                         </div>
                     </div>
                 </div>
-            </main>
-
-            <Footer />
+            )}
 
             {/* Modals */}
             <SaveModal
@@ -306,6 +394,10 @@ client.login(DISCORD_TOKEN);`
                 shareUrl={shareUrl}
                 isOpen={showShareModal}
                 onClose={() => setShowShareModal(false)}
+                title={projectTitle}
+                description={projectDescription}
+                expirationDays={expirationDays}
+                onExpirationChange={setExpirationDays}
             />
 
             {/* Metadata Modal */}
@@ -398,6 +490,94 @@ client.login(DISCORD_TOKEN);`
                     </form>
                 </dialog>
             )}
+
+            {/* Leave Confirmation Modal */}
+            {isMounted && (
+                <dialog
+                    ref={leaveModalRef}
+                    className="modal"
+                >
+                    <div className="modal-box rounded-2xl">
+                        <h3 className="font-bold text-lg text-warning">⚠️ Unsaved Changes</h3>
+                        <p className="py-4 text-base-content/70">
+                            You have unsaved changes. Are you sure you want to leave without saving?
+                        </p>
+                        <div className="modal-action">
+                            <form method="dialog">
+                                <button
+                                    className="btn btn-ghost rounded-xl"
+                                >
+                                    Stay
+                                </button>
+                            </form>
+                            <button
+                                onClick={() => {
+                                    if (leaveModalRef.current) {
+                                        leaveModalRef.current.close()
+                                    }
+                                    if (pendingNavigation) {
+                                        pendingNavigation()
+                                    }
+                                }}
+                                className="btn btn-error rounded-xl"
+                            >
+                                Leave
+                            </button>
+                        </div>
+                    </div>
+                    <form method="dialog" className="modal-backdrop">
+                        <button>close</button>
+                    </form>
+                </dialog>
+            )}
+
+            {/* Refresh Warning Modal */}
+            {isMounted && (
+                <dialog
+                    ref={refreshModalRef}
+                    className="modal"
+                >
+                    <div className="modal-box rounded-2xl">
+                        <h3 className="font-bold text-lg text-warning">⏸️ Wait!</h3>
+                        <p className="py-4 text-base-content/70">
+                            You have unsaved changes. Refreshing will lose all your work.
+                        </p>
+                        <p className="text-sm text-base-content/60 mb-4">
+                            Save your project first to keep your progress.
+                        </p>
+                        <div className="modal-action">
+                            <form method="dialog">
+                                <button
+                                    className="btn btn-ghost rounded-xl"
+                                >
+                                    Cancel
+                                </button>
+                            </form>
+                            <button
+                                onClick={() => {
+                                    // Close modal
+                                    if (refreshModalRef.current) {
+                                        refreshModalRef.current.close()
+                                    }
+                                    setShowRefreshWarning(false)
+                                    // Now reload the page
+                                    window.location.reload()
+                                }}
+                                className="btn btn-warning rounded-xl"
+                            >
+                                Refresh Anyway
+                            </button>
+                        </div>
+                    </div>
+                    <form method="dialog" className="modal-backdrop">
+                        <button>close</button>
+                    </form>
+                </dialog>
+            )}
         </div>
     )
 }
+
+
+
+

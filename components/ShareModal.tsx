@@ -9,6 +9,8 @@ interface ShareModalProps {
     title?: string
     description?: string
     isPublic?: boolean
+    expirationDays?: number | null
+    onExpirationChange?: (days: number | null) => void
     onNew?: () => void
 }
 
@@ -19,16 +21,28 @@ export default function ShareModal({
     title,
     description,
     isPublic,
+    expirationDays,
+    onExpirationChange,
     onNew
 }: ShareModalProps) {
     const shareModalRef = useRef<HTMLInputElement>(null)
     const [copied, setCopied] = useState(false)
+    const [selectedExpiration, setSelectedExpiration] = useState<number | null>(expirationDays || null)
 
     useEffect(() => {
         if (shareModalRef.current) {
             shareModalRef.current.checked = isOpen
         }
     }, [isOpen])
+
+    useEffect(() => {
+        setSelectedExpiration(expirationDays || null)
+    }, [expirationDays])
+
+    const handleExpirationChange = (days: number | null) => {
+        setSelectedExpiration(days)
+        onExpirationChange?.(days)
+    }
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(shareUrl)
@@ -53,7 +67,7 @@ export default function ShareModal({
                 className="modal-toggle"
             />
             <div className="modal">
-                <div className="modal-box w-full sm:max-w-md">
+                <div className="modal-box w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
                     <div className="flex items-center gap-3 mb-6">
                         <span className="text-4xl">🎉</span>
                         <div>
@@ -66,7 +80,7 @@ export default function ShareModal({
                         <div className="divider my-0"></div>
 
                         {/* Paste Info */}
-                        <div className="bg-base-200 rounded-lg p-4 space-y-2">
+                        <div className="bg-base-200 rounded-lg p-4 space-y-3">
                             <div>
                                 <p className="text-xs text-base-content/60 font-semibold">SNIPPET</p>
                                 <p className="text-sm font-semibold truncate">{title || 'Untitled'}</p>
@@ -82,6 +96,26 @@ export default function ShareModal({
                                 <span className={isPublic ? 'text-success' : 'text-warning'}>
                                     {isPublic ? '🌐 Public' : '🔒 Private'}
                                 </span>
+                            </div>
+
+                            {/* Expiration Option */}
+                            <div className="space-y-2">
+                                <label className="text-xs text-base-content/60 font-semibold">EXPIRATION</label>
+                                <select
+                                    value={selectedExpiration || ''}
+                                    onChange={(e) => handleExpirationChange(e.target.value ? parseInt(e.target.value) : null)}
+                                    className="select select-sm w-full rounded-lg border-base-300 bg-base-100"
+                                >
+                                    <option value="">Never</option>
+                                    <option value="1">1 day</option>
+                                    <option value="3">3 days</option>
+                                    <option value="7">7 days</option>
+                                </select>
+                                {selectedExpiration && (
+                                    <p className="text-xs text-info/80">
+                                        ⏱️ Expires in {selectedExpiration} day{selectedExpiration > 1 ? 's' : ''}
+                                    </p>
+                                )}
                             </div>
                         </div>
 

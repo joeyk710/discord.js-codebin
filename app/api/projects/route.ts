@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db'
 
 export async function POST(request: NextRequest) {
     try {
-        const { title, description, files, isPublic = true } = await request.json()
+        const { title, description, files, isPublic = true, expirationDays } = await request.json()
 
         if (!title || typeof title !== 'string') {
             return NextResponse.json(
@@ -29,11 +29,19 @@ export async function POST(request: NextRequest) {
             }
         }
 
+        // Calculate expiration date if provided
+        let expiresAt: Date | null = null
+        if (expirationDays && typeof expirationDays === 'number' && expirationDays > 0) {
+            expiresAt = new Date()
+            expiresAt.setDate(expiresAt.getDate() + Math.min(expirationDays, 7)) // Max 7 days
+        }
+
         const project = await prisma.project.create({
             data: {
                 title: title,
                 description: description || '',
                 isPublic: isPublic,
+                expiresAt: expiresAt,
                 files: (files.map((file: any) => ({
                     id: crypto.randomUUID(),
                     path: file.path,
@@ -81,6 +89,14 @@ export async function GET(request: NextRequest) {
         if (!project) {
             return NextResponse.json(
                 { error: 'Project not found' },
+                { status: 404 }
+            )
+        }
+
+        // Check if project has expired
+        if (project.expiresAt && new Date() > project.expiresAt) {
+            return NextResponse.json(
+                { error: 'This project has expired' },
                 { status: 404 }
             )
         }

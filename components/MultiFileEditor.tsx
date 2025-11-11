@@ -38,6 +38,12 @@ export default function MultiFileEditor({
         initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name }))
     )
     const [activeFile, setActiveFile] = useState<string>(initialFiles[0]?.path || '')
+    // Keep internal state in sync when parent provides new initialFiles (e.g. restoring a draft)
+    useEffect(() => {
+        setFiles(initialFiles)
+        setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name })))
+        setActiveFile(initialFiles[0]?.path || '')
+    }, [initialFiles])
     const [fileTree, setFileTree] = useState<FileNode[]>([])
     const [showNewFileDialog, setShowNewFileDialog] = useState(false)
     const [newFilePath, setNewFilePath] = useState('')

@@ -15,6 +15,7 @@ interface PasteData {
   description: string
   language: string
   createdAt: string
+  expiresAt: string
   views: number
   isPublic: boolean
 }
@@ -218,8 +219,20 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
             <div>
               <h1 className="text-xl sm:text-2xl font-bold">{paste.title}</h1>
               {paste.description && <p className="text-xs sm:text-sm opacity-75 mt-1">{paste.description}</p>}
-              <div className="text-xs opacity-60 mt-1">
-                {new Date(paste.createdAt).toLocaleDateString()} • {paste.views} views • {paste.language}
+              <div className="text-xs opacity-60 mt-1 flex flex-wrap gap-2">
+                <span>{new Date(paste.createdAt).toLocaleDateString()}</span>
+                <span>•</span>
+                <span>{paste.views} views</span>
+                <span>•</span>
+                <span>{paste.language}</span>
+                {paste.expiresAt && (
+                  <>
+                    <span>•</span>
+                    <span className={new Date() > new Date(paste.expiresAt) ? 'text-error' : 'text-warning'}>
+                      ⏱️ Expires {new Date(paste.expiresAt).toLocaleDateString()}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
