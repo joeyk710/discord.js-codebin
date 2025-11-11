@@ -308,12 +308,12 @@ client.login(DISCORD_TOKEN);`
                 />
             )}
 
-            <main className="flex-1 overflow-hidden flex flex-col m-1 sm:m-3">
-                <div className="flex-1 overflow-hidden rounded-2xl shadow-xl bg-base-100 flex flex-col">
+            <main className="flex-1 overflow-hidden flex flex-col m-1 sm:m-3 min-h-0">
+                <div className="flex-1 overflow-hidden rounded-2xl shadow-xl bg-base-100 flex flex-col min-h-0">
                     {/* Content Container */}
-                    <div className="w-full px-2 sm:px-3 py-1 sm:py-2 flex-1 flex flex-col gap-2 sm:gap-4 overflow-hidden min-h-0">
+                    <div className="w-full px-2 sm:px-3 py-1 sm:py-2 flex-1 flex flex-col gap-1 sm:gap-4 overflow-hidden min-h-0">
                         {/* Top Row: Action Buttons */}
-                        <div className="flex gap-1 sm:gap-2 flex-wrap items-center">
+                        <div className="flex gap-1 sm:gap-2 flex-wrap items-center shrink-0">
                             <ThemeSwitcher />
                             <Link href="/" className="btn btn-xs sm:btn-sm btn-ghost rounded-xl">
                                 <span className="hidden sm:inline">🏠 Home</span>
@@ -339,7 +339,7 @@ client.login(DISCORD_TOKEN);`
                         </div>
 
                         {/* Editor */}
-                        <div className="flex-1 overflow-hidden rounded-xl border border-base-300 h-[calc(100vh-24px)] relative">
+                        <div className="flex-1 overflow-hidden rounded-xl border border-base-300 min-h-0 relative">
                             <MultiFileEditor
                                 initialFiles={files}
                                 onFilesChange={handleFilesChange}
@@ -348,7 +348,7 @@ client.login(DISCORD_TOKEN);`
                             <button
                                 aria-label="Toggle fullscreen editor"
                                 onClick={() => setIsEditorFullscreen(true)}
-                                className="absolute top-3 right-3 btn btn-xs btn-ghost rounded-full text-2xl"
+                                className="absolute top-3 right-3 btn btn-xs btn-ghost rounded-full text-2xl z-10"
                                 title="Open editor fullscreen"
                             >
                                 ⤢
