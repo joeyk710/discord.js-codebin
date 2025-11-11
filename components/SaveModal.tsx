@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect } from 'react'
 import ExpirationInput from './ExpirationInput'
+import ExpirationModal from './ExpirationModal'
 
 interface SaveModalProps {
   isOpen: boolean
@@ -14,6 +15,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
   const [isPublic, setIsPublic] = React.useState(true)
   const [expirationMinutes, setExpirationMinutes] = React.useState<number | null>(null)
   const [expirationError, setExpirationError] = React.useState<string>('')
+  const [showExpirationModal, setShowExpirationModal] = React.useState(false)
   const saveModalRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -76,7 +78,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
             {/* Expiration Section */}
             <ExpirationInput
               value={expirationMinutes}
-              onChange={setExpirationMinutes}
+              onOpenModal={() => setShowExpirationModal(true)}
               error={expirationError}
             />
 
@@ -118,6 +120,14 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
           onClick={onClose}
         ></label>
       </div>
+
+      {/* Separate Expiration Modal */}
+      <ExpirationModal
+        isOpen={showExpirationModal}
+        onClose={() => setShowExpirationModal(false)}
+        value={expirationMinutes}
+        onChange={setExpirationMinutes}
+      />
     </>
   )
 }

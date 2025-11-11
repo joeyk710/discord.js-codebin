@@ -26,8 +26,10 @@ export default function ShareModal({
     onNew
 }: ShareModalProps) {
     const shareModalRef = useRef<HTMLInputElement>(null)
+    const expirationModalRef = useRef<HTMLInputElement>(null)
     const [copied, setCopied] = useState(false)
     const [selectedExpiration, setSelectedExpiration] = useState<number | null>(expirationDays || null)
+    const [showExpirationModal, setShowExpirationModal] = useState(false)
 
     useEffect(() => {
         if (shareModalRef.current) {
@@ -36,8 +38,10 @@ export default function ShareModal({
     }, [isOpen])
 
     useEffect(() => {
-        setSelectedExpiration(expirationDays || null)
-    }, [expirationDays])
+        if (expirationModalRef.current) {
+            expirationModalRef.current.checked = showExpirationModal
+        }
+    }, [showExpirationModal])
 
     const handleExpirationChange = (days: number | null) => {
         setSelectedExpiration(days)
@@ -67,7 +71,7 @@ export default function ShareModal({
                 className="modal-toggle"
             />
             <div className="modal">
-                <div className="modal-box w-full sm:max-w-md max-h-[90vh] overflow-y-auto">
+                <div className="modal-box w-full sm:max-w-md max-h-[90vh] overflow-y-auto overflow-visible">
                     <div className="flex items-center gap-3 mb-6">
                         <span className="text-4xl">🎉</span>
                         <div>
@@ -98,24 +102,15 @@ export default function ShareModal({
                                 </span>
                             </div>
 
-                            {/* Expiration Option */}
-                            <div className="space-y-2">
-                                <label className="text-xs text-base-content/60 font-semibold">EXPIRATION</label>
-                                <select
-                                    value={selectedExpiration || ''}
-                                    onChange={(e) => handleExpirationChange(e.target.value ? parseInt(e.target.value) : null)}
-                                    className="select select-sm w-full rounded-lg border-base-300 bg-base-100"
+                            {/* Expiration Option - Button to open modal */}
+                            <div className="flex items-center justify-between">
+                                <span className="text-xs text-base-content/60 font-semibold">EXPIRATION</span>
+                                <label
+                                    htmlFor="expiration_modal"
+                                    className="btn btn-xs btn-ghost cursor-pointer"
                                 >
-                                    <option value="">Never</option>
-                                    <option value="1">1 day</option>
-                                    <option value="3">3 days</option>
-                                    <option value="7">7 days</option>
-                                </select>
-                                {selectedExpiration && (
-                                    <p className="text-xs text-info/80">
-                                        ⏱️ Expires in {selectedExpiration} day{selectedExpiration > 1 ? 's' : ''}
-                                    </p>
-                                )}
+                                    {selectedExpiration ? `${selectedExpiration} day${selectedExpiration > 1 ? 's' : ''}` : 'Set expiration'}
+                                </label>
                             </div>
                         </div>
 
@@ -179,6 +174,55 @@ export default function ShareModal({
                     htmlFor="share_modal"
                     onClick={onClose}
                 ></label>
+            </div>
+
+            {/* Separate Expiration Modal */}
+            <input
+                ref={expirationModalRef}
+                type="checkbox"
+                id="expiration_modal"
+                className="modal-toggle"
+            />
+            <div className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-lg mb-4">Set Expiration Time</h3>
+                    <p className="text-sm text-base-content/70 mb-4">
+                        Choose how long this paste should be available before it expires.
+                    </p>
+
+                    <select
+                        value={selectedExpiration || ''}
+                        onChange={(e) => handleExpirationChange(e.target.value ? parseInt(e.target.value) : null)}
+                        className="select select-bordered w-full rounded-lg bg-base-100 mb-6"
+                    >
+                        <option value="">Never</option>
+                        <option value="1">1 day</option>
+                        <option value="3">3 days</option>
+                        <option value="7">7 days</option>
+                    </select>
+
+                    {selectedExpiration && (
+                        <p className="text-xs text-info/80 mb-6 flex items-center gap-2">
+                            <span>⏱️</span>
+                            Paste will expire in {selectedExpiration} day{selectedExpiration > 1 ? 's' : ''}
+                        </p>
+                    )}
+
+                    <div className="modal-action gap-2">
+                        <label
+                            htmlFor="expiration_modal"
+                            className="btn btn-sm btn-ghost rounded-xl cursor-pointer"
+                        >
+                            Cancel
+                        </label>
+                        <label
+                            htmlFor="expiration_modal"
+                            className="btn btn-sm btn-primary rounded-xl cursor-pointer"
+                        >
+                            Done
+                        </label>
+                    </div>
+                </div>
             </div>
         </>
     )
