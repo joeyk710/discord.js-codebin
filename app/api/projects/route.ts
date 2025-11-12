@@ -36,33 +36,47 @@ export async function POST(request: NextRequest) {
             expiresAt.setDate(expiresAt.getDate() + Math.min(expirationDays, 7)) // Max 7 days
         }
 
-        const project = await prisma.project.create({
-            data: {
-                title: title,
-                description: description || '',
-                isPublic: isPublic,
-                expiresAt: expiresAt,
-                files: (files.map((file: any) => ({
-                    id: crypto.randomUUID(),
-                    path: file.path,
-                    name: file.path.split('/').pop() || file.path,
-                    code: file.code,
-                    language: file.language || 'javascript',
-                }))) as any,
-            },
-        })
+        try {
+            const project = await prisma.project.create({
+                data: {
+                    title: title,
+                    description: description || '',
+                    isPublic: isPublic,
+                    expiresAt: expiresAt,
+                    files: (files.map((file: any) => ({
+                        id: crypto.randomUUID(),
+                        path: file.path,
+                        name: file.path.split('/').pop() || file.path,
+                        code: file.code,
+                        language: file.language || 'javascript',
+                    }))) as any,
+                },
+            })
 
-        const origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'
+            const origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'
 
-        return NextResponse.json({
-            id: project.id,
-            success: true,
-            shortUrl: `${origin}/project/${project.id}`,
-            project,
-        })
+            return NextResponse.json({
+                id: project.id,
+                success: true,
+                shortUrl: `${origin}/project/${project.id}`,
+                project,
+            })
+        } catch (dbError) {
+            console.error('Database error:', dbError)
+            throw dbError
+        }
     } catch (error) {
         console.error('Error creating project:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
+
+        // Log more details for debugging
+        if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
+            return NextResponse.json(
+                { error: 'Database connection failed. Please try again later.' },
+                { status: 503 }
+            )
+        }
+
         return NextResponse.json(
             { error: 'Failed to create project', details: errorMessage },
             { status: 500 }

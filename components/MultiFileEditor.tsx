@@ -50,10 +50,13 @@ export default function MultiFileEditor({
     const [suggestions, setSuggestions] = useState<Suggestion[]>([])
     const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
     const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
+    const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
+    const [fileToDelete, setFileToDelete] = useState<string | null>(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
     const newFileInputRef = useRef<HTMLInputElement>(null)
     const newFileModalRef = useRef<HTMLInputElement>(null)
     const deleteErrorModalRef = useRef<HTMLDialogElement>(null)
+    const deleteConfirmModalRef = useRef<HTMLDialogElement>(null)
     const languageModalRef = useRef<HTMLDialogElement>(null)
 
     // Build file tree
@@ -244,10 +247,28 @@ export default function MultiFileEditor({
         }
     }, [])
 
+    const isValidFilePath = (path: string): boolean => {
+        if (!path.trim()) return false
+        const fileName = path.split('/').pop() || path
+        // Check if filename has an extension (contains a dot after the last slash)
+        return fileName.includes('.')
+    }
+
     const handleCreateNewFile = useCallback(
         (e: React.FormEvent) => {
             e.preventDefault()
-            if (!newFilePath.trim()) return
+
+            // Validate path is not empty
+            if (!newFilePath.trim()) {
+                alert('File path is required')
+                return
+            }
+
+            // Validate file has an extension
+            if (!isValidFilePath(newFilePath)) {
+                alert('File name must include an extension (e.g., .js, .ts, .json)')
+                return
+            }
 
             const fileName = newFilePath.split('/').pop() || newFilePath
             const newFile: FileData = {
@@ -276,11 +297,37 @@ export default function MultiFileEditor({
                 return
             }
 
-            setFiles(files.filter(f => f.path !== path))
-            handleTabClose(path)
+            // Show confirmation modal
+            setFileToDelete(path)
+            setShowDeleteConfirmModal(true)
+            setTimeout(() => {
+                if (deleteConfirmModalRef.current) {
+                    deleteConfirmModalRef.current.showModal()
+                }
+            }, 0)
         },
-        [files, handleTabClose]
+        [files.length]
     )
+
+    const handleConfirmDelete = useCallback(() => {
+        if (!fileToDelete) return
+
+        setFiles(files.filter(f => f.path !== fileToDelete))
+        handleTabClose(fileToDelete)
+        setFileToDelete(null)
+        setShowDeleteConfirmModal(false)
+        if (deleteConfirmModalRef.current) {
+            deleteConfirmModalRef.current.close()
+        }
+    }, [files, fileToDelete, handleTabClose])
+
+    const handleCancelDelete = useCallback(() => {
+        setFileToDelete(null)
+        setShowDeleteConfirmModal(false)
+        if (deleteConfirmModalRef.current) {
+            deleteConfirmModalRef.current.close()
+        }
+    }, [])
 
     const handleRenameFile = useCallback(
         (oldPath: string, newPath: string) => {
@@ -549,11 +596,14 @@ export default function MultiFileEditor({
                                 value={newFilePath}
                                 onChange={(e) => setNewFilePath(e.target.value)}
                                 required
-                                className="input input-bordered w-full validator"
+                                className={`input input-bordered w-full ${newFilePath.trim() && !isValidFilePath(newFilePath) ? 'input-error' : ''
+                                    }`}
                             />
-                            <p className="validator-hint">
-                                {newFilePath.trim() === '' ? 'File path is required' : ''}
-                            </p>
+                            {newFilePath.trim() && !isValidFilePath(newFilePath) && (
+                                <p className="text-error text-sm mt-2">
+                                    File name must include an extension (e.g., .js, .ts, .json)
+                                </p>
+                            )}
                             <p className="text-xs text-base-content/50 mt-2">
                                 Use forward slashes (/) for folders
                             </p>
@@ -566,7 +616,11 @@ export default function MultiFileEditor({
                             >
                                 Cancel
                             </button>
-                            <button type="submit" className="btn btn-primary rounded-xl">
+                            <button
+                                type="submit"
+                                disabled={!isValidFilePath(newFilePath)}
+                                className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
                                 Create
                             </button>
                         </div>
@@ -593,6 +647,35 @@ export default function MultiFileEditor({
                 onSelect={handleLanguageSelect}
                 currentLanguage={currentFile?.language || 'javascript'}
             />
+
+            {/* Delete Confirmation Modal */}
+            <dialog ref={deleteConfirmModalRef} className="modal">
+                <div className="modal-box rounded-2xl">
+                    <h3 className="font-bold text-lg">Delete File?</h3>
+                    <p className="py-4">
+                        Are you sure you want to delete <span className="font-semibold">{fileToDelete?.split('/').pop()}</span>? This action cannot be undone.
+                    </p>
+                    <div className="modal-action">
+                        <button
+                            type="button"
+                            className="btn btn-outline rounded-xl"
+                            onClick={handleCancelDelete}
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-error rounded-xl"
+                            onClick={handleConfirmDelete}
+                        >
+                            Delete
+                        </button>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button onClick={handleCancelDelete}>close</button>
+                </form>
+            </dialog>
 
             {/* Delete Error Modal */}
             <dialog ref={deleteErrorModalRef} className="modal">
