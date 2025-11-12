@@ -27,16 +27,13 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: Navbar
                         alt="discord.js"
                         className="w-8 sm:w-10 h-8 sm:h-10 rounded-lg"
                     />
-                    <div className="hidden sm:block">
-                        <h1 className="text-lg sm:text-xl font-bold text-base-content">discord.js Code Bin</h1>
-                    </div>
-                    <div className="sm:hidden">
-                        <h1 className="text-sm font-bold text-base-content">DJS Code Bin</h1>
+                    <div>
+                        <h1 className="text-base sm:text-xl font-bold text-base-content">discord.js Code Bin</h1>
                     </div>
                 </Link>
             </div>
 
-            <div className="navbar-center gap-3 sm:gap-4">
+            <div className="navbar-center gap-3 sm:gap-4 ml-6 sm:ml-10 lg:ml-16">
                 <ThemeSwitcher />
                 {!isHomePage && (
                     <>
