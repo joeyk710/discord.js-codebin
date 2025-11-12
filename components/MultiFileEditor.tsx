@@ -47,16 +47,10 @@ export default function MultiFileEditor({
     )
     const [activeFile, setActiveFile] = useState<string>(initialFiles[0]?.path || '')
 
-    // Helper to update files and notify parent
+    // Helper to update files. Parent will be notified by the effect below when `files` changes.
     const updateFiles = useCallback((newFiles: FileData[] | ((prev: FileData[]) => FileData[])) => {
-        setFiles(prev => {
-            const updated = typeof newFiles === 'function' ? newFiles(prev) : newFiles
-            if (onFilesChange) {
-                onFilesChange(updated)
-            }
-            return updated
-        })
-    }, [onFilesChange])
+        setFiles(prev => (typeof newFiles === 'function' ? newFiles(prev) : newFiles))
+    }, [])
     const [fileTree, setFileTree] = useState<FileNode[]>([])
     const [showNewFileDialog, setShowNewFileDialog] = useState(false)
     const [newFilePath, setNewFilePath] = useState('')

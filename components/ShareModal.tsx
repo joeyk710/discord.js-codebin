@@ -71,9 +71,11 @@ export default function ShareModal({
                 className="modal-toggle"
             />
             <div className="modal">
-                <div className="modal-box w-full sm:max-w-md max-h-[90vh] overflow-y-auto overflow-visible">
+                <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
                     <div className="flex items-center gap-3 mb-6">
-                        <span className="text-4xl">🎉</span>
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <span className="text-2xl">🎉</span>
+                        </div>
                         <div>
                             <h3 className="font-bold text-2xl text-base-content">Saved!</h3>
                             <p className="text-sm text-base-content/60">Your code is ready to share</p>
