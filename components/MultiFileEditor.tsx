@@ -47,7 +47,6 @@ export default function MultiFileEditor({
     const [fileTree, setFileTree] = useState<FileNode[]>([])
     const [showNewFileDialog, setShowNewFileDialog] = useState(false)
     const [newFilePath, setNewFilePath] = useState('')
-    const [newFileLanguage, setNewFileLanguage] = useState<string>('javascript')
     const [suggestions, setSuggestions] = useState<Suggestion[]>([])
     const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
     const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
@@ -292,9 +291,10 @@ export default function MultiFileEditor({
 
             const userPath = newFilePath.trim()
             const userHasExt = (userPath.split('/').pop() || '').includes('.')
-            const pathWithExt = userHasExt ? userPath : getPathWithExtension(userPath, newFileLanguage)
+            const defaultLang = 'javascript'
+            const pathWithExt = userHasExt ? userPath : getPathWithExtension(userPath, defaultLang)
 
-            const uniquePath = generateUniquePath(pathWithExt, newFileLanguage)
+            const uniquePath = generateUniquePath(pathWithExt, defaultLang)
 
             if (uniquePath.toLowerCase() !== pathWithExt.toLowerCase()) {
                 // Inform user about rename
@@ -305,7 +305,7 @@ export default function MultiFileEditor({
             }
 
             const fileName = uniquePath.split('/').pop() || uniquePath
-            const inferredLang = inferLanguageFromFilename(fileName) || newFileLanguage || 'javascript'
+            const inferredLang = inferLanguageFromFilename(fileName) || 'javascript'
 
             const newFile: FileData = {
                 id: `file-${Date.now()}`,
@@ -318,10 +318,9 @@ export default function MultiFileEditor({
             setFiles(prev => [...prev, newFile])
             handleFileSelect(newFile.path)
             setNewFilePath('')
-            setNewFileLanguage('javascript')
             handleCloseNewFileModal()
         },
-        [files, newFilePath, newFileLanguage, handleFileSelect]
+        [files, newFilePath, handleFileSelect]
     )
 
     const handleDeleteFile = useCallback(
@@ -637,33 +636,15 @@ export default function MultiFileEditor({
                                 required
                                 className="input input-bordered w-full"
                             />
-                            <div className="flex items-center gap-3 mt-3">
-                                <div className="flex-1">
-                                    <label className="label">
-                                        <span className="label-text">Language</span>
-                                    </label>
-                                    <select
-                                        value={newFileLanguage}
-                                        onChange={(e) => setNewFileLanguage(e.target.value)}
-                                        className="select select-bordered w-full"
-                                    >
-                                        <option value="javascript">JavaScript</option>
-                                        <option value="typescript">TypeScript</option>
-                                        <option value="json">JSON</option>
-                                        <option value="python">Python</option>
-                                        <option value="html">HTML</option>
-                                        <option value="css">CSS</option>
-                                        <option value="markdown">Markdown</option>
-                                    </select>
-                                </div>
-                                <div className="text-xs text-base-content/60">
-                                    <p>If you omit an extension, <span className="font-mono">.{getExtensionForLanguage(newFileLanguage)}</span> will be appended.</p>
-                                </div>
+                            <div className="mt-3">
+                                <p className="text-xs text-base-content/60">
+                                    If you omit an extension, the language will be inferred from the filename (or default to .js) and that extension will be appended.
+                                </p>
                             </div>
 
-                            {newFilePath.trim() && doesFileExistWithLang(newFilePath, newFileLanguage) && (
+                            {newFilePath.trim() && doesFileExistWithLang(newFilePath, undefined) && (
                                 <p className="text-warning text-sm mt-2">
-                                    A file with that path (after applying the selected language extension) already exists.
+                                    A file with that path (after inferring the extension) already exists.
                                 </p>
                             )}
 
@@ -681,7 +662,7 @@ export default function MultiFileEditor({
                             </button>
                             <button
                                 type="submit"
-                                disabled={newFilePath.trim() === '' || doesFileExistWithLang(newFilePath, newFileLanguage)}
+                                disabled={newFilePath.trim() === '' || doesFileExistWithLang(newFilePath, undefined)}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Create
