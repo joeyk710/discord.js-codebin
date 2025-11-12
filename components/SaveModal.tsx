@@ -91,7 +91,8 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
                     saveModalRef.current.checked = false
                   }
                 }}
-                className="btn btn-ghost rounded-xl"
+                disabled={isSaving}
+                className="btn btn-ghost rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
@@ -117,7 +118,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
         <label
           className="modal-backdrop"
           htmlFor="save_modal"
-          onClick={onClose}
+          onClick={() => !isSaving && onClose()}
         ></label>
       </div>
 

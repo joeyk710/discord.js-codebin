@@ -36,68 +36,70 @@ export default function FileTabs({
     const sortedFiles = [...openFiles].sort((a, b) => a.name.localeCompare(b.name))
 
     return (
-        <div role="tablist" className="tabs tabs-border px-2 sm:px-4 py-3 bg-base-200 border-b border-base-300 overflow-x-auto overflow-y-visible gap-3 sm:gap-4">
+        <div role="tablist" className="flex items-center px-3 sm:px-4 py-0 bg-base-200/50 backdrop-blur-sm border-b border-base-300/30 overflow-x-auto overflow-y-visible gap-1 min-h-[48px]">
             {sortedFiles.map(file => (
                 <div
                     key={file.path}
                     role="tab"
                     onClick={() => onTabClick(file.path)}
                     className={`
-            tab gap-2 px-3 sm:px-4 py-2 flex items-center cursor-pointer
+            group relative flex items-center gap-2 px-3 sm:px-4 py-2.5 cursor-pointer transition-all duration-200 min-w-fit
             ${activeFile === file.path
-                            ? 'tab-active text-primary font-semibold'
-                            : 'border border-base-300 rounded-lg'
+                            ? 'bg-base-100 text-base-content font-medium shadow-sm border-t-2 border-t-primary'
+                            : 'hover:bg-base-300/40 text-base-content/70 hover:text-base-content border-t-2 border-t-transparent'
                         }
           `}
                 >
-                    {/* Icon on the left */}
-                    <div className="flex items-center gap-2 min-w-0">
-                        {file.language ? (
-                            (() => {
-                                const langKey = file.language.toLowerCase()
-                                const mapped = (() => {
-                                    if (langKey === 'c++' || langKey === 'cpp') return 'cpp'
-                                    if (langKey === 'c#' || langKey === 'csharp') return 'csharp'
-                                    if (langKey === 'objective-c' || langKey === 'objectivec') return 'objective-c'
-                                    if (langKey === 'dockerfile') return 'docker'
-                                    if (langKey === 'powershell') return 'powershell'
-                                    if (langKey === 'webassembly') return 'webassembly'
-                                    return langKey
-                                })()
-
-                                const tooltipLabel = file.language
-
-                                if (MATERIAL_ICON_LANGS.has(mapped)) {
-                                    return (
-                                        <div className="tooltip z-50" data-tip={tooltipLabel}>
-                                            <img src={`/material-icons/${mapped}.svg`} alt={file.language} className="w-5 h-5 opacity-90" />
-                                        </div>
-                                    )
-                                }
-
-                                return (
-                                    <div className="tooltip z-50" data-tip={tooltipLabel}>
-                                        <span className="text-lg">{getEmojiIcon(file.language)}</span>
-                                    </div>
-                                )
+                    {/* Icon and name */}
+                    {file.language ? (
+                        (() => {
+                            const langKey = file.language.toLowerCase()
+                            const mapped = (() => {
+                                if (langKey === 'c++' || langKey === 'cpp') return 'cpp'
+                                if (langKey === 'c#' || langKey === 'csharp') return 'csharp'
+                                if (langKey === 'objective-c' || langKey === 'objectivec') return 'objective-c'
+                                if (langKey === 'dockerfile') return 'docker'
+                                if (langKey === 'powershell') return 'powershell'
+                                if (langKey === 'webassembly') return 'webassembly'
+                                return langKey
                             })()
-                        ) : <span className="w-5 h-5" />}
 
-                        <span className="text-sm truncate max-w-xs">{file.name}</span>
-                        {file.isDirty && <span className="text-primary text-lg leading-none">●</span>}
-                    </div>
+                            if (MATERIAL_ICON_LANGS.has(mapped)) {
+                                return (
+                                    <img
+                                        src={`/material-icons/${mapped}.svg`}
+                                        alt={file.language}
+                                        className={`w-4 h-4 transition-opacity ${activeFile === file.path ? 'opacity-100' : 'opacity-70 group-hover:opacity-90'}`}
+                                        title={file.language}
+                                    />
+                                )
+                            }
 
-                    <div className="tooltip z-50" data-tip="Close tab">
-                        <button
-                            onClick={e => {
-                                e.stopPropagation()
-                                onTabClose(file.path)
-                            }}
-                            className="btn btn-ghost btn-xs rounded-xl opacity-50 hover:opacity-100 ml-1"
-                        >
-                            ✕
-                        </button>
-                    </div>
+                            return <span className="text-base">{getEmojiIcon(file.language)}</span>
+                        })()
+                    ) : <span className="w-4 h-4" />}
+
+                    <span className="text-sm truncate max-w-[140px] sm:max-w-xs">
+                        {file.name}
+                    </span>
+
+                    {file.isDirty && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-warning animate-pulse" title="Unsaved changes"></span>
+                    )}
+
+                    {/* Close button - hidden until hover */}
+                    <button
+                        onClick={e => {
+                            e.stopPropagation()
+                            onTabClose(file.path)
+                        }}
+                        className="ml-1 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-base-content/10 rounded p-0.5"
+                        aria-label="Close tab"
+                    >
+                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
                 </div>
             ))}
         </div>

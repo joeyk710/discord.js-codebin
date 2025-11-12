@@ -5,9 +5,11 @@ export async function POST(request: NextRequest) {
     try {
         const { title, description, files, isPublic = true, expirationDays } = await request.json()
 
-        if (!title || typeof title !== 'string') {
+        console.log('POST /api/projects - Request body:', { title, description, filesCount: files?.length, isPublic })
+
+        if (!title || typeof title !== 'string' || title.trim() === '') {
             return NextResponse.json(
-                { error: 'Invalid title provided' },
+                { error: 'Invalid title provided. Title must be a non-empty string.' },
                 { status: 400 }
             )
         }
@@ -21,7 +23,7 @@ export async function POST(request: NextRequest) {
 
         // Validate file structure
         for (const file of files) {
-            if (!file.path || !file.code) {
+            if (!file.path || file.code === undefined || file.code === null) {
                 return NextResponse.json(
                     { error: 'Each file must have a path and code' },
                     { status: 400 }
@@ -63,22 +65,68 @@ export async function POST(request: NextRequest) {
             })
         } catch (dbError) {
             console.error('Database error:', dbError)
+
+            // Check for connection errors
+            if (dbError instanceof Error) {
+                if (dbError.message.includes('P6008') || dbError.message.includes('Can\'t reach database')) {
+                    return NextResponse.json(
+                        {
+                            error: 'Database connection failed',
+                            message: 'Unable to connect to database. Please check DATABASE_URL is set correctly or try again later.',
+                            details: dbError.message
+                        },
+                        { status: 503 }
+                    )
+                }
+
+                if (dbError.message.includes('ECONNREFUSED')) {
+                    return NextResponse.json(
+                        {
+                            error: 'Database connection refused',
+                            message: 'Database server is not running or unreachable.',
+                            details: dbError.message
+                        },
+                        { status: 503 }
+                    )
+                }
+            }
+
             throw dbError
         }
     } catch (error) {
         console.error('Error creating project:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
 
+        // Check for database connectivity issues
+        if (errorMessage.includes('P6008') || errorMessage.includes('Can\'t reach database')) {
+            return NextResponse.json(
+                {
+                    error: 'Database connection failed',
+                    message: 'Unable to connect to database. Please check your database configuration.',
+                    details: errorMessage
+                },
+                { status: 503 }
+            )
+        }
+
         // Log more details for debugging
         if (error instanceof Error && error.message.includes('ECONNREFUSED')) {
             return NextResponse.json(
-                { error: 'Database connection failed. Please try again later.' },
+                {
+                    error: 'Database connection refused',
+                    message: 'Database server is not running. Please start your database.',
+                    details: errorMessage
+                },
                 { status: 503 }
             )
         }
 
         return NextResponse.json(
-            { error: 'Failed to create project', details: errorMessage },
+            {
+                error: 'Failed to create project',
+                message: errorMessage,
+                details: errorMessage,
+            },
             { status: 500 }
         )
     }

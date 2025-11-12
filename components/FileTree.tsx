@@ -99,10 +99,10 @@ function FileTreeNode({
         <div key={node.path}>
             <div
                 className={`
-                    flex items-center gap-2 px-3 py-2 rounded-lg transition-all
-                    ${isFile ? 'cursor-pointer hover:bg-base-300' : 'hover:bg-base-200'}
-                    ${isActive && isFile ? 'bg-primary text-primary-content font-semibold shadow-md' : ''}
-                    ${isOpen && !isActive ? 'opacity-80 bg-base-200 text-base-content/70' : ''}
+                    flex items-center gap-2 px-3 py-2 rounded-lg transition-all relative
+                    ${isFile ? 'cursor-pointer hover:bg-base-300/60' : 'hover:bg-base-200/40'}
+                    ${isActive && isFile ? 'bg-primary text-primary-content font-medium shadow-sm border-l-2 border-primary-focus' : ''}
+                    ${isOpen && !isActive ? 'bg-base-200/50 text-base-content/80 border-l-2 border-base-300' : ''}
                 `}
                 style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
                 onClick={() => isFile && onFileSelect(node.path)}
@@ -202,22 +202,35 @@ export default function FileTree({
     openFiles = [],
 }: FileTreeProps) {
     return (
-        <div className="flex flex-col h-full bg-base-100 border-r border-base-300">
-            <div className="p-4 border-b border-base-300">
-                <h3 className="font-semibold text-sm mb-3">Files</h3>
+        <div className="flex flex-col h-full bg-base-100">
+            {/* Enhanced header */}
+            <div className="px-4 py-3 border-b border-base-300/50 bg-base-200/30">
+                <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-semibold text-sm text-base-content/90 uppercase tracking-wider">Explorer</h3>
+                </div>
                 {!isReadOnly && onAddFile && (
                     <button
                         onClick={() => onAddFile('.')}
-                        className="btn btn-sm btn-primary w-full rounded-xl"
+                        className="btn btn-sm btn-outline btn-primary w-full rounded-lg gap-2 hover:bg-primary hover:text-primary-content transition-all"
                     >
-                        + New File
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        New File
                     </button>
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2 space-y-2">
+            {/* File list */}
+            <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1">
                 {files.length === 0 ? (
-                    <p className="text-xs text-base-content/50 p-4">No files</p>
+                    <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
+                        <svg className="w-12 h-12 text-base-content/20 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <p className="text-xs text-base-content/50">No files yet</p>
+                        {!isReadOnly && <p className="text-xs text-base-content/40 mt-1">Click "New File" to start</p>}
+                    </div>
                 ) : (
                     files.map(node => (
                         <div key={node.path}>

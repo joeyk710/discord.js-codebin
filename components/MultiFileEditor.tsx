@@ -7,6 +7,8 @@ import FileTabs from './FileTabs'
 import FileTree from './FileTree'
 import SuggestionsModal from './SuggestionsModal'
 import LanguageSelectorModal from './LanguageSelectorModal'
+import ToastContainer from './ToastContainer'
+import { ToastProps } from './Toast'
 import { getMaterialIconFilename, inferLanguageFromFilename } from '@/lib/fileTree'
 import { buildFileTree, FileNode } from '@/lib/fileTree'
 import { analyzeDiscordJsCode, type Suggestion } from '@/lib/analyzer'
@@ -53,6 +55,7 @@ export default function MultiFileEditor({
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
     const [fileToDelete, setFileToDelete] = useState<string | null>(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [toasts, setToasts] = useState<ToastProps[]>([])
     const newFileInputRef = useRef<HTMLInputElement>(null)
     const newFileModalRef = useRef<HTMLInputElement>(null)
     const deleteErrorModalRef = useRef<HTMLDialogElement>(null)
@@ -91,6 +94,16 @@ export default function MultiFileEditor({
     }, [showNewFileDialog])
 
     const currentFile = files.find(f => f.path === activeFile)
+
+    // Toast management
+    const addToast = useCallback((message: string, type: ToastProps['type'] = 'info', duration = 3000) => {
+        const id = `toast-${Date.now()}-${Math.random()}`
+        setToasts(prev => [...prev, { id, message, type, duration, onClose: removeToast }])
+    }, [])
+
+    const removeToast = useCallback((id: string) => {
+        setToasts(prev => prev.filter(t => t.id !== id))
+    }, [])
 
     // Analyze code when active file changes
     useEffect(() => {
@@ -241,7 +254,6 @@ export default function MultiFileEditor({
 
     const handleCloseNewFileModal = useCallback(() => {
         setShowNewFileDialog(false)
-        setNewFilePath('')
         if (newFileModalRef.current) {
             newFileModalRef.current.checked = false
         }
@@ -291,21 +303,19 @@ export default function MultiFileEditor({
 
             const userPath = newFilePath.trim()
             const userHasExt = (userPath.split('/').pop() || '').includes('.')
-            const defaultLang = 'javascript'
+            // Use current file's language as default, or fallback to javascript
+            const defaultLang = currentFile?.language || 'javascript'
             const pathWithExt = userHasExt ? userPath : getPathWithExtension(userPath, defaultLang)
 
             const uniquePath = generateUniquePath(pathWithExt, defaultLang)
 
             if (uniquePath.toLowerCase() !== pathWithExt.toLowerCase()) {
-                // Inform user about rename
-                setNewFilePath(uniquePath)
-                // show a brief alert that auto-rename occurred
-                // (we could instead show a non-blocking toast)
-                alert(`A file with that name exists. Creating as ${uniquePath}`)
+                // Show non-blocking toast instead of alert
+                addToast(`File renamed to ${uniquePath.split('/').pop()} to avoid duplicate`, 'warning', 4000)
             }
 
             const fileName = uniquePath.split('/').pop() || uniquePath
-            const inferredLang = inferLanguageFromFilename(fileName) || 'javascript'
+            const inferredLang = inferLanguageFromFilename(fileName) || defaultLang
 
             const newFile: FileData = {
                 id: `file-${Date.now()}`,
@@ -317,10 +327,10 @@ export default function MultiFileEditor({
 
             setFiles(prev => [...prev, newFile])
             handleFileSelect(newFile.path)
-            setNewFilePath('')
             handleCloseNewFileModal()
+            addToast(`Created ${fileName}`, 'success', 2000)
         },
-        [files, newFilePath, handleFileSelect]
+        [files, newFilePath, currentFile, handleFileSelect, addToast]
     )
 
     const handleDeleteFile = useCallback(
@@ -348,6 +358,7 @@ export default function MultiFileEditor({
     const handleConfirmDelete = useCallback(() => {
         if (!fileToDelete) return
 
+        const fileName = fileToDelete.split('/').pop() || fileToDelete
         setFiles(files.filter(f => f.path !== fileToDelete))
         handleTabClose(fileToDelete)
         setFileToDelete(null)
@@ -355,7 +366,8 @@ export default function MultiFileEditor({
         if (deleteConfirmModalRef.current) {
             deleteConfirmModalRef.current.close()
         }
-    }, [files, fileToDelete, handleTabClose])
+        addToast(`Deleted ${fileName}`, 'info', 2500)
+    }, [files, fileToDelete, handleTabClose, addToast])
 
     const handleCancelDelete = useCallback(() => {
         setFileToDelete(null)
@@ -421,7 +433,7 @@ export default function MultiFileEditor({
     )
 
     return (
-        <div className="flex flex-col h-full w-full">
+        <div className="flex flex-col h-full w-full bg-base-100">
             <FileTabs
                 openFiles={openFiles}
                 activeFile={activeFile}
@@ -437,20 +449,25 @@ export default function MultiFileEditor({
                     <div className="flex-1 flex flex-col overflow-hidden w-full">
                         {currentFile ? (
                             <>
-                                <div className="px-2 sm:px-4 py-2 sm:py-3 bg-base-200 border-b border-base-300 flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <label htmlFor="file-drawer" className="btn btn-ghost btn-square p-0 w-9 h-9 flex-shrink-0 md:hidden flex items-center justify-center cursor-pointer">
+                                <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-base-200/80 backdrop-blur-sm border-b border-base-300/50 flex items-center justify-between gap-3 sm:gap-4 flex-wrap shadow-sm">
+                                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                                        <label htmlFor="file-drawer" className="btn btn-ghost btn-sm btn-circle md:hidden flex items-center justify-center cursor-pointer hover:bg-base-300">
                                             <Bars3Icon className="w-5 h-5" />
                                         </label>
-                                        <div className="text-xs sm:text-sm text-base-content/70 flex-1 truncate min-w-0">
-                                            {currentFile.path}
+                                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                                            <span className="text-xs sm:text-sm font-medium text-base-content/80 truncate">
+                                                {currentFile.path}
+                                            </span>
+                                            {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
+                                                <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes"></span>
+                                            )}
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap">
+                                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                                         <button
                                             onClick={() => setShowSuggestionsModal(true)}
                                             disabled={isAnalyzing || suggestions.length === 0}
-                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2"
+                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
                                             title="View code suggestions"
                                         >
                                             {isAnalyzing ? (
@@ -467,7 +484,7 @@ export default function MultiFileEditor({
                                         </button>
                                         <button
                                             onClick={() => languageModalRef.current?.showModal()}
-                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2 min-w-[44px] h-9 z-50 pointer-events-auto flex items-center"
+                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 min-w-[44px] hover:btn-primary transition-colors"
                                             aria-label={`Select language (${currentFile.language})`}
                                             disabled={isReadOnly}
                                         >
@@ -502,8 +519,12 @@ export default function MultiFileEditor({
                                 </div>
                             </>
                         ) : (
-                            <div className="flex items-center justify-center flex-1 text-base-content/50">
-                                <p>No file selected</p>
+                            <div className="flex flex-col items-center justify-center flex-1 text-center px-4">
+                                <svg className="w-16 h-16 text-base-content/10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                <p className="text-base-content/40 text-sm font-medium mb-1">No file selected</p>
+                                <p className="text-base-content/30 text-xs">Select a file from the explorer to start editing</p>
                             </div>
                         )}
                     </div>
@@ -530,7 +551,7 @@ export default function MultiFileEditor({
             {/* Desktop sidebar + Editor layout */}
             <div className="hidden md:flex flex-1 overflow-hidden">
                 {/* File Tree Sidebar - desktop only */}
-                <div className="w-64 min-w-64 border-r border-base-300">
+                <div className="w-64 min-w-64 border-r border-base-300/50 bg-base-100">
                     <FileTree
                         files={fileTree}
                         activeFile={activeFile}
@@ -547,15 +568,20 @@ export default function MultiFileEditor({
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {currentFile ? (
                         <>
-                            <div className="px-2 sm:px-4 py-2 sm:py-3 bg-base-200 border-b border-base-300 flex items-center justify-between gap-2 sm:gap-4 flex-wrap">
-                                <div className="text-xs sm:text-sm text-base-content/70 flex-1 truncate min-w-0">
-                                    {currentFile.path}
+                            <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-base-200/80 backdrop-blur-sm border-b border-base-300/50 flex items-center justify-between gap-3 sm:gap-4 flex-wrap shadow-sm">
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <span className="text-xs sm:text-sm font-medium text-base-content/80 truncate">
+                                        {currentFile.path}
+                                    </span>
+                                    {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
+                                        <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes"></span>
+                                    )}
                                 </div>
-                                <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap">
+                                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
                                     <button
                                         onClick={() => setShowSuggestionsModal(true)}
                                         disabled={isAnalyzing || suggestions.length === 0}
-                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2"
+                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
                                         title="View code suggestions"
                                     >
                                         {isAnalyzing ? (
@@ -572,7 +598,7 @@ export default function MultiFileEditor({
                                     </button>
                                     <button
                                         onClick={() => languageModalRef.current?.showModal()}
-                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1 sm:gap-2 min-w-[44px] h-9 z-50 pointer-events-auto flex items-center"
+                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 min-w-[44px] hover:btn-primary transition-colors"
                                         aria-label={`Select language (${currentFile.language})`}
                                         disabled={isReadOnly}
                                     >
@@ -605,8 +631,12 @@ export default function MultiFileEditor({
                             </div>
                         </>
                     ) : (
-                        <div className="flex items-center justify-center flex-1 text-base-content/50">
-                            <p>No file selected</p>
+                        <div className="flex flex-col items-center justify-center flex-1 text-center px-4">
+                            <svg className="w-16 h-16 text-base-content/10 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                            <p className="text-base-content/40 text-sm font-medium mb-1">No file selected</p>
+                            <p className="text-base-content/30 text-xs">Select a file from the explorer to start editing</p>
                         </div>
                     )}
                 </div>
@@ -620,12 +650,19 @@ export default function MultiFileEditor({
                 className="modal-toggle"
             />
             <div className="modal">
-                <div className="modal-box rounded-2xl">
-                    <h3 className="font-bold text-lg mb-4">Create New File</h3>
-                    <form onSubmit={handleCreateNewFile} className="space-y-4">
+                <div className="modal-box rounded-2xl max-w-lg">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                        </div>
+                        <h3 className="font-bold text-lg">Create New File</h3>
+                    </div>
+                    <form onSubmit={handleCreateNewFile} className="space-y-5">
                         <div>
                             <label className="label">
-                                <span className="label-text">File Path</span>
+                                <span className="label-text font-medium">File Path</span>
                             </label>
                             <input
                                 ref={newFileInputRef}
@@ -634,38 +671,65 @@ export default function MultiFileEditor({
                                 value={newFilePath}
                                 onChange={(e) => setNewFilePath(e.target.value)}
                                 required
-                                className="input input-bordered w-full"
+                                className="input input-bordered w-full focus:input-primary"
                             />
-                            <div className="mt-3">
-                                <p className="text-xs text-base-content/60">
-                                    If you omit an extension, the language will be inferred from the filename (or default to .js) and that extension will be appended.
-                                </p>
-                            </div>
 
-                            {newFilePath.trim() && doesFileExistWithLang(newFilePath, undefined) && (
-                                <p className="text-warning text-sm mt-2">
-                                    A file with that path (after inferring the extension) already exists.
-                                </p>
-                            )}
+                            {/* Preview of normalized filename */}
+                            {newFilePath.trim() && (() => {
+                                const userPath = newFilePath.trim()
+                                const userHasExt = (userPath.split('/').pop() || '').includes('.')
+                                const defaultLang = currentFile?.language || 'javascript'
+                                const normalizedPath = userHasExt ? userPath : getPathWithExtension(userPath, defaultLang)
+                                const willBeRenamed = doesFileExistWithLang(newFilePath, undefined)
 
-                            <p className="text-xs text-base-content/50 mt-2">
-                                Use forward slashes (/) for folders
+                                if (willBeRenamed) {
+                                    const uniquePath = generateUniquePath(normalizedPath, defaultLang)
+                                    return (
+                                        <div className="mt-3 p-3 bg-warning/10 border border-warning/30 rounded-lg">
+                                            <p className="text-sm text-warning flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                File exists, will create: <span className="font-mono font-semibold">{uniquePath}</span>
+                                            </p>
+                                        </div>
+                                    )
+                                }
+
+                                if (!userHasExt) {
+                                    return (
+                                        <div className="mt-3 p-3 bg-info/10 border border-info/30 rounded-lg">
+                                            <p className="text-sm text-info flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                Will create: <span className="font-mono font-semibold">{normalizedPath}</span>
+                                            </p>
+                                        </div>
+                                    )
+                                }
+
+                                return null
+                            })()}
+
+                            <p className="text-xs text-base-content/60 mt-3">
+                                Extension will be inferred from filename or use <span className="font-mono">.{getExtensionForLanguage(currentFile?.language || 'javascript')}</span> (current language)
                             </p>
                         </div>
-                        <div className="modal-action">
+                        <div className="modal-action mt-6">
                             <button
                                 type="button"
-                                className="btn btn-outline rounded-xl"
+                                className="btn btn-ghost rounded-xl"
                                 onClick={handleCloseNewFileModal}
                             >
                                 Cancel
                             </button>
                             <button
                                 type="submit"
-                                disabled={newFilePath.trim() === '' || doesFileExistWithLang(newFilePath, undefined)}
+                                disabled={newFilePath.trim() === ''}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Create
+                                Create File
                             </button>
                         </div>
                     </form>
@@ -694,25 +758,39 @@ export default function MultiFileEditor({
 
             {/* Delete Confirmation Modal */}
             <dialog ref={deleteConfirmModalRef} className="modal">
-                <div className="modal-box rounded-2xl">
-                    <h3 className="font-bold text-lg">Delete File?</h3>
-                    <p className="py-4">
-                        Are you sure you want to delete <span className="font-semibold">{fileToDelete?.split('/').pop()}</span>? This action cannot be undone.
-                    </p>
-                    <div className="modal-action">
+                <div className="modal-box rounded-2xl max-w-md">
+                    <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-error/10 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-error" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-bold text-lg mb-2">Delete File?</h3>
+                            <p className="text-sm text-base-content/70">
+                                Are you sure you want to delete{' '}
+                                <span className="font-semibold text-base-content">{fileToDelete?.split('/').pop()}</span>?
+                                {' '}This action cannot be undone.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="modal-action mt-6">
                         <button
                             type="button"
-                            className="btn btn-outline rounded-xl"
+                            className="btn btn-ghost rounded-xl"
                             onClick={handleCancelDelete}
                         >
                             Cancel
                         </button>
                         <button
                             type="button"
-                            className="btn btn-error rounded-xl"
+                            className="btn btn-error rounded-xl gap-2"
                             onClick={handleConfirmDelete}
                         >
-                            Delete
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            Delete File
                         </button>
                     </div>
                 </div>
@@ -723,16 +801,30 @@ export default function MultiFileEditor({
 
             {/* Delete Error Modal */}
             <dialog ref={deleteErrorModalRef} className="modal">
-                <div className="modal-box rounded-2xl">
-                    <h3 className="font-bold text-lg">Cannot Delete File</h3>
-                    <p className="py-4">You cannot delete the last file. Every project must have at least one file.</p>
-                    <div className="modal-action">
+                <div className="modal-box rounded-2xl max-w-md">
+                    <div className="flex items-start gap-4">
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
+                            <svg className="w-6 h-6 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                            </svg>
+                        </div>
+                        <div className="flex-1">
+                            <h3 className="font-bold text-lg mb-2">Cannot Delete File</h3>
+                            <p className="text-sm text-base-content/70">
+                                You cannot delete the last file. Every project must have at least one file.
+                            </p>
+                        </div>
+                    </div>
+                    <div className="modal-action mt-6">
                         <form method="dialog">
-                            <button className="btn btn-primary rounded-xl">OK</button>
+                            <button className="btn btn-primary rounded-xl">Got it</button>
                         </form>
                     </div>
                 </div>
             </dialog>
+
+            {/* Toast Notifications */}
+            <ToastContainer toasts={toasts} onClose={removeToast} />
         </div>
     )
 }

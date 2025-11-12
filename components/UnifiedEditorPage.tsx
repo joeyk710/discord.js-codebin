@@ -66,14 +66,11 @@ function clearDraftCookie() {
 }
 
 export default function UnifiedEditorPage() {
-    const [projectTitle, setProjectTitle] = useState('My Project')
-    const [projectDescription, setProjectDescription] = useState('')
-    const [files, setFiles] = useState<FileData[]>([
-        {
-            id: '1',
-            path: 'bot.js',
-            name: 'bot.js',
-            code: `import { Client, Events, GatewayIntentBits } from 'discord.js';
+    const defaultFile: FileData = {
+        id: '1',
+        path: 'bot.js',
+        name: 'bot.js',
+        code: `import { Client, Events, GatewayIntentBits } from 'discord.js';
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -84,9 +81,12 @@ client.once(Events.ClientReady, () => {
 });
 
 client.login(DISCORD_TOKEN);`,
-            language: 'javascript',
-        },
-    ])
+        language: 'javascript',
+    }
+
+    const [projectTitle, setProjectTitle] = useState('My Project')
+    const [projectDescription, setProjectDescription] = useState('')
+    const [files, setFiles] = useState<FileData[]>([defaultFile])
     const [hasDraft, setHasDraft] = useState(false)
     const [showRestoreDraftModal, setShowRestoreDraftModal] = useState(false)
     const [isMounted, setIsMounted] = useState(false)
@@ -108,31 +108,21 @@ client.login(DISCORD_TOKEN);`,
     // Only initialize on client side to prevent hydration mismatch
     useEffect(() => {
         setIsMounted(true)
-        // Delay draft loading to ensure component is fully mounted
-        const timer = setTimeout(() => {
-            const draft = getDraftFromCookie()
-            if (draft) {
-                setHasDraft(true)
-                setShowRestoreDraftModal(true)
-            }
-        }, 100)
-        return () => clearTimeout(timer)
-    }, [])
-
-    // Sync dialog state for restore draft modal
-    useEffect(() => {
-        if (!isMounted || !restoreDraftDialogRef.current) return
-        if (showRestoreDraftModal) {
-            restoreDraftDialogRef.current.showModal()
-        } else {
-            restoreDraftDialogRef.current.close()
+        // Check for draft and restore if it exists
+        const draft = getDraftFromCookie()
+        if (draft) {
+            // Restore draft without showing modal on initial load
+            setProjectTitle(draft.projectTitle)
+            setProjectDescription(draft.projectDescription)
+            setFiles(draft.files)
+            setHasDraft(false) // Don't show modal on mount
         }
-    }, [showRestoreDraftModal, isMounted])
+    }, [])
 
     // Warn before unload if there are unsaved files using daisyUI modal
     useEffect(() => {
         // Track if user has unsaved changes
-        const hasUnsavedChanges = files.length > 1 || files[0]?.code !== ''
+        const hasUnsavedChanges = files.length > 1 || files[0]?.code !== defaultFile.code
 
         // Intercept keyboard shortcuts (Cmd+R, Ctrl+R, F5, etc)
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -188,22 +178,10 @@ client.login(DISCORD_TOKEN);`,
     useEffect(() => {
         const timer = setTimeout(() => {
             // Only save if: custom title OR description OR modified code
-            const defaultCode = `import { Client, Events, GatewayIntentBits } from 'discord.js';
-
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
-
-client.once(Events.ClientReady, () => {
-  console.log('Bot is online!');
-});
-
-client.login(DISCORD_TOKEN);`
-
             const hasContent =
                 projectTitle !== 'My Project' ||
                 projectDescription !== '' ||
-                files.some(f => f.code !== defaultCode)
+                files.some(f => f.code !== defaultFile.code)
 
             if (hasContent) {
                 const draftState: DraftState = {
@@ -228,8 +206,15 @@ client.login(DISCORD_TOKEN);`
 
     const handleSaveWithMetadata = async (metadata: any) => {
         setIsSaving(true)
-        setShowSaveModal(false)
+        // Don't close the modal immediately - wait for save to complete
         try {
+            // Validate title
+            if (!projectTitle || projectTitle.trim() === '') {
+                alert('Project title is required')
+                setIsSaving(false)
+                return
+            }
+
             // Convert expirationMinutes to expirationDays for projects
             let expirationDaysToSend: number | undefined = undefined
             if (metadata.expirationMinutes) {
@@ -241,8 +226,8 @@ client.login(DISCORD_TOKEN);`
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    title: projectTitle || 'Untitled Project',
-                    description: projectDescription || '',
+                    title: projectTitle.trim(),
+                    description: projectDescription.trim(),
                     files: files.map(f => ({
                         path: f.path,
                         code: f.code,
@@ -253,6 +238,17 @@ client.login(DISCORD_TOKEN);`
                 }),
             })
             const data = await response.json()
+
+            console.log('Save response:', { status: response.status, ok: response.ok, data })
+
+            if (!response.ok) {
+                console.error('API Error:', data)
+                const errorMsg = data.error || data.message || 'Unknown error'
+                alert(`Failed to save project: ${errorMsg}`)
+                setIsSaving(false)
+                setShowSaveModal(true)
+                return
+            }
 
             if (data.id) {
                 // Clear the draft cookie after successful save
@@ -267,33 +263,18 @@ client.login(DISCORD_TOKEN);`
 
                 const url = data.shortUrl || `${window.location.origin}/project/${data.id}`
                 setShareUrl(url)
+
+                // Close save modal and show share modal after successful save
+                setShowSaveModal(false)
                 setShowShareModal(true)
+                setIsSaving(false)
             }
         } catch (error) {
             console.error(error)
             alert('Failed to save project')
-        } finally {
             setIsSaving(false)
+            setShowSaveModal(true)
         }
-    }
-
-    const handleRestoreDraft = () => {
-        // First, update state
-        const draft = getDraftFromCookie()
-        if (draft) {
-            setProjectTitle(draft.projectTitle)
-            setProjectDescription(draft.projectDescription)
-            setFiles(draft.files)
-        }
-        // Then close modal
-        setShowRestoreDraftModal(false)
-        setHasDraft(false)
-    }
-
-    const handleDiscardDraft = () => {
-        clearDraftCookie()
-        setShowRestoreDraftModal(false)
-        setHasDraft(false)
     }
 
     const handleFilesChange = useCallback((updatedFiles: FileData[]) => {
@@ -457,45 +438,6 @@ client.login(DISCORD_TOKEN);`
                     onClick={() => setShowMetadataModal(false)}
                 />
             </div>
-
-            {/* Restore Draft Modal - Only render on client to prevent hydration mismatch */}
-            {isMounted && (
-                <dialog
-                    ref={restoreDraftDialogRef}
-                    className="modal"
-                    onClose={() => {
-                        // Only update state if modal is still showing
-                        if (showRestoreDraftModal) {
-                            setShowRestoreDraftModal(false)
-                        }
-                    }}
-                >
-                    <div className="modal-box rounded-2xl">
-                        <h3 className="font-bold text-lg">Restore Previous Draft?</h3>
-                        <p className="py-4 text-base-content/70">
-                            We found your previous work. Would you like to restore it or start fresh?
-                        </p>
-                        <div className="modal-action">
-                            <button
-                                onClick={handleDiscardDraft}
-                                className="btn btn-ghost rounded-xl"
-                            >
-                                Start Fresh
-                            </button>
-                            <button
-                                onClick={handleRestoreDraft}
-                                className="btn btn-primary rounded-xl"
-                            >
-                                Restore Draft
-                            </button>
-                        </div>
-                    </div>
-                    <form method="dialog" className="modal-backdrop">
-                        <button>close</button>
-                    </form>
-                </dialog>
-            )}
-
             {/* Leave Confirmation Modal */}
             {isMounted && (
                 <dialog
