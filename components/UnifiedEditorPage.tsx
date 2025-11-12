@@ -1,14 +1,12 @@
 'use client'
 
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { PencilIcon } from '@heroicons/react/24/outline'
 import Navbar from './Navbar'
 import MultiFileEditor from './MultiFileEditor'
 import SaveModal from './SaveModal'
 import ShareModal from './ShareModal'
-import ThemeSwitcher from './ThemeSwitcher'
 import Footer from './Footer'
-import Link from 'next/link'
-import { HomeIcon, ArrowUpTrayIcon, ClipboardDocumentIcon } from '@heroicons/react/24/outline'
 
 interface FileData {
     id: string
@@ -103,7 +101,6 @@ client.login(DISCORD_TOKEN);`,
     const metadataModalRef = useRef<HTMLInputElement>(null)
     const leaveModalRef = useRef<HTMLDialogElement>(null)
     const refreshModalRef = useRef<HTMLDialogElement>(null)
-    const [isEditorFullscreen, setIsEditorFullscreen] = useState(false)
 
     // Only initialize on client side to prevent hydration mismatch
     useEffect(() => {
@@ -283,90 +280,31 @@ client.login(DISCORD_TOKEN);`,
 
     return (
         <div className="flex flex-col h-screen bg-base-100">
-            {!isEditorFullscreen && (
-                <Navbar
-                    onSaveShare={() => setShowSaveModal(true)}
-                    isSaving={isSaving}
-                />
-            )}
+            <Navbar
+                onSaveShare={() => setShowSaveModal(true)}
+                onShowMetadata={() => setShowMetadataModal(true)}
+                isSaving={isSaving}
+            />
 
-            <main className="flex-1 overflow-y-auto flex flex-col m-1 sm:m-3 min-h-0">
-                <div className="flex-1 overflow-hidden rounded-2xl shadow-xl bg-base-100 flex flex-col min-h-0">
+            <main className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-hidden bg-base-100 flex flex-col">
                     {/* Content Container */}
-                    <div className="w-full px-2 sm:px-3 py-1 sm:py-2 flex-1 flex flex-col gap-1 sm:gap-4 overflow-hidden min-h-0">
-                        {/* Top Row: Action Buttons */}
-                        <div className="flex gap-1 sm:gap-2 flex-wrap items-center shrink-0">
-                            <ThemeSwitcher />
-                            <Link href="/" className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center">
-                                <HomeIcon className="w-4 h-4 mr-2" />
-                                <span className="hidden sm:inline">Home</span>
-                                <span className="sm:hidden">Home</span>
-                            </Link>
-                            <button
-                                onClick={() => setShowSaveModal(true)}
-                                disabled={isSaving}
-                                className="btn btn-xs sm:btn-sm btn-primary rounded-xl flex items-center gap-2"
-                                title="Save and share your project"
-                            >
-                                <ArrowUpTrayIcon className="w-4 h-4" />
-                                <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : 'Save & Share'}</span>
-                                <span className="sm:hidden">{isSaving ? '⏳' : 'Save'}</span>
-                            </button>
-                            <button
-                                onClick={() => setShowMetadataModal(true)}
-                                className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"
-                                title="Edit project metadata"
-                            >
-                                <ClipboardDocumentIcon className="w-4 h-4" />
-                                <span className="hidden sm:inline">Metadata</span>
-                                <span className="sm:hidden">Meta</span>
-                            </button>
-                        </div>
-
+                    <div className="w-full flex-1 flex flex-col overflow-hidden">
                         {/* Editor */}
                         <div className="flex-1 overflow-hidden rounded-xl border border-base-300 min-h-0 relative">
                             <MultiFileEditor
                                 initialFiles={files}
                                 onFilesChange={handleFilesChange}
                             />
-                            {/* Fullscreen toggle */}
-                            <button
-                                aria-label="Toggle fullscreen editor"
-                                onClick={() => setIsEditorFullscreen(true)}
-                                className="absolute top-3 right-3 btn btn-xs btn-ghost rounded-full text-2xl z-10"
-                                title="Open editor fullscreen"
-                            >
-                                ⤢
-                            </button>
                         </div>
                     </div>
                 </div>
 
-                {/* Footer - scrollable on mobile */}
-                {!isEditorFullscreen && <Footer />}
             </main>
 
-            {/* Fullscreen editor overlay */}
-            {isEditorFullscreen && (
-                <div className="fixed inset-0 z-50 bg-base-100 p-2 sm:p-6">
-                    <div className="flex flex-col h-full">
-                        <div className="flex items-center justify-end gap-2 mb-2">
-                            <button
-                                onClick={() => setIsEditorFullscreen(false)}
-                                className="btn btn-sm btn-ghost rounded-xl"
-                            >
-                                Close
-                            </button>
-                        </div>
-                        <div className="flex-1 overflow-hidden rounded-lg border border-base-300">
-                            <MultiFileEditor
-                                initialFiles={files}
-                                onFilesChange={handleFilesChange}
-                            />
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Footer */}
+            <Footer />
+
 
             {/* Modals */}
             <SaveModal
@@ -394,9 +332,18 @@ client.login(DISCORD_TOKEN);`,
                 className="modal-toggle"
             />
             <div className="modal">
-                <div className="modal-box rounded-2xl">
-                    <h3 className="font-bold text-lg mb-6">Project Metadata</h3>
-                    <form className="space-y-4">
+                <div className="modal-box w-full sm:max-w-xl max-h-[90vh] overflow-y-auto">
+                    <div className="flex items-center gap-3 mb-6">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/20">
+                            <PencilIcon className="w-6 h-6 text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-2xl text-base-content">Edit Metadata</h3>
+                            <p className="text-sm text-base-content/60">Update your project details</p>
+                        </div>
+                    </div>
+                    <form className="space-y-5">
+                        <div className="divider my-0"></div>
                         <div>
                             <label className="label">
                                 <span className="label-text font-semibold">Project Title</span>
@@ -406,7 +353,7 @@ client.login(DISCORD_TOKEN);`,
                                 value={projectTitle}
                                 onChange={(e) => setProjectTitle(e.target.value)}
                                 placeholder="My Awesome Project"
-                                className="input input-bordered w-full"
+                                className="input input-bordered w-full rounded-xl"
                             />
                         </div>
                         <div>
@@ -417,17 +364,24 @@ client.login(DISCORD_TOKEN);`,
                                 value={projectDescription}
                                 onChange={(e) => setProjectDescription(e.target.value)}
                                 placeholder="Describe your project..."
-                                className="textarea textarea-bordered w-full"
+                                className="textarea textarea-bordered w-full rounded-xl"
                                 rows={4}
                             />
                         </div>
-                        <div className="modal-action">
+                        <div className="modal-action gap-3">
                             <button
                                 type="button"
                                 onClick={() => setShowMetadataModal(false)}
-                                className="btn btn-ghost rounded-xl"
+                                className="btn btn-ghost rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
-                                Close
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setShowMetadataModal(false)}
+                                className="btn btn-primary rounded-xl"
+                            >
+                                Done
                             </button>
                         </div>
                     </form>

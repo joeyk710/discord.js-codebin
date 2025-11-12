@@ -3,7 +3,7 @@ export default function Footer() {
     <>
       {/* Mobile collapsible footer */}
       <div className="md:hidden">
-        <div className="collapse collapse-arrow border border-base-300 bg-base-100">
+        <div className="collapse collapse-arrow bg-base-100">
           <input type="checkbox" defaultChecked={false} />
           <div className="collapse-title flex items-center justify-between px-4 py-3 font-semibold">
             <div className="flex items-center gap-2">
@@ -81,7 +81,7 @@ export default function Footer() {
       </div>
 
       {/* Desktop footer */}
-      <footer className="hidden md:flex footer footer-horizontal bg-base-100 text-base-content border-t border-base-300 p-10 flex-shrink-0 gap-20">
+      <footer className="hidden md:flex footer footer-horizontal bg-base-100 text-base-content p-10 flex-shrink-0 gap-20">
         {/* Logo and branding section */}
         <aside>
           <div className="flex items-center gap-2 mb-3">
