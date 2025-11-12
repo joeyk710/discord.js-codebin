@@ -91,6 +91,7 @@ client.login(DISCORD_TOKEN);`,
     const restoreDraftDialogRef = useRef<HTMLDialogElement>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [shareUrl, setShareUrl] = useState('')
+    const [lastSavedIsPublic, setLastSavedIsPublic] = useState<boolean | undefined>(undefined)
     const [expirationDays, setExpirationDays] = useState<number | null>(null)
     const [showSaveModal, setShowSaveModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
@@ -258,6 +259,9 @@ client.login(DISCORD_TOKEN);`,
                     localStorage.setItem('ownedProjects', JSON.stringify(ownedProjects))
                 }
 
+                // Remember whether the saved project was public so the ShareModal can display visibility
+                setLastSavedIsPublic(!!metadata.isPublic)
+
                 const url = data.shortUrl || `${window.location.origin}/project/${data.id}`
                 setShareUrl(url)
 
@@ -320,6 +324,7 @@ client.login(DISCORD_TOKEN);`,
                 onClose={() => setShowShareModal(false)}
                 title={projectTitle}
                 description={projectDescription}
+                isPublic={lastSavedIsPublic}
                 expirationDays={expirationDays}
                 onExpirationChange={setExpirationDays}
             />

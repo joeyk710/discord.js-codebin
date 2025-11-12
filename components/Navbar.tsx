@@ -35,14 +35,9 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: Navbar
                 </Link>
             </div>
 
-            <div className="navbar-center gap-3 sm:gap-4 ml-6 sm:ml-10 lg:ml-16">
+            <div className="navbar-center gap-3 sm:gap-4 ml-6 sm:ml-10 lg:ml-6">
                 <ThemeSwitcher />
-                {!isHomePage && (
-                    <Link href="/" className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center">
-                        <HomeIcon className="w-4 h-4 mr-2" />
-                        <span className="hidden sm:inline">Home</span>
-                    </Link>
-                )}
+                {/* Home button removed - branding links to home already */}
                 {showEditorButtons && (
                     <>
                         <button

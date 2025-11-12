@@ -199,7 +199,7 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
         <div className="alert alert-error max-w-md">
           <span>{error || 'Paste not found'}</span>
         </div>
-        <Link href="/" className="btn rounded-xl btn-primary">
+        <Link href="/editor" className="btn rounded-xl btn-primary">
           ← Back to Editor
         </Link>
       </div>
@@ -213,7 +213,7 @@ export default function PastePage({ params }: { params: Promise<{ id: string }> 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Back Button and Title */}
           <div className="flex items-start gap-2">
-            <Link href="/" className="btn rounded-xl btn-ghost btn-sm mt-1 flex-shrink-0">
+            <Link href="/editor" className="btn rounded-xl btn-ghost btn-sm mt-1 flex-shrink-0">
               ← Back
             </Link>
             <div>
