@@ -6,6 +6,7 @@
 import { ModularAnalyzer } from './ModularAnalyzer'
 import { IntentsDetector } from './detectors/IntentsDetector'
 import { ErrorDetector } from './detectors/ErrorDetector'
+import { BestPracticesDetector } from './detectors/BestPracticesDetector'
 import type { Suggestion } from './types'
 
 // Export types
@@ -17,6 +18,7 @@ const analyzer = new ModularAnalyzer()
 // Register all detectors
 analyzer.addDetector(new IntentsDetector())
 analyzer.addDetector(new ErrorDetector())
+analyzer.addDetector(new BestPracticesDetector())
 
 /**
  * Main analysis function - analyze discord.js code
@@ -32,4 +34,4 @@ export default analyzeDiscordJsCode
 /**
  * Export the analyzer for advanced usage
  */
-export { ModularAnalyzer, IntentsDetector, ErrorDetector }
+export { ModularAnalyzer, IntentsDetector, ErrorDetector, BestPracticesDetector }

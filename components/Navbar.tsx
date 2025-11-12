@@ -14,6 +14,8 @@ interface NavbarProps {
 export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: NavbarProps) {
     const pathname = usePathname()
     const isHomePage = pathname === '/'
+    const isViewPage = pathname?.startsWith('/paste/') || pathname?.startsWith('/project/')
+    const showEditorButtons = !isHomePage && !isViewPage
 
     return (
         <div className="navbar bg-base-100 flex-shrink-0 shadow-none gap-4 px-2 sm:px-6 py-3 sm:py-4">
@@ -36,11 +38,13 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: Navbar
             <div className="navbar-center gap-3 sm:gap-4 ml-6 sm:ml-10 lg:ml-16">
                 <ThemeSwitcher />
                 {!isHomePage && (
+                    <Link href="/" className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center">
+                        <HomeIcon className="w-4 h-4 mr-2" />
+                        <span className="hidden sm:inline">Home</span>
+                    </Link>
+                )}
+                {showEditorButtons && (
                     <>
-                        <Link href="/" className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center">
-                            <HomeIcon className="w-4 h-4 mr-2" />
-                            <span className="hidden sm:inline">Home</span>
-                        </Link>
                         <button
                             onClick={onShowMetadata}
                             className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"

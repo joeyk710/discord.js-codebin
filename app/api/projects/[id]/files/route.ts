@@ -89,6 +89,56 @@ export async function POST(
     }
 }
 
+export async function PUT(
+    request: NextRequest,
+    { params }: { params: Promise<RouteParams> }
+) {
+    try {
+        const { id } = await params
+        const { files } = await request.json()
+
+        if (!files || !Array.isArray(files)) {
+            return NextResponse.json(
+                { error: 'Files array is required' },
+                { status: 400 }
+            )
+        }
+
+        // Verify project exists
+        const project = await prisma.project.findUnique({
+            where: { id },
+        })
+
+        if (!project) {
+            return NextResponse.json(
+                { error: 'Project not found' },
+                { status: 404 }
+            )
+        }
+
+        // Update project with all files
+        const updatedProject = await prisma.project.update({
+            where: { id },
+            data: {
+                files: files as any,
+                updatedAt: new Date(),
+            },
+        })
+
+        return NextResponse.json({
+            success: true,
+            message: 'Files updated successfully',
+        })
+    } catch (error) {
+        console.error('Error updating files:', error)
+        const errorMessage = error instanceof Error ? error.message : String(error)
+        return NextResponse.json(
+            { error: 'Failed to update files', details: errorMessage },
+            { status: 500 }
+        )
+    }
+}
+
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<RouteParams> }

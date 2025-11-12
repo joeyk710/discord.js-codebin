@@ -40,7 +40,15 @@ export default function ProjectViewerPage() {
     const [error, setError] = useState<string | null>(null)
     const [isDeleting, setIsDeleting] = useState(false)
     const [showDeleteModal, setShowDeleteModal] = useState(false)
+    const [isEditMode, setIsEditMode] = useState(false)
+    const [editedFiles, setEditedFiles] = useState<Array<any>>([])
+    const [isSaving, setIsSaving] = useState(false)
+    const [showSuccessModal, setShowSuccessModal] = useState(false)
+    const [showErrorModal, setShowErrorModal] = useState(false)
+    const [errorMessage, setErrorMessage] = useState('')
     const deleteModalRef = useRef<HTMLInputElement>(null)
+    const successModalRef = useRef<HTMLDialogElement>(null)
+    const errorModalRef = useRef<HTMLDialogElement>(null)
 
     useEffect(() => {
         async function loadProject() {
@@ -68,6 +76,20 @@ export default function ProjectViewerPage() {
             deleteModalRef.current.checked = showDeleteModal
         }
     }, [showDeleteModal])
+
+    // Control success modal
+    useEffect(() => {
+        if (showSuccessModal && successModalRef.current) {
+            successModalRef.current.showModal()
+        }
+    }, [showSuccessModal])
+
+    // Control error modal
+    useEffect(() => {
+        if (showErrorModal && errorModalRef.current) {
+            errorModalRef.current.showModal()
+        }
+    }, [showErrorModal])
 
     const handleDeleteProject = async () => {
         try {
@@ -98,6 +120,42 @@ export default function ProjectViewerPage() {
         if (deleteModalRef.current) {
             deleteModalRef.current.checked = false
         }
+    }
+
+    const handleUpdateProject = async () => {
+        try {
+            setIsSaving(true)
+
+            // Update all files in the project
+            const response = await fetch(`/api/projects/${id}/files`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ files: editedFiles }),
+            })
+
+            if (!response.ok) {
+                throw new Error('Failed to update project')
+            }
+
+            // Reload project data
+            const updatedResponse = await fetch(`/api/projects?id=${id}`)
+            if (updatedResponse.ok) {
+                const data = await updatedResponse.json()
+                setProject(data)
+            }
+
+            setIsEditMode(false)
+            setShowSuccessModal(true)
+        } catch (err) {
+            setErrorMessage(err instanceof Error ? err.message : 'Failed to update project')
+            setShowErrorModal(true)
+        } finally {
+            setIsSaving(false)
+        }
+    }
+
+    const handleFilesChange = (files: Array<any>) => {
+        setEditedFiles(files)
     }
 
     if (loading) {
@@ -155,24 +213,67 @@ export default function ProjectViewerPage() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0">
-                                <button
-                                    onClick={() => setShowDeleteModal(true)}
-                                    disabled={isDeleting}
-                                    className="btn btn-sm btn-outline btn-error rounded-xl"
-                                    title="Delete project"
-                                >
-                                    {isDeleting ? (
-                                        <>
-                                            <span className="loading loading-spinner loading-sm"></span>
-                                            Deleting...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <span className="hidden sm:inline">🗑️ Delete</span>
-                                            <span className="sm:hidden">🗑️</span>
-                                        </>
-                                    )}
-                                </button>
+                                {!isEditMode ? (
+                                    <>
+                                        <button
+                                            onClick={() => {
+                                                setIsEditMode(true)
+                                                setEditedFiles(project.projectFiles || project.files || [])
+                                            }}
+                                            className="btn btn-sm btn-primary rounded-xl"
+                                            title="Edit project"
+                                        >
+                                            <span className="hidden sm:inline">✏️ Edit</span>
+                                            <span className="sm:hidden">✏️</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setShowDeleteModal(true)}
+                                            disabled={isDeleting}
+                                            className="btn btn-sm btn-outline btn-error rounded-xl"
+                                            title="Delete project"
+                                        >
+                                            {isDeleting ? (
+                                                <>
+                                                    <span className="loading loading-spinner loading-sm"></span>
+                                                    Deleting...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="hidden sm:inline">🗑️ Delete</span>
+                                                    <span className="sm:hidden">🗑️</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button
+                                            onClick={() => setIsEditMode(false)}
+                                            disabled={isSaving}
+                                            className="btn btn-sm btn-ghost rounded-xl"
+                                        >
+                                            Cancel
+                                        </button>
+                                        <button
+                                            onClick={handleUpdateProject}
+                                            disabled={isSaving}
+                                            className="btn btn-sm btn-primary rounded-xl"
+                                            title="Update and save project"
+                                        >
+                                            {isSaving ? (
+                                                <>
+                                                    <span className="loading loading-spinner loading-sm"></span>
+                                                    Saving...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span className="hidden sm:inline">💾 Update & Save</span>
+                                                    <span className="sm:hidden">💾</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    </>
+                                )}
                                 <ThemeSwitcher />
                             </div>
                         </div>
@@ -181,8 +282,9 @@ export default function ProjectViewerPage() {
                     {/* Editor */}
                     <div className="flex-1 overflow-hidden">
                         <MultiFileEditor
-                            initialFiles={project.projectFiles || project.files || []}
-                            isReadOnly={true}
+                            initialFiles={isEditMode ? editedFiles : (project.projectFiles || project.files || [])}
+                            isReadOnly={!isEditMode}
+                            onFilesChange={isEditMode ? handleFilesChange : undefined}
                         />
                     </div>
                 </div>
@@ -232,6 +334,72 @@ export default function ProjectViewerPage() {
                     onClick={handleCancelDelete}
                 />
             </div>
+
+            {/* Success Modal */}
+            <dialog ref={successModalRef} className="modal">
+                <div className="modal-box w-full sm:max-w-md">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-success/20">
+                            <span className="text-2xl">✓</span>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-xl text-base-content">Success!</h3>
+                            <p className="text-sm text-base-content/60">Your project has been updated</p>
+                        </div>
+                    </div>
+                    <div className="divider my-2"></div>
+                    <p className="text-base-content/70 mb-4">
+                        Your changes have been saved successfully. The updated code is now available at the same share link.
+                    </p>
+                    <div className="modal-action">
+                        <button
+                            onClick={() => {
+                                setShowSuccessModal(false)
+                                successModalRef.current?.close()
+                            }}
+                            className="btn btn-primary rounded-xl w-full"
+                        >
+                            Done
+                        </button>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button onClick={() => setShowSuccessModal(false)}>close</button>
+                </form>
+            </dialog>
+
+            {/* Error Modal */}
+            <dialog ref={errorModalRef} className="modal">
+                <div className="modal-box w-full sm:max-w-md">
+                    <div className="flex items-center gap-3 mb-4">
+                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-error/20">
+                            <span className="text-2xl">✕</span>
+                        </div>
+                        <div>
+                            <h3 className="font-bold text-xl text-base-content">Error</h3>
+                            <p className="text-sm text-base-content/60">Failed to update project</p>
+                        </div>
+                    </div>
+                    <div className="divider my-2"></div>
+                    <p className="text-base-content/70 mb-4">
+                        {errorMessage}
+                    </p>
+                    <div className="modal-action">
+                        <button
+                            onClick={() => {
+                                setShowErrorModal(false)
+                                errorModalRef.current?.close()
+                            }}
+                            className="btn btn-ghost rounded-xl w-full"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button onClick={() => setShowErrorModal(false)}>close</button>
+                </form>
+            </dialog>
         </div>
     )
 }

@@ -46,6 +46,17 @@ export default function MultiFileEditor({
         initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language }))
     )
     const [activeFile, setActiveFile] = useState<string>(initialFiles[0]?.path || '')
+
+    // Helper to update files and notify parent
+    const updateFiles = useCallback((newFiles: FileData[] | ((prev: FileData[]) => FileData[])) => {
+        setFiles(prev => {
+            const updated = typeof newFiles === 'function' ? newFiles(prev) : newFiles
+            if (onFilesChange) {
+                onFilesChange(updated)
+            }
+            return updated
+        })
+    }, [onFilesChange])
     const [fileTree, setFileTree] = useState<FileNode[]>([])
     const [showNewFileDialog, setShowNewFileDialog] = useState(false)
     const [newFilePath, setNewFilePath] = useState('')
@@ -231,7 +242,7 @@ export default function MultiFileEditor({
         (newCode: string) => {
             if (isReadOnly) return
 
-            setFiles(files.map(f =>
+            updateFiles(files.map(f =>
                 f.path === activeFile
                     ? { ...f, code: newCode }
                     : f
@@ -244,7 +255,7 @@ export default function MultiFileEditor({
                     : f
             ))
         },
-        [files, activeFile, openFiles, isReadOnly]
+        [files, activeFile, openFiles, isReadOnly, updateFiles]
     )
 
     const handleAddFile = useCallback(() => {
@@ -325,7 +336,7 @@ export default function MultiFileEditor({
                 language: inferredLang,
             }
 
-            setFiles(prev => [...prev, newFile])
+            updateFiles(prev => [...prev, newFile])
             handleFileSelect(newFile.path)
             handleCloseNewFileModal()
             addToast(`Created ${fileName}`, 'success', 2000)
@@ -359,7 +370,7 @@ export default function MultiFileEditor({
         if (!fileToDelete) return
 
         const fileName = fileToDelete.split('/').pop() || fileToDelete
-        setFiles(files.filter(f => f.path !== fileToDelete))
+        updateFiles(files.filter(f => f.path !== fileToDelete))
         handleTabClose(fileToDelete)
         setFileToDelete(null)
         setShowDeleteConfirmModal(false)
@@ -379,7 +390,7 @@ export default function MultiFileEditor({
 
     const handleRenameFile = useCallback(
         (oldPath: string, newPath: string) => {
-            setFiles(files.map(f =>
+            updateFiles(files.map(f =>
                 f.path === oldPath
                     ? { ...f, path: newPath, name: newPath.split('/').pop() || newPath }
                     : f
@@ -415,7 +426,7 @@ export default function MultiFileEditor({
                     }
                     : f
             )
-            setFiles(updatedFiles)
+            updateFiles(updatedFiles)
 
             // Update active file path if it changed
             const updatedFile = updatedFiles.find(f => f.id === currentFile.id)
