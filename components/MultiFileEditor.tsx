@@ -7,7 +7,7 @@ import FileTabs from './FileTabs'
 import FileTree from './FileTree'
 import SuggestionsModal from './SuggestionsModal'
 import LanguageSelectorModal from './LanguageSelectorModal'
-import { getMaterialIconFilename } from '@/lib/fileTree'
+import { getMaterialIconFilename, inferLanguageFromFilename } from '@/lib/fileTree'
 import { buildFileTree, FileNode } from '@/lib/fileTree'
 import { analyzeDiscordJsCode, type Suggestion } from '@/lib/analyzer'
 
@@ -47,6 +47,7 @@ export default function MultiFileEditor({
     const [fileTree, setFileTree] = useState<FileNode[]>([])
     const [showNewFileDialog, setShowNewFileDialog] = useState(false)
     const [newFilePath, setNewFilePath] = useState('')
+    const [newFileLanguage, setNewFileLanguage] = useState<string>('javascript')
     const [suggestions, setSuggestions] = useState<Suggestion[]>([])
     const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
     const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
@@ -254,37 +255,73 @@ export default function MultiFileEditor({
         return fileName.includes('.')
     }
 
+    const doesFileExist = (path: string): boolean => {
+        const normalized = path.trim()
+        return files.some(f => f.path.toLowerCase() === normalized.toLowerCase())
+    }
+
+    const doesFileExistWithLang = (path: string, language?: string): boolean => {
+        // Normalize final path: if path already has extension, use it; otherwise add extension for language
+        const hasExt = (p: string) => p.split('/').pop()?.includes('.')
+        const normalized = hasExt(path) ? path.trim() : getPathWithExtension(path.trim(), language || 'javascript')
+        return files.some(f => f.path.toLowerCase() === normalized.toLowerCase())
+    }
+
+    const generateUniquePath = (basePath: string, language?: string): string => {
+        const dirIndex = basePath.lastIndexOf('/')
+        const dir = dirIndex > -1 ? basePath.substring(0, dirIndex + 1) : ''
+        const filename = dirIndex > -1 ? basePath.substring(dirIndex + 1) : basePath
+        const hasDot = filename.includes('.')
+        const nameWithoutExt = hasDot ? filename.substring(0, filename.lastIndexOf('.')) : filename
+        const ext = hasDot ? filename.substring(filename.lastIndexOf('.') + 1) : (getExtensionForLanguage(language || 'javascript') || '')
+
+        let candidate = ext ? `${dir}${nameWithoutExt}.${ext}` : `${dir}${nameWithoutExt}`
+        let i = 1
+        while (files.some(f => f.path.toLowerCase() === candidate.toLowerCase())) {
+            candidate = ext ? `${dir}${nameWithoutExt}(${i}).${ext}` : `${dir}${nameWithoutExt}(${i})`
+            i++
+        }
+        return candidate
+    }
+
     const handleCreateNewFile = useCallback(
         (e: React.FormEvent) => {
             e.preventDefault()
 
-            // Validate path is not empty
-            if (!newFilePath.trim()) {
-                alert('File path is required')
-                return
+            if (!newFilePath.trim()) return
+
+            const userPath = newFilePath.trim()
+            const userHasExt = (userPath.split('/').pop() || '').includes('.')
+            const pathWithExt = userHasExt ? userPath : getPathWithExtension(userPath, newFileLanguage)
+
+            const uniquePath = generateUniquePath(pathWithExt, newFileLanguage)
+
+            if (uniquePath.toLowerCase() !== pathWithExt.toLowerCase()) {
+                // Inform user about rename
+                setNewFilePath(uniquePath)
+                // show a brief alert that auto-rename occurred
+                // (we could instead show a non-blocking toast)
+                alert(`A file with that name exists. Creating as ${uniquePath}`)
             }
 
-            // Validate file has an extension
-            if (!isValidFilePath(newFilePath)) {
-                alert('File name must include an extension (e.g., .js, .ts, .json)')
-                return
-            }
+            const fileName = uniquePath.split('/').pop() || uniquePath
+            const inferredLang = inferLanguageFromFilename(fileName) || newFileLanguage || 'javascript'
 
-            const fileName = newFilePath.split('/').pop() || newFilePath
             const newFile: FileData = {
                 id: `file-${Date.now()}`,
-                path: newFilePath.trim(),
+                path: uniquePath,
                 name: fileName,
                 code: '',
-                language: 'javascript',
+                language: inferredLang,
             }
 
-            setFiles([...files, newFile])
+            setFiles(prev => [...prev, newFile])
             handleFileSelect(newFile.path)
             setNewFilePath('')
+            setNewFileLanguage('javascript')
             handleCloseNewFileModal()
         },
-        [files, newFilePath, handleFileSelect]
+        [files, newFilePath, newFileLanguage, handleFileSelect]
     )
 
     const handleDeleteFile = useCallback(
@@ -485,6 +522,7 @@ export default function MultiFileEditor({
                             onDeleteFile={handleDeleteFile}
                             onRenameFile={handleRenameFile}
                             isReadOnly={isReadOnly}
+                            openFiles={openFiles.map(f => f.path)}
                         />
                     </div>
                 </div>
@@ -502,6 +540,7 @@ export default function MultiFileEditor({
                         onDeleteFile={handleDeleteFile}
                         onRenameFile={handleRenameFile}
                         isReadOnly={isReadOnly}
+                        openFiles={openFiles.map(f => f.path)}
                     />
                 </div>
 
@@ -592,18 +631,42 @@ export default function MultiFileEditor({
                             <input
                                 ref={newFileInputRef}
                                 type="text"
-                                placeholder="e.g., src/index.ts"
+                                placeholder="e.g., src/index or src/index.ts"
                                 value={newFilePath}
                                 onChange={(e) => setNewFilePath(e.target.value)}
                                 required
-                                className={`input input-bordered w-full ${newFilePath.trim() && !isValidFilePath(newFilePath) ? 'input-error' : ''
-                                    }`}
+                                className="input input-bordered w-full"
                             />
-                            {newFilePath.trim() && !isValidFilePath(newFilePath) && (
-                                <p className="text-error text-sm mt-2">
-                                    File name must include an extension (e.g., .js, .ts, .json)
+                            <div className="flex items-center gap-3 mt-3">
+                                <div className="flex-1">
+                                    <label className="label">
+                                        <span className="label-text">Language</span>
+                                    </label>
+                                    <select
+                                        value={newFileLanguage}
+                                        onChange={(e) => setNewFileLanguage(e.target.value)}
+                                        className="select select-bordered w-full"
+                                    >
+                                        <option value="javascript">JavaScript</option>
+                                        <option value="typescript">TypeScript</option>
+                                        <option value="json">JSON</option>
+                                        <option value="python">Python</option>
+                                        <option value="html">HTML</option>
+                                        <option value="css">CSS</option>
+                                        <option value="markdown">Markdown</option>
+                                    </select>
+                                </div>
+                                <div className="text-xs text-base-content/60">
+                                    <p>If you omit an extension, <span className="font-mono">.{getExtensionForLanguage(newFileLanguage)}</span> will be appended.</p>
+                                </div>
+                            </div>
+
+                            {newFilePath.trim() && doesFileExistWithLang(newFilePath, newFileLanguage) && (
+                                <p className="text-warning text-sm mt-2">
+                                    A file with that path (after applying the selected language extension) already exists.
                                 </p>
                             )}
+
                             <p className="text-xs text-base-content/50 mt-2">
                                 Use forward slashes (/) for folders
                             </p>
@@ -618,7 +681,7 @@ export default function MultiFileEditor({
                             </button>
                             <button
                                 type="submit"
-                                disabled={!isValidFilePath(newFilePath)}
+                                disabled={newFilePath.trim() === '' || doesFileExistWithLang(newFilePath, newFileLanguage)}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Create

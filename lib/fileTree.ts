@@ -191,3 +191,58 @@ export function getMaterialIconFilename(language: string): string | null {
 
     return map[lang] ?? null
 }
+
+// Infer language key from a filename's extension. Returns a language string
+// that matches the keys used in getMaterialIconFilename (e.g., 'javascript', 'typescript')
+export function inferLanguageFromFilename(filename: string): string | null {
+    if (!filename) return null
+    const name = filename.toLowerCase()
+    const lastDot = name.lastIndexOf('.')
+    if (lastDot === -1) return null
+    const ext = name.substring(lastDot + 1)
+
+    const extMap: { [key: string]: string } = {
+        'js': 'javascript',
+        'cjs': 'javascript',
+        'mjs': 'javascript',
+        'ts': 'typescript',
+        'tsx': 'typescript',
+        'jsx': 'javascript',
+        'json': 'json',
+        'py': 'python',
+        'java': 'java',
+        'cpp': 'cpp',
+        'cc': 'cpp',
+        'c': 'c',
+        'cs': 'csharp',
+        'php': 'php',
+        'rb': 'ruby',
+        'go': 'go',
+        'rs': 'rust',
+        'swift': 'swift',
+        'kt': 'kotlin',
+        'kts': 'kotlin',
+        'scala': 'scala',
+        'r': 'r',
+        'm': 'matlab',
+        'html': 'html',
+        'htm': 'html',
+        'css': 'css',
+        'scss': 'sass',
+        'sass': 'sass',
+        'less': 'less',
+        'md': 'markdown',
+        'markdown': 'markdown',
+        'xml': 'xml',
+        'yml': 'yaml',
+        'yaml': 'yaml',
+        'toml': 'toml',
+        'sql': 'sql',
+        'graphql': 'graphql',
+        'dockerfile': 'docker',
+        'docker': 'docker',
+        'makefile': 'makefile',
+    }
+
+    return extMap[ext] ?? null
+}

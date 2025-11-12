@@ -2,6 +2,7 @@
 
 import React, { useState, useCallback } from 'react'
 import { FileNode, getLanguageIcon, getMaterialIconFilename } from '@/lib/fileTree'
+import { inferLanguageFromFilename } from '@/lib/fileTree'
 
 const MATERIAL_ICON_LANGS = new Set([
     'javascript', 'typescript', 'python', 'java', 'cpp', 'csharp', 'php', 'ruby', 'go', 'rust', 'swift', 'kotlin', 'scala', 'r', 'matlab', 'objective-c', 'groovy', 'clojure', 'haskell', 'elixir', 'erlang', 'ocaml', 'scheme', 'lisp', 'lua', 'perl', 'powershell', 'pascal', 'cobol', 'fortran', 'ada', 'prolog', 'dart', 'solidity', 'webassembly', 'html', 'css', 'sass', 'less', 'json', 'xml', 'yaml', 'toml', 'markdown', 'graphql', 'docker', 'makefile'
@@ -15,6 +16,7 @@ interface FileTreeProps {
     onDeleteFile?: (path: string) => void
     onRenameFile?: (oldPath: string, newPath: string) => void
     isReadOnly?: boolean
+    openFiles?: string[]
 }
 
 function FileTreeNode({
@@ -26,6 +28,7 @@ function FileTreeNode({
     onDeleteFile,
     onRenameFile,
     isReadOnly,
+    openFiles,
 }: {
     node: FileNode
     level: number
@@ -35,12 +38,14 @@ function FileTreeNode({
     onDeleteFile?: (path: string) => void
     onRenameFile?: (oldPath: string, newPath: string) => void
     isReadOnly?: boolean
+    openFiles?: string[]
 }) {
     const [expanded, setExpanded] = useState(level === 0)
     const [isRenaming, setIsRenaming] = useState(false)
     const [newName, setNewName] = useState(node.name)
     const isFile = node.type === 'file'
     const isActive = activeFile === node.path
+    const isOpen = !!openFiles?.includes(node.path)
 
     const handleRename = () => {
         if (newName.trim() && newName !== node.name) {
@@ -58,12 +63,17 @@ function FileTreeNode({
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg" style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}>
                 {/* Icon left of editable filename */}
                 {(() => {
-                    const lang = (node.language || 'javascript').toLowerCase()
+                    // Prefer explicit node.language, otherwise infer from filename extension
+                    const explicit = node.language ? node.language.toLowerCase() : null
+                    const inferred = inferLanguageFromFilename(node.name)
+                    const lang = explicit || inferred || 'javascript'
                     const mapped = lang === 'c++' || lang === 'cpp' ? 'cpp' : lang === 'c#' || lang === 'csharp' ? 'csharp' : lang === 'objectivec' ? 'objective-c' : lang === 'dockerfile' ? 'docker' : lang
                     if (MATERIAL_ICON_LANGS.has(mapped)) {
-                        return <img src={`/material-icons/${mapped}.svg`} alt={node.language} className="w-4 h-4" />
+                        return (
+                            <img src={`/material-icons/${mapped}.svg`} alt={lang} className="w-4 h-4" />
+                        )
                     }
-                    return <span className="w-4 text-center">{getLanguageIcon(node.language || 'javascript')}</span>
+                    return <span className="w-4 text-center">{getLanguageIcon(lang)}</span>
                 })()}
                 <input
                     type="text"
@@ -89,10 +99,11 @@ function FileTreeNode({
         <div key={node.path}>
             <div
                 className={`
-          flex items-center gap-2 px-3 py-2 rounded-lg transition-all
-          ${isFile ? 'cursor-pointer hover:bg-base-300' : 'hover:bg-base-200'}
-          ${isActive && isFile ? 'bg-primary text-primary-content font-semibold shadow-md' : ''}
-        `}
+                    flex items-center gap-2 px-3 py-2 rounded-lg transition-all
+                    ${isFile ? 'cursor-pointer hover:bg-base-300' : 'hover:bg-base-200'}
+                    ${isActive && isFile ? 'bg-primary text-primary-content font-semibold shadow-md' : ''}
+                    ${isOpen && !isActive ? 'opacity-80 bg-base-200 text-base-content/70' : ''}
+                `}
                 style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
                 onClick={() => isFile && onFileSelect(node.path)}
             >
@@ -112,15 +123,17 @@ function FileTreeNode({
                 {isFile && (
                     <div className="mr-2">
                         {(() => {
-                            const lang = (node.language || 'javascript').toLowerCase()
+                            const explicit = node.language ? node.language.toLowerCase() : null
+                            const inferred = inferLanguageFromFilename(node.name)
+                            const lang = explicit || inferred || 'javascript'
                             const mapped = lang === 'c++' || lang === 'cpp' ? 'cpp' : lang === 'c#' || lang === 'csharp' ? 'csharp' : lang === 'objectivec' ? 'objective-c' : lang === 'dockerfile' ? 'docker' : lang
                             if (MATERIAL_ICON_LANGS.has(mapped)) {
                                 return (
-                                    <img src={`/material-icons/${mapped}.svg`} alt={node.language} className="w-4 h-4" title={node.language} />
+                                    <img src={`/material-icons/${mapped}.svg`} alt={lang} className="w-4 h-4" title={lang} />
                                 )
                             }
                             return (
-                                <span className="w-4 text-center" title={node.language}>{getLanguageIcon(node.language || 'javascript')}</span>
+                                <span className="w-4 text-center" title={lang}>{getLanguageIcon(lang)}</span>
                             )
                         })()}
                     </div>
@@ -157,7 +170,7 @@ function FileTreeNode({
             </div>
 
             {!isFile && expanded && node.children && (
-                <div>
+                <div className="space-y-1">
                     {node.children.map(child => (
                         <FileTreeNode
                             key={child.path}
@@ -169,6 +182,7 @@ function FileTreeNode({
                             onDeleteFile={onDeleteFile}
                             onRenameFile={onRenameFile}
                             isReadOnly={isReadOnly}
+                            openFiles={openFiles}
                         />
                     ))}
                 </div>
@@ -185,6 +199,7 @@ export default function FileTree({
     onDeleteFile,
     onRenameFile,
     isReadOnly = false,
+    openFiles = [],
 }: FileTreeProps) {
     return (
         <div className="flex flex-col h-full bg-base-100 border-r border-base-300">
@@ -200,22 +215,24 @@ export default function FileTree({
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2">
+            <div className="flex-1 overflow-y-auto p-2 space-y-2">
                 {files.length === 0 ? (
                     <p className="text-xs text-base-content/50 p-4">No files</p>
                 ) : (
                     files.map(node => (
-                        <FileTreeNode
-                            key={node.path}
-                            node={node}
-                            level={0}
-                            activeFile={activeFile}
-                            onFileSelect={onFileSelect}
-                            onAddFile={onAddFile}
-                            onDeleteFile={onDeleteFile}
-                            onRenameFile={onRenameFile}
-                            isReadOnly={isReadOnly}
-                        />
+                        <div key={node.path}>
+                            <FileTreeNode
+                                node={node}
+                                level={0}
+                                activeFile={activeFile}
+                                onFileSelect={onFileSelect}
+                                onAddFile={onAddFile}
+                                onDeleteFile={onDeleteFile}
+                                onRenameFile={onRenameFile}
+                                isReadOnly={isReadOnly}
+                                openFiles={openFiles}
+                            />
+                        </div>
                     ))
                 )}
             </div>
