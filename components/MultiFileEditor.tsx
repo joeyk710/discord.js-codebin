@@ -384,9 +384,18 @@ export default function MultiFileEditor({
 
     const handleRenameFile = useCallback(
         (oldPath: string, newPath: string) => {
+            // Infer language from new filename extension
+            const newName = newPath.split('/').pop() || newPath
+            const inferredLang = inferLanguageFromFilename(newName) || undefined
+
             updateFiles(files.map(f =>
                 f.path === oldPath
-                    ? { ...f, path: newPath, name: newPath.split('/').pop() || newPath }
+                    ? {
+                        ...f,
+                        path: newPath,
+                        name: newName,
+                        language: inferredLang ?? f.language,
+                    }
                     : f
             ))
 
@@ -395,10 +404,10 @@ export default function MultiFileEditor({
                 setActiveFile(newPath)
             }
 
-            // Update open files
+            // Update open files (also carry language change)
             setOpenFiles(openFiles.map(f =>
                 f.path === oldPath
-                    ? { ...f, path: newPath, name: newPath.split('/').pop() || newPath }
+                    ? { ...f, path: newPath, name: newName, language: inferredLang ?? f.language }
                     : f
             ))
         },
