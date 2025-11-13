@@ -522,7 +522,7 @@ export default function MultiFileEditor({
                                         </button>
                                         <button
                                             onClick={() => languageModalRef.current?.showModal()}
-                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 min-w-[44px] hover:btn-primary transition-colors"
+                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 sm:min-w-[44px] hover:btn-primary transition-colors"
                                             aria-label={`Select language (${currentFile.language})`}
                                             disabled={isReadOnly}
                                         >
@@ -544,7 +544,7 @@ export default function MultiFileEditor({
                                             })()}
 
                                             <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
-                                            <span className="sm:hidden ml-1">{formatLanguageDisplay(currentFile.language)}</span>
+                                            <span className="sm:hidden ml-1 whitespace-nowrap">{formatLanguageDisplay(currentFile.language)}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -636,7 +636,7 @@ export default function MultiFileEditor({
                                     </button>
                                     <button
                                         onClick={() => languageModalRef.current?.showModal()}
-                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 min-w-[44px] hover:btn-primary transition-colors"
+                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 sm:min-w-[44px] hover:btn-primary transition-colors"
                                         aria-label={`Select language (${currentFile.language})`}
                                         disabled={isReadOnly}
                                     >
@@ -657,6 +657,7 @@ export default function MultiFileEditor({
                                         })()}
 
                                         <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
+                                        <span className="sm:hidden whitespace-nowrap">{formatLanguageDisplay(currentFile.language)}</span>
                                     </button>
                                 </div>
                             </div>
