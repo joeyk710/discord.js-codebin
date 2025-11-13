@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: 'discord.js Code Bin',
     description: 'Write and share discord.js code with intelligent suggestions',
-    t: ['/djs.png'],
+    images: ['/djs.png'],
     url: 'https://discord-js-codebin.vercel.app',
     type: 'website',
   },
