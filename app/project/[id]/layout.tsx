@@ -1,13 +1,11 @@
 import { Metadata } from 'next'
 
-interface PasteData {
+interface ProjectData {
     id: string
-    code: string
     title: string
-    description: string
-    language: string
+    description: string | null
+    files?: any
     createdAt: string
-    expiresAt: string
     views: number
     isPublic: boolean
 }
@@ -21,18 +19,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         const { id } = await params
         const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://discord-js-codebin.vercel.app'
 
-        const response = await fetch(`${baseUrl}/api/paste?id=${id}`)
+        const response = await fetch(`${baseUrl}/api/projects?id=${id}`, {
+            next: { revalidate: 60 } // Cache for 60 seconds
+        })
         if (!response.ok) {
             return {
-                title: 'Paste Not Found',
-                description: 'The requested paste could not be found',
+                title: 'Project Not Found',
+                description: 'The requested project could not be found',
             }
         }
 
-        const paste: PasteData = await response.json()
+        const project: ProjectData = await response.json()
 
-        const title = paste.title || 'discord.js Code Paste'
-        const description = paste.description || paste.code?.substring(0, 155) || 'View and analyze discord.js code'
+        const title = project.title || 'discord.js Code Project'
+        const description = project.description || 'View and analyze discord.js code project'
 
         return {
             title,
@@ -41,7 +41,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 title,
                 description,
                 type: 'website',
-                url: `${baseUrl}/paste/${id}`,
+                url: `${baseUrl}/project/${id}`,
                 images: [
                     {
                         url: '/djs.png',
@@ -67,7 +67,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
 }
 
-export default function PasteLayout({
+export default function ProjectLayout({
     children,
 }: {
     children: React.ReactNode
