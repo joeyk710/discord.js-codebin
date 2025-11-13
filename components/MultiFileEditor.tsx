@@ -36,6 +36,30 @@ interface OpenFile {
 
 const LANGUAGES = ['JavaScript', 'TypeScript', 'JSON', 'Python', 'HTML', 'CSS', 'Markdown']
 
+// Map internal language keys to user-facing labels
+const formatLanguageDisplay = (lang: string) => {
+    const key = (lang || '').toLowerCase()
+    switch (key) {
+        case 'javascript':
+            return 'JavaScript'
+        case 'typescript':
+            return 'TypeScript'
+        case 'json':
+            return 'JSON'
+        case 'python':
+            return 'Python'
+        case 'html':
+            return 'HTML'
+        case 'css':
+            return 'CSS'
+        case 'markdown':
+            return 'Markdown'
+        default:
+            // Fallback: capitalize first letter
+            return lang.charAt(0).toUpperCase() + lang.slice(1)
+    }
+}
+
 export default function MultiFileEditor({
     initialFiles,
     isReadOnly = false,
@@ -519,8 +543,8 @@ export default function MultiFileEditor({
                                                 )
                                             })()}
 
-                                            <span className="hidden sm:inline">{currentFile.language.charAt(0).toUpperCase() + currentFile.language.slice(1)}</span>
-                                            <span className="sm:hidden ml-1">{currentFile.language.slice(0, 3).toUpperCase()}</span>
+                                            <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
+                                            <span className="sm:hidden ml-1">{formatLanguageDisplay(currentFile.language)}</span>
                                         </button>
                                     </div>
                                 </div>
@@ -632,7 +656,7 @@ export default function MultiFileEditor({
                                             )
                                         })()}
 
-                                        <span className="hidden sm:inline">{currentFile.language.toUpperCase()}</span>
+                                        <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
                                     </button>
                                 </div>
                             </div>
