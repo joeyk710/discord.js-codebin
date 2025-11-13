@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     siteName: 'discord.js Code Bin',
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'discord.js Code Bin',
     description: 'Write and share discord.js code with intelligent suggestions',
     images: [
