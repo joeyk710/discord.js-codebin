@@ -39,7 +39,11 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'discord.js Code Bin',
     description: 'Write and share discord.js code with intelligent suggestions',
-    images: ['/djs.png'],
+    images: [
+      {
+        url: '/djs.png',
+      }
+    ],
   },
 }
 
