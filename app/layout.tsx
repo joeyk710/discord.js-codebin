@@ -21,7 +21,6 @@ export const metadata: Metadata = {
     apple: '/djs.png',
   },
   openGraph: {
-    title: 'discord.js Code Bin',
     description: 'Write and share discord.js code with intelligent suggestions',
     images: [
       {
@@ -37,7 +36,6 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary',
-    title: 'discord.js Code Bin',
     description: 'Write and share discord.js code with intelligent suggestions',
     images: [
       {
