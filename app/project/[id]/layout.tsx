@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         const project: ProjectData = await response.json()
 
         const title = project.title || 'discord.js Code Project'
-        const description = project.description || 'View and analyze discord.js code project'
+        const description = project.description || 'View and analyze this discord.js project'
 
         return {
             title,
