@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { randomUUID } from 'crypto'
 
 export async function POST(request: NextRequest) {
     try {
@@ -39,14 +40,18 @@ export async function POST(request: NextRequest) {
         }
 
         try {
+            // Generate a secure deletion token for this project
+            const deletionToken = randomUUID()
+
             const project = await prisma.project.create({
                 data: {
                     title: title,
                     description: description || '',
                     isPublic: isPublic,
                     expiresAt: expiresAt,
+                    deletionToken: deletionToken,
                     files: (files.map((file: any) => ({
-                        id: crypto.randomUUID(),
+                        id: randomUUID(),
                         path: file.path,
                         name: file.path.split('/').pop() || file.path,
                         code: file.code,
@@ -57,11 +62,13 @@ export async function POST(request: NextRequest) {
 
             const origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'
 
+            // Return the deletion token only on creation so the client can store it locally.
             return NextResponse.json({
                 id: project.id,
                 success: true,
                 shortUrl: `${origin}/project/${project.id}`,
                 project,
+                deletionToken,
             })
         } catch (dbError) {
             console.error('Database error:', dbError)

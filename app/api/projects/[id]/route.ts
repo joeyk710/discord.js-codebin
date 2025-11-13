@@ -44,6 +44,32 @@ export async function DELETE(
     try {
         const { id } = await params
 
+        const { searchParams } = new URL(request.url)
+        const token = searchParams.get('token')
+
+        if (!token) {
+            return NextResponse.json(
+                { error: 'Not authorized to delete this project' },
+                { status: 401 }
+            )
+        }
+
+        // Verify deletion token matches the stored token for this project
+        const existing = await prisma.project.findUnique({ where: { id } })
+        if (!existing) {
+            return NextResponse.json(
+                { error: 'Project not found' },
+                { status: 404 }
+            )
+        }
+
+        if (!existing.deletionToken || existing.deletionToken !== token) {
+            return NextResponse.json(
+                { error: 'Invalid deletion token' },
+                { status: 403 }
+            )
+        }
+
         const project = await prisma.project.delete({
             where: { id },
         })

@@ -252,11 +252,36 @@ client.login(DISCORD_TOKEN);`,
                 // Clear the draft cookie after successful save
                 clearDraftCookie()
 
-                // Store project ID
-                const ownedProjects = JSON.parse(localStorage.getItem('ownedProjects') || '[]')
-                if (!ownedProjects.includes(data.id)) {
-                    ownedProjects.push(data.id)
-                    localStorage.setItem('ownedProjects', JSON.stringify(ownedProjects))
+                // Store project ID and deletion token in localStorage. Support older string-only entries.
+                try {
+                    const raw = localStorage.getItem('ownedProjects') || '[]'
+                    let ownedProjects: Array<any> = JSON.parse(raw)
+
+                    // Normalize any string-only entries to object form
+                    ownedProjects = ownedProjects.map((entry: any) => {
+                        if (typeof entry === 'string') return { id: entry, deletionToken: null }
+                        return entry
+                    })
+
+                    // Check if this project already exists
+                    const exists = ownedProjects.some((p: any) => p.id === data.id)
+                    if (!exists) {
+                        ownedProjects.push({ id: data.id, deletionToken: data.deletionToken || null })
+                        localStorage.setItem('ownedProjects', JSON.stringify(ownedProjects))
+                    } else {
+                        // If exists but token missing, update the token if provided
+                        if (data.deletionToken) {
+                            ownedProjects = ownedProjects.map((p: any) => p.id === data.id ? { ...p, deletionToken: data.deletionToken } : p)
+                            localStorage.setItem('ownedProjects', JSON.stringify(ownedProjects))
+                        }
+                    }
+                } catch (err) {
+                    // Fallback: write simple array of ids if parsing fails
+                    try {
+                        localStorage.setItem('ownedProjects', JSON.stringify([data.id]))
+                    } catch (e) {
+                        console.error('Failed to persist ownedProjects', e)
+                    }
                 }
 
                 // Remember whether the saved project was public so the ShareModal can display visibility

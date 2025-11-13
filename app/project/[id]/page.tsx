@@ -94,7 +94,32 @@ export default function ProjectViewerPage() {
     const handleDeleteProject = async () => {
         try {
             setIsDeleting(true)
-            const response = await fetch(`/api/projects/${id}`, {
+            // Read deletion token from localStorage (ownedProjects may contain strings or objects)
+            const ownedRaw = localStorage.getItem('ownedProjects') || '[]'
+            let ownedProjects: any[] = []
+            try {
+                ownedProjects = JSON.parse(ownedRaw)
+            } catch (e) {
+                // If parsing fails, treat as empty
+                ownedProjects = []
+            }
+
+            let token: string | null = null
+            for (const entry of ownedProjects) {
+                if (typeof entry === 'string' && entry === id) {
+                    // No token stored for legacy entries
+                    token = null
+                    break
+                }
+                if (entry && entry.id === id) {
+                    token = entry.deletionToken || null
+                    break
+                }
+            }
+
+            // If token exists, include it in the delete request
+            const deleteUrl = token ? `/api/projects/${id}?token=${encodeURIComponent(token)}` : `/api/projects/${id}`
+            const response = await fetch(deleteUrl, {
                 method: 'DELETE',
             })
 
@@ -102,10 +127,19 @@ export default function ProjectViewerPage() {
                 throw new Error('Failed to delete project')
             }
 
-            // Remove from owned projects
-            const ownedProjects = JSON.parse(localStorage.getItem('ownedProjects') || '[]')
-            const updatedProjects = ownedProjects.filter((projectId: string) => projectId !== id)
-            localStorage.setItem('ownedProjects', JSON.stringify(updatedProjects))
+            // Remove from owned projects (support both string and object entries)
+            try {
+                const raw = localStorage.getItem('ownedProjects') || '[]'
+                let stored: any[] = JSON.parse(raw)
+                stored = stored.filter((entry: any) => {
+                    if (typeof entry === 'string') return entry !== id
+                    return entry.id !== id
+                })
+                localStorage.setItem('ownedProjects', JSON.stringify(stored))
+            } catch (e) {
+                // Fallback: remove by creating empty array
+                localStorage.setItem('ownedProjects', JSON.stringify([]))
+            }
 
             setShowDeleteModal(false)
             router.push('/editor')
