@@ -26,8 +26,8 @@ export const metadata: Metadata = {
     images: [
       {
         url: '/djs.png',
-        width: 1200,
-        height: 630,
+        width: 192,
+        height: 192,
         alt: 'discord.js Code Bin',
       },
     ],
