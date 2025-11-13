@@ -34,9 +34,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         const title = project.title || 'discord.js Code Project'
         const description = project.description || 'View and analyze discord.js code project'
 
-        // Only show thumbnail if title is customized (not default "My Project")
-        const hasCustomTitle = project.title && project.title !== 'My Project'
-
         return {
             title,
             description,
@@ -45,23 +42,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
                 description,
                 type: 'website',
                 url: `${baseUrl}/project/${id}`,
-                ...(hasCustomTitle && {
-                    images: [
-                        {
-                            url: '/djs.png',
-                            width: 192,
-                            height: 192,
-                            alt: 'discord.js Code Bin',
-                        },
-                    ],
-                }),
                 siteName: 'discord.js Code Bin',
+                images: [
+                    {
+                        url: `${baseUrl}/djs.png`,
+                        width: 192,
+                        height: 192,
+                        alt: 'discord.js Code Bin',
+                    },
+                ],
             },
             twitter: {
                 card: 'summary',
                 title,
                 description,
-                ...(hasCustomTitle && { images: ['/djs.png'] }),
+                images: [`${baseUrl}/djs.png`],
+                creator: '@discordjs',
+                site: '@discordjs',
             },
         }
     } catch (error) {
