@@ -36,11 +36,6 @@ export default function Home() {
           >
             Start Editing
           </button>
-
-          {/* Theme Switcher */}
-          <div className="flex justify-center gap-2">
-            <ThemeSwitcher />
-          </div>
         </div>
       </main>
 

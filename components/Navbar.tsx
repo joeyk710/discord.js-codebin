@@ -33,34 +33,35 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: Navbar
                         <h1 className="text-base sm:text-xl font-bold text-base-content">discord.js Code Bin</h1>
                     </div>
                 </Link>
+                {/* Controls placed next to branding for tighter grouping */}
+                <div className="hidden sm:flex items-center gap-2 sm:gap-3 ml-3">
+                    <ThemeSwitcher />
+                    {showEditorButtons && (
+                        <>
+                            <button
+                                onClick={onShowMetadata}
+                                className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"
+                                title="Edit project metadata"
+                            >
+                                <PencilIcon className="w-4 h-4" />
+                                <span className="hidden sm:inline">Metadata</span>
+                            </button>
+                            <button
+                                onClick={onSaveShare}
+                                disabled={isSaving}
+                                className="btn btn-xs sm:btn-sm btn-primary rounded-xl flex items-center gap-2"
+                                title="Save and share your project"
+                            >
+                                <PlusIcon className="w-4 h-4" />
+                                <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : 'Save & Share'}</span>
+                                <span className="sm:hidden">{isSaving ? '⏳' : 'Save'}</span>
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
-            <div className="navbar-center gap-3 sm:gap-4 ml-6 sm:ml-10 lg:ml-6">
-                <ThemeSwitcher />
-                {/* Home button removed - branding links to home already */}
-                {showEditorButtons && (
-                    <>
-                        <button
-                            onClick={onShowMetadata}
-                            className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"
-                            title="Edit project metadata"
-                        >
-                            <PencilIcon className="w-4 h-4" />
-                            <span className="hidden sm:inline">Metadata</span>
-                        </button>
-                        <button
-                            onClick={onSaveShare}
-                            disabled={isSaving}
-                            className="btn btn-xs sm:btn-sm btn-primary rounded-xl flex items-center gap-2"
-                            title="Save and share your project"
-                        >
-                            <PlusIcon className="w-4 h-4" />
-                            <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : 'Save & Share'}</span>
-                            <span className="sm:hidden">{isSaving ? '⏳' : 'Save'}</span>
-                        </button>
-                    </>
-                )}
-            </div>
+            <div className="navbar-center" />
 
             <div className="navbar-end">
             </div>
