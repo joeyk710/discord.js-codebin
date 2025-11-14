@@ -33,8 +33,7 @@ export default function ExpirationModal({
 }: ExpirationModalProps) {
     const [searchInput, setSearchInput] = useState('')
     const [filteredPresets, setFilteredPresets] = useState<ExpirationPreset[]>(PRESETS)
-    const [customMinutes, setCustomMinutes] = useState<number | null>(null)
-    const inputRef = useRef<HTMLInputElement>(null)
+    const [inputMode, setInputMode] = useState<'search' | 'custom'>('search')
     const modalRef = useRef<HTMLInputElement>(null)
 
     // Sync modal state
@@ -44,28 +43,35 @@ export default function ExpirationModal({
         }
     }, [isOpen])
 
-    // Fuzzy search filter
+    // Detect input mode and filter presets
     useEffect(() => {
         if (!searchInput.trim()) {
             setFilteredPresets(PRESETS)
+            setInputMode('search')
             return
         }
 
+        // Try parsing as duration first
+        const parsed = parseDuration(searchInput)
+        if (parsed !== null) {
+            setInputMode('custom')
+            setFilteredPresets([])
+            return
+        }
+
+        // Fall back to preset search
+        setInputMode('search')
         const query = searchInput.toLowerCase()
         const filtered = PRESETS.filter(preset => {
+            const label = preset.label.toLowerCase()
             let queryIdx = 0
-            for (let i = 0; i < preset.label.length && queryIdx < query.length; i++) {
-                if (preset.label[i] === query[queryIdx]) {
+            for (let i = 0; i < label.length && queryIdx < query.length; i++) {
+                if (label[i] === query[queryIdx]) {
                     queryIdx++
                 }
             }
             return queryIdx === query.length
-        }).sort((a, b) => {
-            const aIdx = a.label.toLowerCase().indexOf(query[0])
-            const bIdx = b.label.toLowerCase().indexOf(query[0])
-            return aIdx - bIdx
         })
-
         setFilteredPresets(filtered)
     }, [searchInput])
 
@@ -73,26 +79,51 @@ export default function ExpirationModal({
         onChange(preset.minutes)
         onClose()
         setSearchInput('')
-        setCustomMinutes(null)
     }
 
-    const handleCustomInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const val = e.target.value
-        if (!val) {
-            setCustomMinutes(null)
-            onChange(null)
-            return
+    const parseDuration = (input: string): number | null => {
+        if (!input) return null
+
+        const s = input.trim()
+        if (!s) return null
+
+        // Match groups like '1.5h', '90m', '2d', or plain numbers '90'
+        const regex = /(\d+(?:\.\d+)?)(?:\s*(d|day|days|h|hr|hrs|hour|hours|m|min|mins|minute|minutes))?/gi
+        let match: RegExpExecArray | null
+        let total = 0
+        let found = false
+
+        while ((match = regex.exec(s)) !== null) {
+            found = true
+            const num = parseFloat(match[1])
+            const unit = match[2] ? match[2].toLowerCase() : undefined
+
+            if (!unit) {
+                // No unit -> minutes
+                total += Math.round(num)
+            } else if (unit.startsWith('d')) {
+                total += Math.round(num * 1440)
+            } else if (unit.startsWith('h')) {
+                total += Math.round(num * 60)
+            } else {
+                // minutes
+                total += Math.round(num)
+            }
         }
 
-        const minutes = parseInt(val, 10)
-        if (!isNaN(minutes)) {
-            if (minutes < 5) {
-                setCustomMinutes(minutes)
-                onChange(null)
-            } else {
-                setCustomMinutes(minutes)
-                onChange(minutes)
-            }
+        if (!found) return null
+        return total
+    }
+
+    const handleSearchInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchInput(e.target.value)
+    }
+
+    const handleApplyCustom = () => {
+        const parsed = parseDuration(searchInput)
+        if (parsed !== null && parsed >= 5 && parsed <= 10080) {
+            onChange(parsed)
+            handleSelectPreset({ label: getDisplayLabelFor(parsed), minutes: parsed })
         }
     }
 
@@ -117,20 +148,35 @@ export default function ExpirationModal({
         }
     }
 
-    const isError = customMinutes !== null && customMinutes < 5
+    const getDisplayLabelFor = (minutes: number): string => {
+        if (minutes < 60) {
+            return `${minutes} minute${minutes !== 1 ? 's' : ''}`
+        } else if (minutes < 1440) {
+            const hours = Math.round((minutes / 60) * 10) / 10
+            return `${hours} hour${hours !== 1 ? 's' : ''}`
+        } else {
+            const days = Math.round((minutes / 1440) * 10) / 10
+            return `${days} day${days !== 1 ? 's' : ''}`
+        }
+    }
+
+    const parsedMinutes = parseDuration(searchInput)
+    const isError = parsedMinutes !== null && parsedMinutes < 5
 
     const handleClose = () => {
         onClose()
         setSearchInput('')
-        setCustomMinutes(null)
+        onChange(null)
     }
 
     const handleReset = () => {
         onChange(null)
         setSearchInput('')
-        setCustomMinutes(null)
         onClose()
     }
+
+    const parsedCustom = inputMode === 'custom' ? parseDuration(searchInput) : null
+    const customIsValid = parsedCustom !== null && parsedCustom >= 5 && parsedCustom <= 10080
 
     return (
         <>
@@ -143,89 +189,84 @@ export default function ExpirationModal({
             <div className="modal">
                 <div className="modal-box w-full sm:max-w-md">
                     <h3 className="font-bold text-lg mb-4">Select Expiration Time</h3>
-                    <p className="text-sm text-base-content/70 mb-4">
-                        Minimum expiration is 5 minutes
-                    </p>
 
                     {/* Search Input */}
                     <div className="mb-4">
                         <input
-                            ref={inputRef}
                             type="text"
-                            placeholder="Search or enter minutes..."
+                            placeholder="Search presets or enter custom — e.g. 90, 1.5h, 2 days"
                             value={searchInput}
-                            onChange={(e) => setSearchInput(e.target.value)}
-                            className="input input-bordered w-full rounded-lg text-sm"
-                            autoFocus
+                            onChange={handleSearchInput}
+                            className="input input-sm w-full rounded-lg text-sm input-bordered"
                         />
                     </div>
 
-                    {/* Presets List */}
-                    <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-                        {filteredPresets.length > 0 ? (
-                            filteredPresets.map((preset) => (
-                                <button
-                                    key={preset.minutes}
-                                    type="button"
-                                    onClick={() => handleSelectPreset(preset)}
-                                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${value === preset.minutes ? 'bg-primary text-primary-content' : 'hover:bg-base-200'
-                                        }`}
-                                >
-                                    {preset.label}
-                                </button>
-                            ))
-                        ) : (
-                            <div className="px-3 py-2 text-sm text-base-content/50">
-                                No presets match your search
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="divider my-3">or</div>
-
-                    {/* Custom Input */}
-                    <div className="space-y-3 mb-6">
-                        <div className="flex gap-2">
-                            <input
-                                type="number"
-                                placeholder="Enter minutes"
-                                value={customMinutes ?? ''}
-                                onChange={handleCustomInput}
-                                min="5"
-                                className={`input input-sm flex-1 rounded-lg text-sm ${customMinutes !== null && customMinutes < 5
-                                    ? 'input-error border-error'
-                                    : 'input-bordered'
-                                    }`}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (customMinutes !== null && customMinutes >= 5) {
-                                        handleSelectPreset({
-                                            label: `${customMinutes} minutes`,
-                                            minutes: customMinutes,
-                                        })
-                                    }
-                                }}
-                                disabled={customMinutes === null || customMinutes < 5}
-                                className="btn btn-sm btn-primary rounded-lg"
-                            >
-                                Set
-                            </button>
+                    {/* Presets List (shown when searching presets or empty) */}
+                    {inputMode === 'search' && (
+                        <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                            {filteredPresets.length > 0 ? (
+                                filteredPresets.map((preset) => (
+                                    <button
+                                        key={preset.minutes}
+                                        type="button"
+                                        onClick={() => handleSelectPreset(preset)}
+                                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${value === preset.minutes
+                                            ? 'bg-primary text-primary-content'
+                                            : 'hover:bg-base-200'
+                                            }`}
+                                    >
+                                        {preset.label}
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="px-3 py-2 text-sm text-base-content/50">
+                                    No presets match
+                                </div>
+                            )}
                         </div>
-                        {customMinutes !== null && customMinutes < 5 && (
-                            <p className="text-xs text-error">
-                                ⚠️ Minimum is 5 minutes
-                            </p>
-                        )}
-                    </div>
+                    )}
+
+                    {/* Custom Duration Input (shown when user enters a custom duration) */}
+                    {inputMode === 'custom' && (
+                        <div className="space-y-2 mb-4">
+                            {customIsValid && (
+                                <>
+                                    <p className="text-xs text-success font-semibold">
+                                        ✓ Parsed: {getDisplayLabelFor(parsedCustom!)}
+                                    </p>
+                                    <button
+                                        type="button"
+                                        onClick={handleApplyCustom}
+                                        className="w-full btn btn-sm btn-primary rounded-lg"
+                                    >
+                                        Apply {getDisplayLabelFor(parsedCustom!)}
+                                    </button>
+                                </>
+                            )}
+                            {parsedCustom !== null && parsedCustom < 5 && (
+                                <p className="text-xs text-error font-semibold">
+                                    ⚠️ Minimum is 5 minutes (you entered {parsedCustom} {parsedCustom === 1 ? 'minute' : 'minutes'})
+                                </p>
+                            )}
+                            {parsedCustom !== null && parsedCustom > 10080 && (
+                                <p className="text-xs text-error font-semibold">
+                                    ⚠️ Maximum is 7 days (you entered {getDisplayLabelFor(parsedCustom)})
+                                </p>
+                            )}
+                            {parsedCustom === null && (
+                                <p className="text-xs text-error font-semibold">
+                                    ⚠️ Could not parse. Try formats: 90, 1.5h, 2 days, etc.
+                                </p>
+                            )}
+                        </div>
+                    )}
 
                     {/* Modal Actions */}
                     <div className="modal-action gap-2">
                         <button
                             type="button"
                             onClick={handleClose}
-                            className="btn btn-sm btn-ghost rounded-lg"
+                            className="btn btn-sm btn-ghost rounded-xl"
                         >
                             Cancel
                         </button>
@@ -233,7 +274,7 @@ export default function ExpirationModal({
                             <button
                                 type="button"
                                 onClick={handleReset}
-                                className="btn btn-sm btn-outline rounded-lg"
+                                className="btn btn-sm btn-outline rounded-xl"
                             >
                                 ✕ Reset
                             </button>
@@ -242,7 +283,7 @@ export default function ExpirationModal({
                             <button
                                 type="button"
                                 onClick={handleClose}
-                                className="btn btn-sm btn-primary rounded-lg"
+                                className="btn btn-sm btn-primary rounded-xl"
                             >
                                 Done
                             </button>

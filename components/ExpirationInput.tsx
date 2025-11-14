@@ -51,7 +51,7 @@ export default function ExpirationInput({
         <div className="form-control w-full">
             <label className="label pb-2">
                 <span className="label-text font-semibold text-base">Expiration</span>
-                <span className="text-xs text-base-content/60">(minimum 5 minutes)</span>
+                <span className="text-xs text-base-content/60">(minimum 5 minutes, max 7 days)</span>
             </label>
 
             <button

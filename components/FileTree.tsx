@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback } from 'react'
+import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { FileNode, getLanguageIcon, getMaterialIconFilename } from '@/lib/fileTree'
 import { inferLanguageFromFilename } from '@/lib/fileTree'
 
@@ -99,10 +100,9 @@ function FileTreeNode({
         <div key={node.path}>
             <div
                 className={`
-                    flex items-center gap-2 px-3 py-2 rounded-lg transition-all relative
+                    flex items-center gap-2 px-3 py-2 rounded-lg border border-base-300/10 dark:border-white/5 transition-colors relative focus:outline-none focus:ring-0
                     ${isFile ? 'cursor-pointer hover:bg-base-300/60' : 'hover:bg-base-200/40'}
-                    ${isActive && isFile ? 'bg-primary text-primary-content font-medium shadow-sm border-l-2 border-primary-focus' : ''}
-                    ${isOpen && !isActive ? 'bg-base-200/50 text-base-content/80 border-l-2 border-base-300' : ''}
+                    ${isActive && isFile ? 'bg-base-200/50 text-base-content/80 border-l-2 border-base-300' : ''}
                 `}
                 style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
                 onClick={() => isFile && onFileSelect(node.path)}
@@ -150,20 +150,22 @@ function FileTreeNode({
                                 e.stopPropagation()
                                 setIsRenaming(true)
                             }}
-                            className="btn btn-ghost btn-xs rounded-xl"
+                            className="btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20"
                             title="Rename file"
+                            aria-label="Rename file"
                         >
-                            ✏️
+                            <PencilIcon className="w-4 h-4" />
                         </button>
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
                                 onDeleteFile?.(node.path)
                             }}
-                            className="btn btn-ghost btn-xs rounded-xl"
+                            className="btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20"
                             title="Delete file"
+                            aria-label="Delete file"
                         >
-                            ✕
+                            <TrashIcon className="w-4 h-4" />
                         </button>
                     </div>
                 )}
@@ -211,12 +213,12 @@ export default function FileTree({
                 {!isReadOnly && onAddFile && (
                     <button
                         onClick={() => onAddFile('.')}
-                        className="btn btn-sm btn-outline btn-primary w-full rounded-lg gap-2 hover:bg-primary hover:text-primary-content transition-all"
+                        className="btn btn-xs w-full justify-start rounded-xl gap-2 px-3 py-2 min-h-[40px] border border-base-300 dark:border-white/20 hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                         </svg>
-                        New File
+                        <span className="text-sm">New File</span>
                     </button>
                 )}
             </div>

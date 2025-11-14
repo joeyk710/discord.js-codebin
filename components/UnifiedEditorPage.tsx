@@ -26,6 +26,25 @@ interface DraftState {
 const DRAFT_COOKIE_NAME = 'djs_editor_draft'
 const DRAFT_EXPIRES_DAYS = 7
 
+// Default starter file used when creating a new project
+const DEFAULT_FILE: FileData = {
+    id: '1',
+    path: 'bot.js',
+    name: 'bot.js',
+    code: `import { Client, Events, GatewayIntentBits } from 'discord.js';
+
+const client = new Client({
+    intents: [GatewayIntentBits.Guilds]
+});
+
+client.once(Events.ClientReady, () => {
+    console.log('Bot is online!');
+});
+
+client.login(DISCORD_TOKEN);`,
+    language: 'javascript',
+}
+
 function saveDraftToCookie(data: DraftState) {
     try {
         const expirationDate = new Date()
@@ -64,31 +83,11 @@ function clearDraftCookie() {
 }
 
 export default function UnifiedEditorPage() {
-    const defaultFile: FileData = {
-        id: '1',
-        path: 'bot.js',
-        name: 'bot.js',
-        code: `import { Client, Events, GatewayIntentBits } from 'discord.js';
-
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
-
-client.once(Events.ClientReady, () => {
-  console.log('Bot is online!');
-});
-
-client.login(DISCORD_TOKEN);`,
-        language: 'javascript',
-    }
-
+    // Use a stable default file constant so effects and initial state are consistent
     const [projectTitle, setProjectTitle] = useState('My Project')
     const [projectDescription, setProjectDescription] = useState('')
-    const [files, setFiles] = useState<FileData[]>([defaultFile])
-    const [hasDraft, setHasDraft] = useState(false)
-    const [showRestoreDraftModal, setShowRestoreDraftModal] = useState(false)
+    const [files, setFiles] = useState<FileData[]>([DEFAULT_FILE])
     const [isMounted, setIsMounted] = useState(false)
-    const restoreDraftDialogRef = useRef<HTMLDialogElement>(null)
     const [isSaving, setIsSaving] = useState(false)
     const [shareUrl, setShareUrl] = useState('')
     const [lastSavedIsPublic, setLastSavedIsPublic] = useState<boolean | undefined>(undefined)
@@ -113,14 +112,13 @@ client.login(DISCORD_TOKEN);`,
             setProjectTitle(draft.projectTitle)
             setProjectDescription(draft.projectDescription)
             setFiles(draft.files)
-            setHasDraft(false) // Don't show modal on mount
         }
     }, [])
 
     // Warn before unload if there are unsaved files using daisyUI modal
     useEffect(() => {
         // Track if user has unsaved changes
-        const hasUnsavedChanges = files.length > 1 || files[0]?.code !== defaultFile.code
+        const hasUnsavedChanges = files.length > 1 || files[0]?.code !== DEFAULT_FILE.code
 
         // Intercept keyboard shortcuts (Cmd+R, Ctrl+R, F5, etc)
         const handleKeyDown = (e: KeyboardEvent) => {
@@ -179,7 +177,7 @@ client.login(DISCORD_TOKEN);`,
             const hasContent =
                 projectTitle !== 'My Project' ||
                 projectDescription !== '' ||
-                files.some(f => f.code !== defaultFile.code)
+                files.some(f => f.code !== DEFAULT_FILE.code)
 
             if (hasContent) {
                 const draftState: DraftState = {

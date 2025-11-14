@@ -221,7 +221,7 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
                                 setSelectedIndex(0)
                             }}
                             onKeyDown={handleKeyDown}
-                            className="input input-bordered w-full input-sm rounded-lg"
+                            className="input input-primary w-full input-sm rounded-lg"
                         />
                     </div>
 

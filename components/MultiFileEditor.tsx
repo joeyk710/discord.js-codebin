@@ -277,6 +277,8 @@ export default function MultiFileEditor({
     )
 
     const handleAddFile = useCallback(() => {
+        // Clear previous input so the modal opens with an empty field
+        setNewFilePath('')
         setShowNewFileDialog(true)
         setTimeout(() => newFileInputRef.current?.focus(), 0)
     }, [])
@@ -286,6 +288,8 @@ export default function MultiFileEditor({
         if (newFileModalRef.current) {
             newFileModalRef.current.checked = false
         }
+        // Reset the input when closing to avoid keeping stale text
+        setNewFilePath('')
     }, [])
 
     const isValidFilePath = (path: string): boolean => {
@@ -505,7 +509,7 @@ export default function MultiFileEditor({
                                         <button
                                             onClick={() => setShowSuggestionsModal(true)}
                                             disabled={isAnalyzing || suggestions.length === 0}
-                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
+                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
                                             title="View code suggestions"
                                         >
                                             {isAnalyzing ? (
@@ -522,7 +526,7 @@ export default function MultiFileEditor({
                                         </button>
                                         <button
                                             onClick={() => languageModalRef.current?.showModal()}
-                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 sm:min-w-[44px] hover:btn-primary transition-colors"
+                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300 dark:border-white/20 hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
                                             aria-label={`Select language (${currentFile.language})`}
                                             disabled={isReadOnly}
                                         >
@@ -531,15 +535,11 @@ export default function MultiFileEditor({
                                                 const mapped = getMaterialIconFilename(currentFile.language) || null
                                                 if (mapped) {
                                                     return (
-                                                        <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
-                                                            <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 pointer-events-auto" />
-                                                        </div>
+                                                        <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 mr-1" />
                                                     )
                                                 }
                                                 return (
-                                                    <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
-                                                        <span className="w-5 h-5 inline-flex items-center justify-center pointer-events-auto">🔤</span>
-                                                    </div>
+                                                    <span className="w-5 h-5 inline-flex items-center justify-center mr-1">🔤</span>
                                                 )
                                             })()}
 
@@ -636,7 +636,7 @@ export default function MultiFileEditor({
                                     </button>
                                     <button
                                         onClick={() => languageModalRef.current?.showModal()}
-                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 sm:min-w-[44px] hover:btn-primary transition-colors"
+                                        className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
                                         aria-label={`Select language (${currentFile.language})`}
                                         disabled={isReadOnly}
                                     >
@@ -644,15 +644,11 @@ export default function MultiFileEditor({
                                             const mapped = getMaterialIconFilename(currentFile.language) || null
                                             if (mapped) {
                                                 return (
-                                                    <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
-                                                        <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 pointer-events-auto" />
-                                                    </div>
+                                                    <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 mr-1" />
                                                 )
                                             }
                                             return (
-                                                <div className="tooltip tooltip-bottom md:tooltip-right z-50 mr-1 pointer-events-none" data-tip={currentFile.language}>
-                                                    <span className="w-5 h-5 inline-flex items-center justify-center pointer-events-auto">🔤</span>
-                                                </div>
+                                                <span className="w-5 h-5 inline-flex items-center justify-center mr-1">🔤</span>
                                             )
                                         })()}
 
