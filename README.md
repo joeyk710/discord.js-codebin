@@ -10,7 +10,7 @@ When analyzing code, the system checks for numerous elements that may be conside
 
 In addition, it also checks for missing intents that may be required throughout the entire project such as the MessageContent intent when using the MessageCreate event.
 
-Moreover, the system also provides relevant resources such as the [discord.js documentation] or [discord.js guide] for extensive elaboration and clarification based on the issues present.
+Moreover, the system also provides relevant resources such as the [discord.js documentation](https://discord.js.org) or [discord.js guide](https://discordjs.guide) for extensive elaboration and clarification based on the issues present.
 
 -   Real-time detection of common discord.js issues
 -   Direct links to relevant resources such as the [discord.js documentation](https://discord.js.org) or suggestions based on the [discord.js guide](https://discord.js.guide)
