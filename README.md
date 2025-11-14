@@ -1,45 +1,30 @@
-# Discord.js Code Editor
+# Discord.js Code Bin
 
-A modern web-based code editor for Discord.js with intelligent suggestions and documentation integration, similar to SourceBin and Pastebin.
+A modern website to store one or more files of code relating to the [discord.js](https://discord.js.org) library, exemplifying suggestions and improvements according to the library's documentation and official guide.
 
 ## Features
 
-✨ **Monaco Editor Integration**
+### Code Analysis
 
-- Full-featured code editor with syntax highlighting
-- Auto-completion and IntelliSense
-- Dark theme optimized for coding
+When analyzing code, the system checks for numerous elements that may be considered problematic or differed from suggested usage based on the [discord.js guide](https://discordjs.guide). Some examples include primarily checking for intents that are differentiated based on the latest version of the library (e.g., SCREAMING_SNAKE_CASE to PascalCase) or intents that may be hard-coded using [magic numbers](<https://en.wikipedia.org/wiki/Magic_number*(programming)>).
 
-🎨 **DaisyUI Theming**
+In addition, it also checks for missing intents that may be required throughout the entire project such as the MessageContent intent when using the MessageCreate event.
 
-- Multiple dark themes (Dark, Dracula, Night, Coffee, Business, Synthwave, Halloween, Forest)
-- Easy theme switching with persistence
-- Beautiful, accessible UI components
+Moreover, the system also provides relevant resources such as the [discord.js documentation] or [discord.js guide] for extensive elaboration and clarification based on the issues present.
 
-🔍 **Intelligent Code Analysis**
+-   Real-time detection of common discord.js issues
+-   Direct links to relevant resources such as the [discord.js documentation](https://discord.js.org) or suggestions based on the [discord.js guide](https://discord.js.guide)
 
-- Real-time detection of common Discord.js issues
-- Suggestions based on [discord.js guide](https://discordjs.guide)
-- Automatic linking to relevant documentation
+**Code Sharing**
 
-📚 **Documentation Integration**
-
-- Direct links to [discord.js.org](https://discord.js.org) documentation
-- Property and method suggestions
-- Best practices from the official guide
-
-💾 **Code Sharing**
-
-- Save and share code snippets with unique URLs
-- Simple paste/bin functionality
-- Easy collaboration and code review
+Similar to PasteBin or SourceBin, share your own project consisting of all imported files for others to see or review.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+ installed
-- npm or yarn package manager
+-   Node.js 18+ installed
+-   [`npm`](https://nodejs.org/en/download) or [`yarn`](https://yarnpkg.com) package manager
 
 ### Installation
 
@@ -57,91 +42,18 @@ npm run dev
 
 3. Open [http://localhost:3000](http://localhost:3000) in your browser
 
-## Usage
+## Tech Stack
 
-### Writing Code
-
-1. Type or paste your Discord.js code in the editor
-2. The analyzer will automatically detect issues and provide suggestions
-3. Click on suggestion links to view relevant documentation
-
-### Saving & Sharing
-
-1. Click the "Save & Share" button
-2. Your code will be saved and a unique URL will be generated
-3. Share the URL with others to collaborate
-
-### Common Suggestions
-
-The analyzer detects:
-
-- Missing or incorrect intents
-- Deprecated API usage
-- Missing privileged intent warnings
-- Improper error handling
-- Missing imports
-- Best practice violations
-
-## Project Structure
-
-```
-djs-editor/
-├── app/                      # Next.js app directory
-│   ├── api/                  # API routes
-│   │   └── paste/           # Paste storage endpoints
-│   ├── paste/[id]/          # Dynamic paste viewer
-│   ├── globals.css          # Global styles
-│   ├── layout.tsx           # Root layout
-│   └── page.tsx             # Home page
-├── components/              # React components
-│   ├── CodeEditor.tsx       # Monaco editor wrapper
-│   ├── EditorPage.tsx       # Main editor page
-│   └── SuggestionsPanel.tsx # Suggestions sidebar
-├── lib/                     # Utilities
-│   └── analyzer.ts          # Code analysis logic
-└── data/                    # Stored pastes (gitignored)
-```
-
-## Technologies Used
-
-- **Next.js 14** - React framework
-- **TypeScript** - Type safety
-- **Tailwind CSS 4** - Utility-first CSS framework
-- **DaisyUI 5** - Component library for Tailwind
-- **Monaco Editor** - VS Code's editor
-- **React** - UI library
-- **Nanoid** - Unique ID generation
-
-## Analysis Rules
-
-The code analyzer checks for:
-
-1. **Intents Issues**
-
-   - Old string-based intents (pre-v13)
-   - Missing intents in Client constructor
-   - MessageContent privileged intent usage
-
-2. **Deprecated Patterns**
-
-   - Old event handler patterns
-   - Deprecated fetch methods
-   - Legacy WebSocket options
-
-3. **Best Practices**
-   - Error handling for login
-   - Proper imports from discord.js
-   - Collection usage
-   - GatewayIntentBits usage
+-   **Next.js v16** - React framework
+-   **TypeScript** - Type safety
+-   **Tailwind CSS v4** - Utility-first CSS framework
+-   **DaisyUI 5** - Component library for Tailwind
+-   **Monaco Editor** - VS Code's editor
+-   **React** - The main framework based on top of Next.js
 
 ## Contributing
 
-Contributions are welcome! Feel free to:
-
-- Report bugs
-- Suggest new features
-- Add more analysis rules
-- Improve documentation links
+Contributions are wholeheartedly welcome! Feel free to [report bugs](https://github.com/joeyk710/discord.js-codebin/issues) or [suggest new implementations](https://github.com/joeyk710/discord.js-codebin/pulls/new).
 
 ## License
 
@@ -149,6 +61,6 @@ MIT
 
 ## Resources
 
-- [Discord.js Guide](https://discordjs.guide)
-- [Discord.js Documentation](https://discord.js.org)
-- [Discord.js GitHub](https://github.com/discordjs/discord.js)
+-   [Discord.js Guide](https://discordjs.guide)
+-   [Discord.js Documentation](https://discord.js.org)
+-   [Discord.js GitHub](https://github.com/discordjs/discord.js)
