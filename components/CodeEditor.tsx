@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import Editor from '@monaco-editor/react'
+import MonacoEditor from '@monaco-editor/react'
 
 interface CodeEditorProps {
   value: string
@@ -46,7 +46,7 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
     return languageMap[lang.toLowerCase()] || 'javascript'
   }
 
-  const handleBeforeMount = (monaco: any) => {
+  const handleBeforeMount = (monaco: { languages: { typescript: { typescriptDefaults: { setDiagnosticsOptions: (arg0: { noSemanticValidation: boolean; noSyntaxValidation: boolean }) => void }; javascriptDefaults: { setDiagnosticsOptions: (arg0: { noSemanticValidation: boolean; noSyntaxValidation: boolean }) => void } } } }) => {
     // Disable TypeScript diagnostics
     monaco.languages.typescript.typescriptDefaults.setDiagnosticsOptions({
       noSemanticValidation: true,
@@ -73,7 +73,7 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
 
   return (
     <div className="relative w-full h-full rounded-lg overflow-hidden border border-base-300">
-      <Editor
+      <MonacoEditor
         height="100%"
         language={getMonacoLanguage(language)}
         value={value}
@@ -83,24 +83,29 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
         options={{
           minimap: { enabled: false },
           fontSize: getResponsiveFontSize(),
-          lineNumbers: 'on',
+          lineNumbers: "on",
           scrollBeyondLastLine: false,
           automaticLayout: true,
           tabSize: 2,
-          wordWrap: 'on',
-          quickSuggestions: false,
-          suggestOnTriggerCharacters: false,
-          acceptSuggestionOnCommitCharacter: false,
-          acceptSuggestionOnEnter: 'off',
-          suggest: { shareSuggestSelections: false },
-          hover: { enabled: false },
+          wordWrap: "on",
+          quickSuggestions: true,
+          suggestOnTriggerCharacters: true,
+          acceptSuggestionOnCommitCharacter: true,
+          acceptSuggestionOnEnter: "smart",
+          suggest: { shareSuggestSelections: true },
+          hover: { enabled: true },
           bracketPairColorization: { enabled: true },
           guides: {
             bracketPairs: "active",
             bracketPairsHorizontal: "active",
             highlightActiveBracketPair: true,
           },
-          matchBrackets: 'near',
+          matchBrackets: "near",
+          formatOnPaste: true,
+          formatOnType: true,
+          autoClosingBrackets: "languageDefined",
+          smoothScrolling: true,
+
         }}
       />
     </div>

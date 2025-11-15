@@ -206,8 +206,8 @@ export default function FileTree({
     return (
         <div className="flex flex-col h-full bg-base-100">
             {/* Enhanced header */}
-            <div className="px-4 py-3 border-b border-base-300/50 bg-base-200/30">
-                <div className="flex items-center justify-between mb-3">
+            <div className="px-4 py-3 border-b border-base-300/50 bg-base-200/30 flex flex-col gap-2">
+                <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-sm text-base-content/90 uppercase tracking-wider">Explorer</h3>
                 </div>
                 {!isReadOnly && onAddFile && (
