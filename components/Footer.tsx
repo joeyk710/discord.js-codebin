@@ -48,14 +48,14 @@ export default function Footer() {
               <nav>
                 <h6 className="footer-title text-xs">Company</h6>
                 <div className="flex flex-col gap-2">
-                  <a href="https://github.com/joeyk710/discord-js-codebin" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
+                  <a href="https://github.com/joeyk710/discord.js-codebin" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
                     GitHub
+                  </a>
+                  <a href="https://github.com/joeyk710/discord.js-codebin/issues" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
+                    Report Issues
                   </a>
                   <a href="https://discord.gg/djs" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
                     Discord Community
-                  </a>
-                  <a href="https://github.com/discordjs/discord.js/issues" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
-                    Report Issues
                   </a>
                 </div>
               </nav>
