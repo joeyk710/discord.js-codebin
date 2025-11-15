@@ -223,7 +223,7 @@ export default function ProjectViewerPage() {
     }
 
     return (
-        <div className="flex flex-col h-screen bg-base-100">
+        <div className="flex flex-col min-h-screen bg-base-100">
             <Navbar
                 onEdit={() => {
                     setIsEditMode(true)
