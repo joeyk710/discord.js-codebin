@@ -1,4 +1,5 @@
 import type { Suggestion } from '../types'
+import { getDocLink } from '../discordMetadata'
 
 /**
  * ErrorDetector - identifies common discord.js errors and best practices
@@ -26,7 +27,7 @@ process.on('unhandledRejection', error => {
 });
 \`\`\``,
         severity: 'high',
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/Client:class',
+        docLink: getDocLink('Client'),
       })
     }
 
@@ -42,7 +43,7 @@ import { Collection } from 'discord.js';
 client.commands = new Collection();
 \`\`\``,
         severity: 'medium',
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/Collection:class',
+        docLink: getDocLink('Collection'),
       })
     }
 
@@ -67,7 +68,7 @@ DISCORD_TOKEN=your_token_here
 \`\`\``,
         severity: 'critical',
         line: lineNum,
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/Client:class#login',
+        docLink: getDocLink('Client') + '#login',
       })
     }
 
@@ -94,7 +95,7 @@ await interaction.editReply({ content: 'Done!' });
 \`\`\``,
         severity: 'high',
         line: lineNum,
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/CommandInteraction:class',
+        docLink: getDocLink('CommandInteraction'),
       })
     }
 
@@ -141,8 +142,13 @@ client.on('messageCreate', message => { ... });
 
     // Check for SlashCommandBuilder missing required fields
     if (code.includes('SlashCommandBuilder')) {
-      if (!code.includes('.setName') || !code.includes('.setDescription')) {
-        const lineNum = lines.findIndex(line => line.includes('SlashCommandBuilder')) + 1
+      // Find the first line where SlashCommandBuilder appears and inspect nearby lines for .setName & .setDescription
+      const startLine = lines.findIndex(line => line.includes('SlashCommandBuilder'))
+      const windowLines = lines.slice(startLine, Math.min(startLine + 20, lines.length)).join('\n')
+      const hasName = /.setName\s*\(/.test(windowLines)
+      const hasDescription = /.setDescription\s*\(/.test(windowLines)
+      if (!hasName || !hasDescription) {
+        const lineNum = startLine + 1
         suggestions.push({
           type: 'error',
           message: 'SlashCommandBuilder missing required fields',
@@ -154,7 +160,7 @@ const command = new SlashCommandBuilder()
 \`\`\``,
           severity: 'critical',
           line: lineNum,
-          docLink: 'https://discord.js.org/docs/packages/builders/main/SlashCommandBuilder:class',
+          docLink: getDocLink('SlashCommandBuilder', 'builders'),
         })
       }
     }
@@ -172,7 +178,7 @@ const command = new SlashCommandBuilder()
 
 Truncate long content to avoid API errors.`,
         severity: 'low',
-        docLink: 'https://discord.js.org/docs/packages/builders/main/EmbedBuilder:class',
+        docLink: getDocLink('EmbedBuilder', 'builders'),
       })
     }
 
@@ -199,7 +205,7 @@ const link = new ButtonBuilder()
 \`\`\``,
           severity: 'critical',
           line: lineNum,
-          docLink: 'https://discord.js.org/docs/packages/builders/main/ButtonBuilder:class',
+          docLink: getDocLink('ButtonBuilder', 'builders'),
         })
       }
     }

@@ -1,4 +1,12 @@
 import type { Suggestion } from '../types'
+import { getDiscordMetadata } from '../discordMetadata'
+
+const discordMeta = getDiscordMetadata()
+const availableIntents = new Set(discordMeta.gatewayIntents)
+const privilegedIntents = new Set(
+  ['MessageContent', 'GuildMembers', 'GuildPresences'].filter(intent => availableIntents.has(intent))
+)
+const versionLabel = discordMeta.version ?? 'latest'
 
 /**
  * IntentsDetector - checks for critical intent configuration issues and privileged intents
@@ -10,8 +18,21 @@ export class IntentsDetector {
     const suggestions: Suggestion[] = []
     const lines = code.split('\n')
 
-    // Check for missing intents when creating Client
-    if (code.includes('new Client') && !code.includes('intents:')) {
+    const importsDiscordJs = /from\s+['"]discord\.js['"]/.test(code)
+    const hasGatewayIntentImport = importsDiscordJs && /\bGatewayIntentBits\b/.test(code)
+
+    const docLinks = {
+      client: `https://discord.js.org/docs/packages/discord.js/${versionLabel}/Client:class`,
+      intents: `https://discord.js.org/docs/packages/discord.js/${versionLabel}/GatewayIntentBits:enum`,
+    }
+
+    const shouldWarnForIntent = (intentName: string) =>
+      privilegedIntents.size === 0 || privilegedIntents.has(intentName)
+
+    const clientCtorMatch = /new\s+Client\s*\(\s*\{([\s\S]*?)\}\s*\)/m.exec(code)
+    const clientHasIntents = !!(clientCtorMatch && /\bintents\s*:/.test(clientCtorMatch[1]))
+
+    if (code.includes('new Client') && !clientHasIntents) {
       const lineNum = lines.findIndex(line => line.includes('new Client')) + 1
       suggestions.push({
         type: 'error',
@@ -30,12 +51,15 @@ const client = new Client({
 \`\`\``,
         severity: 'critical',
         line: lineNum,
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/Client:class',
+        docLink: docLinks.client,
       })
     }
 
-    // Check for MessageContent intent when accessing message.content
-    if (code.includes('message.content') && !code.includes('MessageContent')) {
+    if (
+      code.includes('message.content') &&
+      !(hasGatewayIntentImport && /MessageContent/.test(code)) &&
+      shouldWarnForIntent('MessageContent')
+    ) {
       const lineNum = lines.findIndex(line => line.includes('message.content')) + 1
       suggestions.push({
         type: 'warning',
@@ -52,12 +76,15 @@ intents: [
 **Note**: MessageContent is a privileged intent. Enable it in the Discord Developer Portal under Bot → Privileged Gateway Intents.`,
         severity: 'high',
         line: lineNum,
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/GatewayIntentBits:enum',
+        docLink: docLinks.intents,
       })
     }
 
-    // Check for GuildMembers intent when accessing member-related properties
-    if ((code.includes('guild.members') || code.includes('guildMember')) && !code.includes('GuildMembers')) {
+    if (
+      (code.includes('guild.members') || code.includes('guildMember')) &&
+      !(hasGatewayIntentImport && /GuildMembers/.test(code)) &&
+      shouldWarnForIntent('GuildMembers')
+    ) {
       const lineNum = lines.findIndex(line => line.includes('guild.members') || line.includes('guildMember')) + 1
       suggestions.push({
         type: 'warning',
@@ -73,12 +100,15 @@ intents: [
 **Note**: GuildMembers is a privileged intent. Enable it in Discord Developer Portal.`,
         severity: 'high',
         line: lineNum,
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/GatewayIntentBits:enum',
+        docLink: docLinks.intents,
       })
     }
 
-    // Check for GuildPresences intent when accessing presence data
-    if ((code.includes('presence') || code.includes('.status')) && !code.includes('GuildPresences')) {
+    if (
+      (code.includes('presence') || code.includes('.status')) &&
+      !(hasGatewayIntentImport && /GuildPresences/.test(code)) &&
+      shouldWarnForIntent('GuildPresences')
+    ) {
       const lineNum = lines.findIndex(line => line.includes('presence') || line.includes('.status')) + 1
       suggestions.push({
         type: 'warning',
@@ -94,28 +124,34 @@ intents: [
 **Note**: GuildPresences is a privileged intent. Enable it in Discord Developer Portal.`,
         severity: 'high',
         line: lineNum,
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/GatewayIntentBits:enum',
+        docLink: docLinks.intents,
       })
     }
 
-    // Check for old string-based intents
-    if (code.includes('intents: [') && /intents:\s*\[['"`]/.test(code)) {
-      const lineNum = lines.findIndex(line => line.includes('intents:')) + 1
-      suggestions.push({
-        type: 'warning',
-        message: 'Using deprecated string-based intents',
-        details: `Use GatewayIntentBits enum instead of strings:
+    const intentsArrayMatch = /intents\s*:\s*\[([\s\S]*?)\]/m.exec(code)
+    if (intentsArrayMatch) {
+      const literalMatches = Array.from(intentsArrayMatch[1].matchAll(/['"`]([^'"`]+)['"`]/g)).map(match => match[1])
+      const legacyStrings = literalMatches.filter(literal => literal === literal.toUpperCase())
+      const camelCaseIntents = literalMatches.filter(literal => availableIntents.has(literal))
+
+      if (legacyStrings.length > 0 || camelCaseIntents.length > 0) {
+        const lineNum = lines.findIndex(line => line.includes('intents:')) + 1
+        suggestions.push({
+          type: 'warning',
+          message: 'Using deprecated string-based intents',
+          details: `Use GatewayIntentBits enum instead of string literals:
 \`\`\`typescript
 // ❌ Old way (deprecated)
 intents: ['GUILDS', 'GUILD_MESSAGES']
 
-// ✅ New way (v14+)
+// ✅ discord.js ${versionLabel}
 intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages]
 \`\`\``,
-        severity: 'medium',
-        line: lineNum,
-        docLink: 'https://discord.js.org/docs/packages/discord.js/main/GatewayIntentBits:enum',
-      })
+          severity: 'medium',
+          line: lineNum,
+          docLink: docLinks.intents,
+        })
+      }
     }
 
     return suggestions
