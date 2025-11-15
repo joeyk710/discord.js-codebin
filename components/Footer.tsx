@@ -117,14 +117,14 @@ export default function Footer() {
         <nav>
           <h6 className="footer-title text-sm">Company</h6>
           <div className="flex flex-col gap-2">
-            <a href="https://github.com/joeyk710/discord-js-codebin" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
+            <a href="https://github.com/joeyk710/discord.js-codebin" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
               GitHub
+            </a>
+            <a href="https://github.com/joeyk710/discord.js-codebin/issues" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
+              Report Issues
             </a>
             <a href="https://discord.gg/djs" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
               Discord Community
-            </a>
-            <a href="https://github.com/discordjs/discord.js/issues" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
-              Report Issues
             </a>
           </div>
         </nav>
@@ -139,7 +139,7 @@ export default function Footer() {
             <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
               Privacy Policy
             </a>
-            <a href="https://github.com/discordjs/discord.js/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
+            <a href="https://github.com/joeyk710/discord.js-codebin/LICENSE" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
               License
             </a>
           </div>
