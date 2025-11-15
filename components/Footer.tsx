@@ -70,7 +70,7 @@ export default function Footer() {
                   <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
                     Privacy Policy
                   </a>
-                  <a href="https://github.com/discordjs/discord.js/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
+                  <a href="https://github.com/joeyk710/discord.js-codebin/LICENSE" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
                     License
                   </a>
                 </div>
