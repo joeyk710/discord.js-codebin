@@ -224,102 +224,64 @@ export default function ProjectViewerPage() {
 
     return (
         <div className="flex flex-col h-screen bg-base-100">
-            <Navbar />
+            <Navbar
+                onEdit={() => {
+                    setIsEditMode(true)
+                    setEditedFiles(project.projectFiles || project.files || [])
+                }}
+                onDelete={() => setShowDeleteModal(true)}
+                isDeleting={isDeleting}
+                isEditMode={isEditMode}
+                onCancelEdit={() => {
+                    setIsEditMode(false)
+                    setEditedFiles(project.projectFiles || project.files || [])
+                }}
+                onSaveEdit={handleUpdateProject}
+                isSaving={isSaving}
+            />
 
-            <main className="flex-1 overflow-hidden flex flex-col m-1 sm:m-3">
-                <div className="flex-1 overflow-hidden rounded-2xl shadow-xl bg-base-100 flex flex-col">
-                    {/* Project Header */}
-                    <div className="bg-base-200 border-b border-base-300 px-4 py-3 sm:px-6 sm:py-4 flex-shrink-0">
-                        <div className="flex items-start justify-between gap-4">
-                            <div className="flex-1 min-w-0">
-                                <h1 className="text-2xl sm:text-3xl font-bold text-base-content mb-2">
-                                    {project.title}
-                                </h1>
-                                {project.description && (
-                                    <p className="text-base-content/70 text-sm mb-3">{project.description}</p>
-                                )}
-                                <div className="flex gap-3 text-xs sm:text-sm text-base-content/60 flex-wrap">
-                                    <span>📊 {project.views} views</span>
-                                    <span>📁 {(project.projectFiles || project.files || []).length} files</span>
-                                    <span>
-                                        🔒 {project.isPublic ? 'Public' : 'Private'}
+            <main className="flex-1 overflow-hidden flex flex-col">
+                <div className="flex-1 overflow-hidden bg-base-100 flex flex-col">
+                    {/* outer metadata removed - header lives inside editor container for seamless rounding */}
+
+                    {/* Content Container */}
+                    <div className="w-full flex-1 flex flex-col overflow-hidden">
+                        {/* Editor (with internal metadata header so rounding is seamless) */}
+                        <div className="flex-1 overflow-hidden rounded-xl border border-base-300 min-h-0 relative flex flex-col">
+                            {/* Project metadata header placed inside rounded container */}
+                            <div className="flex items-center px-3 sm:px-4 py-0 bg-base-200/50 backdrop-blur-sm border-b border-base-300/30 overflow-x-auto overflow-y-visible gap-3 min-h-[48px]">
+                                <div className="flex items-center min-w-0 gap-4">
+                                    <h1 className="text-lg sm:text-xl font-semibold truncate">{project.title}</h1>
+                                    {project.description && (
+                                        <span className="text-sm text-base-content/60 hidden md:inline truncate max-w-md">{project.description}</span>
+                                    )}
+                                </div>
+
+                                <div className="ml-auto flex items-center gap-2 text-sm text-base-content/70">
+                                    <span className="badge badge-ghost badge-sm flex items-center gap-2">
+                                        <span aria-hidden>📊</span>
+                                        <span>{(project.views ?? 0) === 1 ? '1 view' : `${project.views ?? 0} views`}</span>
+                                    </span>
+
+                                    <span className="badge badge-ghost badge-sm flex items-center gap-2">
+                                        <span aria-hidden>📁</span>
+                                        <span>{(project.projectFiles || project.files || []).length} {(project.projectFiles || project.files || []).length === 1 ? 'file' : 'files'}</span>
+                                    </span>
+
+                                    <span className={`badge badge-sm ${project.isPublic ? 'badge-primary' : 'badge-outline'}`}>
+                                        {project.isPublic ? 'Public' : 'Private'}
                                     </span>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                {!isEditMode ? (
-                                    <>
-                                        <button
-                                            onClick={() => {
-                                                setIsEditMode(true)
-                                                setEditedFiles(project.projectFiles || project.files || [])
-                                            }}
-                                            className="btn btn-sm btn-primary rounded-xl"
-                                            title="Edit project"
-                                        >
-                                            <span className="hidden sm:inline">✏️ Edit</span>
-                                            <span className="sm:hidden">✏️</span>
-                                        </button>
-                                        <button
-                                            onClick={() => setShowDeleteModal(true)}
-                                            disabled={isDeleting}
-                                            className="btn btn-sm btn-outline btn-error rounded-xl"
-                                            title="Delete project"
-                                        >
-                                            {isDeleting ? (
-                                                <>
-                                                    <span className="loading loading-spinner loading-sm"></span>
-                                                    Deleting...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="hidden sm:inline">🗑️ Delete</span>
-                                                    <span className="sm:hidden">🗑️</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </>
-                                ) : (
-                                    <>
-                                        <button
-                                            onClick={() => setIsEditMode(false)}
-                                            disabled={isSaving}
-                                            className="btn btn-sm btn-ghost rounded-xl"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleUpdateProject}
-                                            disabled={isSaving}
-                                            className="btn btn-sm btn-primary rounded-xl"
-                                            title="Update and save project"
-                                        >
-                                            {isSaving ? (
-                                                <>
-                                                    <span className="loading loading-spinner loading-sm"></span>
-                                                    Saving...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="hidden sm:inline">💾 Update & Save</span>
-                                                    <span className="sm:hidden">💾</span>
-                                                </>
-                                            )}
-                                        </button>
-                                    </>
-                                )}
-                                <ThemeSwitcher />
+
+                            <div className="flex-1 relative">
+                                <MultiFileEditor
+                                    initialFiles={isEditMode ? editedFiles : (project.projectFiles || project.files || [])}
+                                    isReadOnly={!isEditMode}
+                                    onFilesChange={isEditMode ? handleFilesChange : undefined}
+                                />
                             </div>
                         </div>
-                    </div>
-
-                    {/* Editor */}
-                    <div className="flex-1 overflow-hidden">
-                        <MultiFileEditor
-                            initialFiles={isEditMode ? editedFiles : (project.projectFiles || project.files || [])}
-                            isReadOnly={!isEditMode}
-                            onFilesChange={isEditMode ? handleFilesChange : undefined}
-                        />
                     </div>
                 </div>
             </main>

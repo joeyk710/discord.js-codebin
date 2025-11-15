@@ -9,9 +9,16 @@ interface NavbarProps {
     onSaveShare?: () => void
     onShowMetadata?: () => void
     isSaving?: boolean
+    // Project view actions
+    onEdit?: () => void
+    onDelete?: () => void
+    onCancelEdit?: () => void
+    onSaveEdit?: () => void
+    isDeleting?: boolean
+    isEditMode?: boolean
 }
 
-export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: NavbarProps) {
+export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, onDelete, onCancelEdit, onSaveEdit, isDeleting, isEditMode }: NavbarProps) {
     const pathname = usePathname()
     const isHomePage = pathname === '/'
     const isViewPage = pathname?.startsWith('/paste/') || pathname?.startsWith('/project/')
@@ -36,6 +43,8 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: Navbar
                 {/* Controls placed next to branding for tighter grouping */}
                 <div className="hidden sm:flex items-center gap-2 sm:gap-3 ml-3">
                     <ThemeSwitcher />
+
+                    {/* Editor page buttons (Save/Metadata) */}
                     {showEditorButtons && (
                         <>
                             <button
@@ -57,6 +66,58 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving }: Navbar
                                 <span className="sm:hidden">{isSaving ? '⏳' : 'Save'}</span>
                             </button>
                         </>
+                    )}
+
+                    {/* Project view actions: Edit/Delete (or Cancel/Save when editing) */}
+                    {isViewPage && (
+                        <div className="flex items-center gap-2">
+                            {!isEditMode ? (
+                                <>
+                                    <button
+                                        onClick={onEdit}
+                                        className="btn btn-sm btn-primary rounded-xl"
+                                        title="Edit project"
+                                    >
+                                        <span className="hidden sm:inline">✏️ Edit</span>
+                                        <span className="sm:hidden">✏️</span>
+                                    </button>
+                                    <button
+                                        onClick={onDelete}
+                                        disabled={isDeleting}
+                                        className="btn btn-sm btn-outline btn-error rounded-xl"
+                                        title="Delete project"
+                                    >
+                                        {isDeleting ? (
+                                            <>
+                                                <span className="loading loading-spinner loading-sm"></span>
+                                                Deleting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <span className="hidden sm:inline">🗑️ Delete</span>
+                                                <span className="sm:hidden">🗑️</span>
+                                            </>
+                                        )}
+                                    </button>
+                                </>
+                            ) : (
+                                <>
+                                    <button
+                                        onClick={onCancelEdit}
+                                        className="btn btn-sm btn-ghost rounded-xl"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        onClick={onSaveEdit}
+                                        disabled={isSaving}
+                                        className="btn btn-sm btn-primary rounded-xl"
+                                    >
+                                        {isSaving ? '⏳ Saving...' : '💾 Save'}
+                                    </button>
+                                </>
+                            )}
+                        </div>
                     )}
                 </div>
             </div>
