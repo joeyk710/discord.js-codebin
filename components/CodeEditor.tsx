@@ -96,7 +96,7 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
           hover: { enabled: false },
           bracketPairColorization: { enabled: true },
           guides: {
-            bracketPairs: true,
+            bracketPairs: "active",
             bracketPairsHorizontal: "active",
             highlightActiveBracketPair: true,
           },
