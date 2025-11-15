@@ -3,7 +3,6 @@
 import { useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import Footer from '@/components/Footer'
-import ThemeSwitcher from '@/components/ThemeSwitcher'
 
 export default function Home() {
   const router = useRouter()
