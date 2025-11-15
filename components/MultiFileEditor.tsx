@@ -476,12 +476,7 @@ export default function MultiFileEditor({
 
     return (
         <div className="flex flex-col h-full w-full bg-base-100">
-            <FileTabs
-                openFiles={openFiles}
-                activeFile={activeFile}
-                onTabClick={handleFileSelect}
-                onTabClose={handleTabClose}
-            />
+            {/* File tabs removed to keep only the sidebar; open files bar intentionally hidden */}
 
             {/* Drawer wrapper - mobile only */}
             <div className="drawer md:hidden flex-1 overflow-hidden">
