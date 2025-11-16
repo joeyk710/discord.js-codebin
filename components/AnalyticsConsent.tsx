@@ -4,7 +4,10 @@ import React, { useEffect, useState } from 'react'
 import { Analytics } from '@vercel/analytics/next'
 
 export default function AnalyticsConsent() {
-    const [consent, setConsent] = useState<boolean | null>(null)
+    // undefined = not-yet-read (don't render anything)
+    // null = user hasn't decided (show prompt)
+    // true/false = user's choice
+    const [consent, setConsent] = useState<boolean | null | undefined>(undefined)
 
     useEffect(() => {
         try {
@@ -35,6 +38,7 @@ export default function AnalyticsConsent() {
         <>
             {consent === true && <Analytics />}
 
+            {/* only show the prompt when we've read storage and it's explicitly undecided (null) */}
             {consent === null && (
                 <div className="fixed right-4 bottom-4 z-50 max-w-xs w-full bg-base-200 border border-base-300/60 text-base-content/90 rounded-lg shadow-lg p-3">
                     <div className="flex items-start gap-3">
