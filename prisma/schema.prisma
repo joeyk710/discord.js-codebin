@@ -8,18 +8,34 @@ datasource db {
 }
 
 model Project {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  files       Json     @default("[]") // Array of {id, path, name, code, language}
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  views       Int      @default(0)
-  isPublic    Boolean  @default(true)
+  id            String    @id @default(cuid())
+  title         String
+  description   String?
+  files         Json      @default("[]")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  views         Int       @default(0)
+  isPublic      Boolean   @default(true)
   deletionToken String?
-  expiresAt   DateTime? // Optional expiration date for project
+  expiresAt     DateTime?
 
   @@index([createdAt])
   @@index([isPublic])
   @@index([expiresAt])
+}
+
+model Paste {
+  id          String   @id
+  code        String
+  title       String?
+  description String?
+  language    String   @default("javascript")
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime @default(dbgenerated("(now() + '7 days'::interval)"))
+  views       Int      @default(0)
+  isPublic    Boolean  @default(true)
+
+  @@index([createdAt])
+  @@index([expiresAt])
+  @@index([isPublic])
 }

@@ -143,43 +143,65 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url)
         const id = searchParams.get('id')
+        // If an `id` query param is provided return single project, otherwise return a paginated list
+        if (id) {
+            const project = await prisma.project.findUnique({
+                where: { id },
+            })
 
-        if (!id) {
-            return NextResponse.json(
-                { error: 'Project ID is required' },
-                { status: 400 }
-            )
+            if (!project) {
+                return NextResponse.json(
+                    { error: 'Project not found' },
+                    { status: 404 }
+                )
+            }
+
+            // Check if project has expired
+            if (project.expiresAt && new Date() > project.expiresAt) {
+                return NextResponse.json(
+                    { error: 'This project has expired' },
+                    { status: 404 }
+                )
+            }
+
+            // Increment views
+            await prisma.project.update({
+                where: { id },
+                data: { views: { increment: 1 } },
+            })
+
+            return NextResponse.json({
+                ...project,
+                views: project.views + 1,
+            })
         }
 
-        const project = await prisma.project.findUnique({
-            where: { id },
-        })
+        // Paginated listing path (safe numeric parsing to avoid quoted OFFSET)
+        const rawLimit = searchParams.get('limit')
+        const rawOffset = searchParams.get('offset') || searchParams.get('page')
 
-        if (!project) {
-            return NextResponse.json(
-                { error: 'Project not found' },
-                { status: 404 }
-            )
+        const limit = Math.max(1, Math.min(100, parseInt(rawLimit || '25', 10) || 25))
+        // support page or offset; if page provided treat as offset
+        const offset = Math.max(0, parseInt(rawOffset || '0', 10) || 0)
+
+        // allow optional isPublic filter
+        const isPublicParam = searchParams.get('isPublic')
+        const where: any = {}
+        if (isPublicParam !== null) {
+            // coerce to boolean if possible
+            if (isPublicParam === 'true' || isPublicParam === '1') where.isPublic = true
+            else if (isPublicParam === 'false' || isPublicParam === '0') where.isPublic = false
         }
 
-        // Check if project has expired
-        if (project.expiresAt && new Date() > project.expiresAt) {
-            return NextResponse.json(
-                { error: 'This project has expired' },
-                { status: 404 }
-            )
-        }
-
-        // Increment views
-        await prisma.project.update({
-            where: { id },
-            data: { views: { increment: 1 } },
+        const total = await prisma.project.count({ where })
+        const items = await prisma.project.findMany({
+            where,
+            orderBy: { createdAt: 'desc' },
+            skip: offset,
+            take: limit,
         })
 
-        return NextResponse.json({
-            ...project,
-            views: project.views + 1,
-        })
+        return NextResponse.json({ total, items })
     } catch (error) {
         console.error('Error retrieving project:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)
