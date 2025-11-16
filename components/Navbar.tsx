@@ -22,7 +22,8 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
     const pathname = usePathname()
     const isHomePage = pathname === '/'
     const isViewPage = pathname?.startsWith('/paste/') || pathname?.startsWith('/project/')
-    const showEditorButtons = !isHomePage && !isViewPage
+    const isPrivacyPage = pathname === '/privacy' || pathname?.startsWith('/privacy/')
+    const showEditorButtons = !isHomePage && !isViewPage && !isPrivacyPage
 
     return (
         <div className="navbar bg-base-100 flex-shrink-0 shadow-none gap-4 px-2 sm:px-6 py-3 sm:py-4">
@@ -41,7 +42,7 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
                     </div>
                 </Link>
                 {/* Controls placed next to branding for tighter grouping */}
-                <div className="hidden sm:flex items-center gap-2 sm:gap-3 ml-3">
+                <div className="flex items-center gap-2 sm:gap-3 ml-3">
                     <ThemeSwitcher />
 
                     {/* Editor page buttons (Save/Metadata) */}

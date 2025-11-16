@@ -499,48 +499,49 @@ export default function MultiFileEditor({
                                                 <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes"></span>
                                             )}
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                                        <button
-                                            onClick={() => setShowSuggestionsModal(true)}
-                                            disabled={isAnalyzing || suggestions.length === 0}
-                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
-                                            title="View code suggestions"
-                                        >
-                                            {isAnalyzing ? (
-                                                <>
-                                                    <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
-                                                    <span className="hidden sm:inline">Analyzing...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span>💡</span>
-                                                    <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
-                                                </>
-                                            )}
-                                        </button>
-                                        <button
-                                            onClick={() => languageModalRef.current?.showModal()}
-                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300 dark:border-white/20 hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
-                                            aria-label={`Select language (${currentFile.language})`}
-                                            disabled={isReadOnly}
-                                        >
-                                            {/* tooltip only on the icon so the bubble won't overlap the label */}
-                                            {(() => {
-                                                const mapped = getMaterialIconFilename(currentFile.language) || null
-                                                if (mapped) {
-                                                    return (
-                                                        <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 mr-1" />
-                                                    )
-                                                }
-                                                return (
-                                                    <span className="w-5 h-5 inline-flex items-center justify-center mr-1">🔤</span>
-                                                )
-                                            })()}
 
-                                            <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
-                                            <span className="sm:hidden ml-1 whitespace-nowrap">{formatLanguageDisplay(currentFile.language)}</span>
-                                        </button>
+                                        {/* Move controls closer to the filename so they're easier to reach */}
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <button
+                                                onClick={() => setShowSuggestionsModal(true)}
+                                                disabled={isAnalyzing || suggestions.length === 0}
+                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
+                                                title="View code suggestions"
+                                            >
+                                                {isAnalyzing ? (
+                                                    <>
+                                                        <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
+                                                        <span className="hidden sm:inline">Analyzing...</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span>💡</span>
+                                                        <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button
+                                                onClick={() => languageModalRef.current?.showModal()}
+                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300 dark:border-white/20 hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
+                                                aria-label={`Select language (${currentFile.language})`}
+                                                disabled={isReadOnly}
+                                            >
+                                                {(() => {
+                                                    const mapped = getMaterialIconFilename(currentFile.language) || null
+                                                    if (mapped) {
+                                                        return (
+                                                            <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 mr-1" />
+                                                        )
+                                                    }
+                                                    return (
+                                                        <span className="w-5 h-5 inline-flex items-center justify-center mr-1">🔤</span>
+                                                    )
+                                                })()}
+
+                                                <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
+                                                <span className="sm:hidden ml-1 whitespace-nowrap">{formatLanguageDisplay(currentFile.language)}</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div className="flex-1 overflow-hidden">
@@ -609,47 +610,49 @@ export default function MultiFileEditor({
                                     {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
                                         <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes"></span>
                                     )}
-                                </div>
-                                <div className="flex items-center gap-2 flex-shrink-0 flex-wrap">
-                                    <button
-                                        onClick={() => setShowSuggestionsModal(true)}
-                                        disabled={isAnalyzing || suggestions.length === 0}
-                                        className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
-                                        title="View code suggestions"
-                                    >
-                                        {isAnalyzing ? (
-                                            <>
-                                                <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
-                                                <span className="hidden sm:inline">Analyzing...</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <span>💡</span>
-                                                <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
-                                            </>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => languageModalRef.current?.showModal()}
-                                        className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
-                                        aria-label={`Select language (${currentFile.language})`}
-                                        disabled={isReadOnly}
-                                    >
-                                        {(() => {
-                                            const mapped = getMaterialIconFilename(currentFile.language) || null
-                                            if (mapped) {
-                                                return (
-                                                    <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 mr-1" />
-                                                )
-                                            }
-                                            return (
-                                                <span className="w-5 h-5 inline-flex items-center justify-center mr-1">🔤</span>
-                                            )
-                                        })()}
 
-                                        <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
-                                        <span className="sm:hidden whitespace-nowrap">{formatLanguageDisplay(currentFile.language)}</span>
-                                    </button>
+                                    {/* Controls moved next to the filename for easier reach */}
+                                    <div className="ml-3 flex items-center gap-2 flex-shrink-0">
+                                        <button
+                                            onClick={() => setShowSuggestionsModal(true)}
+                                            disabled={isAnalyzing || suggestions.length === 0}
+                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
+                                            title="View code suggestions"
+                                        >
+                                            {isAnalyzing ? (
+                                                <>
+                                                    <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
+                                                    <span className="hidden sm:inline">Analyzing...</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <span>💡</span>
+                                                    <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => languageModalRef.current?.showModal()}
+                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
+                                            aria-label={`Select language (${currentFile.language})`}
+                                            disabled={isReadOnly}
+                                        >
+                                            {(() => {
+                                                const mapped = getMaterialIconFilename(currentFile.language) || null
+                                                if (mapped) {
+                                                    return (
+                                                        <img src={`/material-icons/${mapped}.svg`} alt={currentFile.language} className="w-5 h-5 mr-1" />
+                                                    )
+                                                }
+                                                return (
+                                                    <span className="w-5 h-5 inline-flex items-center justify-center mr-1">🔤</span>
+                                                )
+                                            })()}
+
+                                            <span className="hidden sm:inline">{formatLanguageDisplay(currentFile.language)}</span>
+                                            <span className="sm:hidden whitespace-nowrap">{formatLanguageDisplay(currentFile.language)}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             <div className="flex-1 overflow-hidden">

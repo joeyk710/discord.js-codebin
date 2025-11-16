@@ -360,7 +360,7 @@ export default function UnifiedEditorPage() {
                 className="modal-toggle"
             />
             <div className="modal">
-                <div className="modal-box w-full sm:max-w-xl max-h-[90vh] overflow-y-auto">
+                <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/20">
                             <PencilIcon className="w-6 h-6 text-primary" />
