@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { Bars3Icon } from '@heroicons/react/24/outline'
 import CodeEditor from './CodeEditor'
-import FileTabs from './FileTabs'
+// FileTabs removed — tabs UI is unused; keep sidebar only
 import FileTree from './FileTree'
 import SuggestionsModal from './SuggestionsModal'
 import LanguageSelectorModal from './LanguageSelectorModal'
@@ -479,14 +479,14 @@ export default function MultiFileEditor({
             {/* File tabs removed to keep only the sidebar; open files bar intentionally hidden */}
 
             {/* Drawer wrapper - mobile only */}
-            <div className="drawer md:hidden flex-1 overflow-hidden">
+            <div className="drawer md:hidden flex-1 overflow-visible">
                 <input id="file-drawer" type="checkbox" className="drawer-toggle" />
-                <div className="drawer-content flex flex-1 overflow-hidden flex-col">
+                <div className="drawer-content flex flex-1 overflow-visible flex-col">
                     {/* Editor */}
                     <div className="flex-1 flex flex-col overflow-hidden w-full">
                         {currentFile ? (
                             <>
-                                <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-base-200/80 backdrop-blur-sm border-b border-base-300/50 flex items-center justify-between gap-3 sm:gap-4 flex-wrap shadow-sm">
+                                <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-base-200/80 backdrop-blur-sm border-b border-base-300/50 flex items-center justify-between gap-3 sm:gap-4 flex-wrap shadow-sm overflow-visible">
                                     <div className="flex items-center gap-3 min-w-0 flex-1">
                                         <label htmlFor="file-drawer" className="btn btn-ghost btn-sm btn-circle md:hidden flex items-center justify-center cursor-pointer hover:bg-base-300">
                                             <Bars3Icon className="w-5 h-5" />
@@ -496,7 +496,7 @@ export default function MultiFileEditor({
                                                 {currentFile.path}
                                             </span>
                                             {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
-                                                <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes"></span>
+                                                <span className="tooltip w-2 h-2 rounded-full bg-warning" data-tip="Unsaved changes"></span>
                                             )}
                                         </div>
 
@@ -505,8 +505,8 @@ export default function MultiFileEditor({
                                             <button
                                                 onClick={() => setShowSuggestionsModal(true)}
                                                 disabled={isAnalyzing || suggestions.length === 0}
-                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
-                                                title="View code suggestions"
+                                                className="tooltip btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
+                                                data-tip="View code suggestions"
                                             >
                                                 {isAnalyzing ? (
                                                     <>
@@ -567,7 +567,7 @@ export default function MultiFileEditor({
                 {/* Drawer sidebar - mobile only */}
                 <div className="drawer-side md:hidden">
                     <label htmlFor="file-drawer" className="drawer-overlay"></label>
-                    <div className="w-64 bg-base-100 border-r border-base-300 flex flex-col h-screen overflow-y-auto">
+                    <div className="w-64 bg-base-100 border-r border-base-300 flex flex-col h-screen overflow-y-auto overflow-visible">
                         <FileTree
                             files={fileTree}
                             activeFile={activeFile}
@@ -583,9 +583,9 @@ export default function MultiFileEditor({
             </div>
 
             {/* Desktop sidebar + Editor layout */}
-            <div className="hidden md:flex flex-1 overflow-hidden">
+            <div className="hidden md:flex flex-1 overflow-visible">
                 {/* File Tree Sidebar - desktop only */}
-                <div className="w-64 min-w-64 border-r border-base-300/50 bg-base-100">
+                <div className="w-64 min-w-64 border-r border-base-300/50 bg-base-100 overflow-visible">
                     <FileTree
                         files={fileTree}
                         activeFile={activeFile}
@@ -602,13 +602,13 @@ export default function MultiFileEditor({
                 <div className="flex-1 flex flex-col overflow-hidden">
                     {currentFile ? (
                         <>
-                            <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-base-200/80 backdrop-blur-sm border-b border-base-300/50 flex items-center justify-between gap-3 sm:gap-4 flex-wrap shadow-sm">
+                            <div className="px-3 sm:px-4 py-2.5 sm:py-3 bg-base-200/80 backdrop-blur-sm border-b border-base-300/50 flex items-center justify-between gap-3 sm:gap-4 flex-wrap shadow-sm overflow-visible">
                                 <div className="flex items-center gap-2 min-w-0 flex-1">
                                     <span className="text-xs sm:text-sm font-medium text-base-content/80 truncate">
                                         {currentFile.path}
                                     </span>
                                     {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
-                                        <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes"></span>
+                                        <span className="tooltip w-2 h-2 rounded-full bg-warning" data-tip="Unsaved changes"></span>
                                     )}
 
                                     {/* Controls moved next to the filename for easier reach */}
@@ -616,8 +616,8 @@ export default function MultiFileEditor({
                                         <button
                                             onClick={() => setShowSuggestionsModal(true)}
                                             disabled={isAnalyzing || suggestions.length === 0}
-                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
-                                            title="View code suggestions"
+                                            className="tooltip btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
+                                            data-tip="View code suggestions"
                                         >
                                             {isAnalyzing ? (
                                                 <>

@@ -34,16 +34,60 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
 
   // Map language to Monaco language ID
   const getMonacoLanguage = (lang: string) => {
-    const languageMap: { [key: string]: string } = {
-      'javascript': 'javascript',
-      'typescript': 'typescript',
-      'json': 'json',
-      'python': 'python',
-      'html': 'html',
-      'css': 'css',
-      'markdown': 'markdown',
+    // Accept either a language name from selector (JavaScript, TypeScript, Python...) or a filename/path with extension
+    const lower = (lang || '').toLowerCase()
+
+    // If it looks like a path/filename, infer from extension
+    const maybeFile = lower.includes('/') || lower.includes('.')
+    let key = lower
+    if (maybeFile) {
+      const parts = lower.split('/')
+      const file = parts[parts.length - 1]
+      if (file.includes('.')) {
+        key = file.split('.').pop() || lower
+      }
     }
-    return languageMap[lang.toLowerCase()] || 'javascript'
+
+    // Map file extensions and language names to Monaco language IDs
+    const languageMap: { [key: string]: string } = {
+      // File extensions - JS/TS
+      'js': 'javascript', 'mjs': 'javascript', 'cjs': 'javascript', 'jsx': 'javascript',
+      'ts': 'typescript', 'tsx': 'typescript', 'mts': 'typescript', 'cts': 'typescript',
+      // File extensions - Common
+      'py': 'python', 'pyw': 'python',
+      'htm': 'html', 'html': 'html',
+      'css': 'css', 'scss': 'css', 'sass': 'css', 'less': 'less',
+      'md': 'markdown',
+      'xml': 'xml',
+      'yml': 'yaml',
+      'json': 'json', 'jsonc': 'json', 'toml': 'toml',
+      // File extensions - Other languages
+      'rb': 'ruby', 'go': 'golang', 'java': 'java',
+      'cpp': 'cpp', 'cc': 'cpp', 'c': 'c', 'h': 'c',
+      'cs': 'csharp', 'php': 'php', 'sql': 'sql',
+      'sh': 'shell', 'ps1': 'powershell',
+      'dockerfile': 'dockerfile',
+      'pl': 'perl', 'r': 'r',
+      'kt': 'kotlin', 'rs': 'rust',
+      'graphql': 'graphql', 'lua': 'lua',
+      'hs': 'haskell', 'ml': 'ocaml', 'ex': 'elixir',
+      'erl': 'erlang', 'cl': 'lisp',
+      // Language names from selector (title-cased, lowercased for matching)
+      'javascript': 'javascript', 'typescript': 'typescript', 'python': 'python',
+      'ruby': 'ruby', 'golang': 'golang', 'c++': 'cpp', 'c#': 'csharp',
+      'objective-c': 'objective-c', 'f#': 'fsharp', 'pascal': 'pascal',
+      'cobol': 'cobol', 'fortran': 'fortran', 'ada': 'ada', 'prolog': 'prolog',
+      'elixir': 'elixir', 'erlang': 'erlang', 'kotlin': 'kotlin',
+      'scala': 'scala', 'haskell': 'haskell', 'lisp': 'lisp', 'ocaml': 'ocaml',
+      'clojure': 'clojure', 'groovy': 'groovy', 'dart': 'dart', 'rust': 'rust',
+      'swift': 'swift', 'perl': 'perl', 'powershell': 'powershell',
+      'bash': 'bash', 'shell': 'shell', 'makefile': 'makefile',
+      'markdown': 'markdown', 'yaml': 'yaml',
+      'webassembly': 'wasm',
+    }
+
+    const normalized = languageMap[key] || 'javascript'
+    return normalized
   }
 
   const handleBeforeMount = (monaco: { languages: { typescript: { typescriptDefaults: { setDiagnosticsOptions: (arg0: { noSemanticValidation: boolean; noSyntaxValidation: boolean }) => void }; javascriptDefaults: { setDiagnosticsOptions: (arg0: { noSemanticValidation: boolean; noSyntaxValidation: boolean }) => void } } } }) => {
@@ -88,12 +132,7 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
           automaticLayout: true,
           tabSize: 2,
           wordWrap: "on",
-          quickSuggestions: true,
-          suggestOnTriggerCharacters: true,
-          acceptSuggestionOnCommitCharacter: true,
-          acceptSuggestionOnEnter: "smart",
-          suggest: { shareSuggestSelections: true },
-          hover: { enabled: true },
+          hover: { enabled: false },
           bracketPairColorization: { enabled: true },
           guides: {
             bracketPairs: "active",
@@ -105,7 +144,6 @@ export default function CodeEditor({ value, onChange, language = 'javascript' }:
           formatOnType: true,
           autoClosingBrackets: "languageDefined",
           smoothScrolling: true,
-
         }}
       />
     </div>

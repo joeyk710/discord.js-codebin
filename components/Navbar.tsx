@@ -42,7 +42,7 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
                     </div>
                 </Link>
                 {/* Controls placed next to branding for tighter grouping */}
-                <div className="flex items-center gap-2 sm:gap-3 ml-3">
+                <div className="flex items-center gap-2 sm:gap-3 ml-3 overflow-visible">
                     <ThemeSwitcher />
 
                     {/* Editor page buttons (Save/Metadata) */}
@@ -50,8 +50,8 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
                         <>
                             <button
                                 onClick={onShowMetadata}
-                                className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"
-                                title="Edit project metadata"
+                                className="tooltip btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"
+                                data-tip="Edit project metadata"
                             >
                                 <PencilIcon className="w-4 h-4" />
                                 <span className="hidden sm:inline">Metadata</span>
@@ -59,8 +59,8 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
                             <button
                                 onClick={onSaveShare}
                                 disabled={isSaving}
-                                className="btn btn-xs sm:btn-sm btn-primary rounded-xl flex items-center gap-2"
-                                title="Save and share your project"
+                                className="tooltip btn btn-xs sm:btn-sm btn-primary rounded-xl flex items-center gap-2"
+                                data-tip="Save and share your project"
                             >
                                 <PlusIcon className="w-4 h-4" />
                                 <span className="hidden sm:inline">{isSaving ? '⏳ Saving...' : 'Save & Share'}</span>
@@ -76,8 +76,8 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
                                 <>
                                     <button
                                         onClick={onEdit}
-                                        className="btn btn-sm btn-primary rounded-xl"
-                                        title="Edit project"
+                                        className="tooltip btn btn-sm btn-primary rounded-xl"
+                                        data-tip="Edit project"
                                     >
                                         <span className="hidden sm:inline">✏️ Edit</span>
                                         <span className="sm:hidden">✏️</span>
@@ -85,8 +85,8 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
                                     <button
                                         onClick={onDelete}
                                         disabled={isDeleting}
-                                        className="btn btn-sm btn-outline btn-error rounded-xl"
-                                        title="Delete project"
+                                        className="tooltip btn btn-sm btn-outline btn-error rounded-xl"
+                                        data-tip="Delete project"
                                     >
                                         {isDeleting ? (
                                             <>
