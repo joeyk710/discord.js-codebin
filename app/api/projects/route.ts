@@ -196,6 +196,17 @@ export async function GET(request: NextRequest) {
         const total = await prisma.project.count({ where })
         const items = await prisma.project.findMany({
             where,
+            select: {
+                id: true,
+                title: true,
+                description: true,
+                createdAt: true,
+                updatedAt: true,
+                views: true,
+                isPublic: true,
+                expiresAt: true,
+                // Exclude 'files' from listing to avoid response size limit
+            },
             orderBy: { createdAt: 'desc' },
             skip: offset,
             take: limit,
