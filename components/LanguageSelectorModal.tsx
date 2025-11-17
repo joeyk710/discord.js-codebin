@@ -206,7 +206,7 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
 
         return (
             <dialog ref={ref} className="modal">
-                <div className="modal-box w-full max-w-md max-h-[32rem]">
+                <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
                     <h3 className="font-bold text-lg mb-4">Select Language</h3>
 
                     {/* Search Input */}
