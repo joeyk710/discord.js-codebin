@@ -35,6 +35,7 @@ export default function ExpirationModal({
     const [filteredPresets, setFilteredPresets] = useState<ExpirationPreset[]>(PRESETS)
     const [inputMode, setInputMode] = useState<'search' | 'custom'>('search')
     const modalRef = useRef<HTMLInputElement>(null)
+    const [selectedMinutes, setSelectedMinutes] = useState<number | null>(value ?? null)
 
     // Sync modal state
     useEffect(() => {
@@ -75,9 +76,16 @@ export default function ExpirationModal({
         setFilteredPresets(filtered)
     }, [searchInput])
 
+    // When modal opens, initialize the selectedMinutes to the current value
+    useEffect(() => {
+        if (isOpen) {
+            setSelectedMinutes(value ?? null)
+        }
+    }, [isOpen, value])
+
     const handleSelectPreset = (preset: ExpirationPreset) => {
-        onChange(preset.minutes)
-        onClose()
+        // Selecting a preset should mark it as selected but NOT close the modal.
+        setSelectedMinutes(preset.minutes)
         setSearchInput('')
     }
 
@@ -122,8 +130,9 @@ export default function ExpirationModal({
     const handleApplyCustom = () => {
         const parsed = parseDuration(searchInput)
         if (parsed !== null && parsed >= 5 && parsed <= 10080) {
-            onChange(parsed)
-            handleSelectPreset({ label: getDisplayLabelFor(parsed), minutes: parsed })
+            // Apply custom selection locally; do not close the modal. Done will persist.
+            setSelectedMinutes(parsed)
+            setSearchInput('')
         }
     }
 
@@ -164,12 +173,14 @@ export default function ExpirationModal({
     const isError = parsedMinutes !== null && parsedMinutes < 5
 
     const handleClose = () => {
+        // Close modal and clear the search input, but do not modify the current expiration value.
+        // Resetting the expiration is handled explicitly by the Reset button (handleReset).
         onClose()
         setSearchInput('')
-        onChange(null)
     }
 
     const handleReset = () => {
+        setSelectedMinutes(null)
         onChange(null)
         setSearchInput('')
         onClose()
@@ -210,7 +221,7 @@ export default function ExpirationModal({
                                         key={preset.minutes}
                                         type="button"
                                         onClick={() => handleSelectPreset(preset)}
-                                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${value === preset.minutes
+                                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm hover:cursor-pointer ${((selectedMinutes ?? value) === preset.minutes)
                                             ? 'bg-primary text-primary-content'
                                             : 'hover:bg-base-200'
                                             }`}
@@ -270,7 +281,7 @@ export default function ExpirationModal({
                         >
                             Cancel
                         </button>
-                        {value !== null && (
+                        {(selectedMinutes !== null || value !== null) && (
                             <button
                                 type="button"
                                 onClick={handleReset}
@@ -279,15 +290,20 @@ export default function ExpirationModal({
                                 ✕ Reset
                             </button>
                         )}
-                        {value !== null && (
-                            <button
-                                type="button"
-                                onClick={handleClose}
-                                className="btn btn-sm btn-primary rounded-xl"
-                            >
-                                Done
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={() => {
+                                // Persist the selectedMinutes if user chose one, otherwise keep existing value.
+                                if (selectedMinutes !== null) {
+                                    onChange(selectedMinutes)
+                                }
+                                onClose()
+                                setSearchInput('')
+                            }}
+                            className="btn btn-sm btn-primary rounded-xl"
+                        >
+                            Done
+                        </button>
                     </div>
                 </div>
             </div>
