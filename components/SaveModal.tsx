@@ -47,7 +47,6 @@ function ExpirationTimestamp({ expirationMinutes, isOpen }: { expirationMinutes:
     const intervalMs = isOpen ? 1000 : 30000
     const id = setInterval(compute, intervalMs)
     return () => clearInterval(id)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expirationMinutes, isOpen])
 
   if (!info) return <p className="text-xs text-base-content/50 mt-1">&nbsp;</p>
