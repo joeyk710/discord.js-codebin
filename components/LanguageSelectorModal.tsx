@@ -233,11 +233,12 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
                                     <li key={language}>
                                         <button
                                             onClick={() => handleSelect(language)}
-                                            className={`w-full text-left rounded-lg py-3 px-4 transition-colors flex items-center justify-between ${index === selectedIndex ? 'bg-primary text-primary-content' : 'hover:bg-base-200'
+                                            className={`w-full text-left rounded-lg py-3 px-4 transition-colors flex items-center justify-between ${index === selectedIndex ? 'bg-primary text-primary-content' : 'hover:bg-base-200 hover:cursor-pointer'
                                                 } ${currentLanguage === language
                                                     ? 'font-bold'
                                                     : ''
                                                 }`}
+
                                         >
                                             <div className="flex items-center gap-3">
                                                 {getLanguageIcon(language)}
@@ -265,7 +266,7 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
                     {/* Modal Actions */}
                     <div className="modal-action">
                         <form method="dialog">
-                            <button className="btn btn-ghost rounded-xl">Close</button>
+                            <button className="btn btn-ghost rounded-xl hover:cursor-pointer">Close</button>
                         </form>
                     </div>
                 </div>

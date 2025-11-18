@@ -7,6 +7,60 @@ import MultiFileEditor from '@/components/MultiFileEditor'
 import Footer from '@/components/Footer'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 import Link from 'next/link'
+function ExpirationDisplay({ createdAt, expirationDays }: { createdAt: string; expirationDays: number }) {
+    const [info, setInfo] = useState<{ pretty: string; duration: string } | null>(null)
+
+    const compute = () => {
+        try {
+            const created = new Date(createdAt)
+            const exp = new Date(created)
+            exp.setDate(exp.getDate() + expirationDays)
+            const pretty = exp.toLocaleString(undefined, {
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+            })
+
+            const minsLeft = Math.max(0, Math.floor((exp.getTime() - Date.now()) / 60000))
+            let duration = ''
+            if (minsLeft <= 0) {
+                duration = 'Expired'
+            } else if (minsLeft < 60) {
+                duration = `Expires in ${minsLeft} minute${minsLeft === 1 ? '' : 's'}`
+            } else if (minsLeft < 60 * 24) {
+                const hours = Math.floor(minsLeft / 60)
+                duration = `Expires in ${hours} hour${hours === 1 ? '' : 's'}`
+            } else {
+                const days = Math.floor(minsLeft / (60 * 24))
+                duration = `Expires in ${days} day${days === 1 ? '' : 's'}`
+            }
+
+            setInfo({ pretty, duration })
+        } catch (e) {
+            setInfo(null)
+        }
+    }
+
+    useEffect(() => {
+        compute()
+        const id = setInterval(compute, 30000)
+        return () => clearInterval(id)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [createdAt, expirationDays])
+
+    if (!info) return null
+
+    return (
+        <span className="badge badge-ghost badge-sm flex flex-col items-start">
+            <span className="text-xs">⏳</span>
+            <span className="text-xs">{info.duration}</span>
+            <span className="text-[10px] opacity-60">{info.pretty}</span>
+        </span>
+    )
+}
 
 interface ProjectData {
     id: string
@@ -29,6 +83,7 @@ interface ProjectData {
     createdAt: string
     views: number
     isPublic: boolean
+    expirationDays?: number | null
 }
 
 export default function ProjectViewerPage() {
@@ -271,6 +326,9 @@ export default function ProjectViewerPage() {
                                     <span className={`badge badge-sm ${project.isPublic ? 'badge-primary' : 'badge-outline'}`}>
                                         {project.isPublic ? 'Public' : 'Private'}
                                     </span>
+                                    {project.expirationDays !== undefined && project.expirationDays !== null && (
+                                        <ExpirationDisplay createdAt={project.createdAt} expirationDays={project.expirationDays} />
+                                    )}
                                 </div>
                             </div>
 
