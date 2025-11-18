@@ -25,3 +25,13 @@ a {
 code {
   font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 }
+
+/* Expiration button border: white-ish in daisyUI dark theme */
+html[data-theme="dark"] .expiration-border {
+  border-color: rgba(255,255,255,0.18) !important;
+}
+
+/* Generic themed border helper for buttons that need a light border in dark theme */
+html[data-theme="dark"] .themed-border {
+  border-color: rgba(255,255,255,0.18) !important;
+}

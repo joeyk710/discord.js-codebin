@@ -2,6 +2,58 @@
 
 import React, { useRef, useEffect, useState } from 'react'
 
+// Client-only small component to compute and display expiration timestamp (days)
+function ExpirationTimestamp({ expirationDays, isOpen }: { expirationDays: number | null | undefined; isOpen: boolean }) {
+    const [info, setInfo] = useState<{ pretty: string; duration: string } | null>(null)
+
+    const compute = () => {
+        const effectiveDays = expirationDays != null ? expirationDays : 7
+        const remainingMs = effectiveDays * 24 * 60 * 60 * 1000
+        const expDate = new Date(Date.now() + remainingMs)
+        const pretty = expDate.toLocaleString(undefined, {
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+        })
+
+        const minsLeft = Math.max(0, Math.floor(remainingMs / 60000))
+        let duration = ''
+        if (minsLeft <= 0) {
+            duration = 'Expires now'
+        } else if (minsLeft < 60) {
+            duration = `Expires in ${minsLeft} minute${minsLeft === 1 ? '' : 's'}`
+        } else if (minsLeft < 60 * 24) {
+            const hours = Math.floor(minsLeft / 60)
+            duration = `Expires in ${hours} hour${hours === 1 ? '' : 's'}`
+        } else {
+            const days = Math.floor(minsLeft / (60 * 24))
+            duration = `Expires in ${days} day${days === 1 ? '' : 's'}`
+        }
+
+        setInfo({ pretty, duration })
+    }
+
+    useEffect(() => {
+        compute()
+        const intervalMs = isOpen ? 1000 : 30000
+        const id = setInterval(compute, intervalMs)
+        return () => clearInterval(id)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [expirationDays, isOpen])
+
+    if (!info) return <p className="text-xs text-base-content/50 mt-1">&nbsp;</p>
+
+    return (
+        <div>
+            <p className="text-xs text-base-content/60 mt-1">{info.duration}</p>
+            <p className="text-xs text-base-content/50 mt-0">{info.pretty}</p>
+        </div>
+    )
+}
+
 interface ShareModalProps {
     isOpen: boolean
     onClose: () => void
@@ -26,10 +78,7 @@ export default function ShareModal({
     onNew
 }: ShareModalProps) {
     const shareModalRef = useRef<HTMLInputElement>(null)
-    const expirationModalRef = useRef<HTMLInputElement>(null)
     const [copied, setCopied] = useState(false)
-    const [selectedExpiration, setSelectedExpiration] = useState<number | null>(expirationDays || null)
-    const [showExpirationModal, setShowExpirationModal] = useState(false)
 
     useEffect(() => {
         if (shareModalRef.current) {
@@ -37,16 +86,7 @@ export default function ShareModal({
         }
     }, [isOpen])
 
-    useEffect(() => {
-        if (expirationModalRef.current) {
-            expirationModalRef.current.checked = showExpirationModal
-        }
-    }, [showExpirationModal])
-
-    const handleExpirationChange = (days: number | null) => {
-        setSelectedExpiration(days)
-        onExpirationChange?.(days)
-    }
+    // expiration UI removed from modal
 
     const handleCopyLink = () => {
         navigator.clipboard.writeText(shareUrl)
@@ -60,6 +100,15 @@ export default function ShareModal({
             shareModalRef.current.checked = false
         }
         onNew?.()
+    }
+
+    const handleCancel = () => {
+        // Reset expiration when user cancels/closes the share modal
+        onExpirationChange?.(null)
+        onClose()
+        if (shareModalRef.current) {
+            shareModalRef.current.checked = false
+        }
     }
 
     return (
@@ -104,15 +153,9 @@ export default function ShareModal({
                                 </span>
                             </div>
 
-                            {/* Expiration Option - Button to open modal */}
-                            <div className="flex items-center justify-between">
-                                <span className="text-xs text-base-content/60 font-semibold">EXPIRATION</span>
-                                <label
-                                    htmlFor="expiration_modal"
-                                    className="btn btn-xs btn-ghost cursor-pointer"
-                                >
-                                    {selectedExpiration ? `${selectedExpiration} day${selectedExpiration > 1 ? 's' : ''}` : 'Set expiration'}
-                                </label>
+                            {/* Expiration summary (live-updating). */}
+                            <div className="pl-4">
+                                <ExpirationTimestamp expirationDays={expirationDays} isOpen={isOpen} />
                             </div>
                         </div>
 
@@ -151,12 +194,7 @@ export default function ShareModal({
                         <div className="modal-action gap-2 justify-between">
                             <button
                                 type="button"
-                                onClick={() => {
-                                    onClose()
-                                    if (shareModalRef.current) {
-                                        shareModalRef.current.checked = false
-                                    }
-                                }}
+                                onClick={handleCancel}
                                 className="btn btn-sm btn-ghost rounded-xl"
                             >
                                 Close
@@ -174,58 +212,11 @@ export default function ShareModal({
                 <label
                     className="modal-backdrop"
                     htmlFor="share_modal"
-                    onClick={onClose}
+                    onClick={handleCancel}
                 ></label>
             </div>
 
-            {/* Separate Expiration Modal */}
-            <input
-                ref={expirationModalRef}
-                type="checkbox"
-                id="expiration_modal"
-                className="modal-toggle"
-            />
-            <div className="modal">
-                <div className="modal-box">
-                    <h3 className="font-bold text-lg mb-4">Set Expiration Time</h3>
-                    <p className="text-sm text-base-content/70 mb-4">
-                        Choose how long this paste should be available before it expires.
-                    </p>
-
-                    <select
-                        value={selectedExpiration || ''}
-                        onChange={(e) => handleExpirationChange(e.target.value ? parseInt(e.target.value) : null)}
-                        className="select select-bordered w-full rounded-lg bg-base-100 mb-6"
-                    >
-                        <option value="">Never</option>
-                        <option value="1">1 day</option>
-                        <option value="3">3 days</option>
-                        <option value="7">7 days</option>
-                    </select>
-
-                    {selectedExpiration && (
-                        <p className="text-xs text-info/80 mb-6 flex items-center gap-2">
-                            <span>⏱️</span>
-                            Paste will expire in {selectedExpiration} day{selectedExpiration > 1 ? 's' : ''}
-                        </p>
-                    )}
-
-                    <div className="modal-action gap-2">
-                        <label
-                            htmlFor="expiration_modal"
-                            className="btn btn-sm btn-ghost rounded-xl cursor-pointer"
-                        >
-                            Cancel
-                        </label>
-                        <label
-                            htmlFor="expiration_modal"
-                            className="btn btn-sm btn-primary rounded-xl cursor-pointer"
-                        >
-                            Done
-                        </label>
-                    </div>
-                </div>
-            </div>
+            {/* expiration modal removed - controlled via Save/Share flow elsewhere if needed */}
         </>
     )
 }

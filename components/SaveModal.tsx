@@ -1,6 +1,64 @@
 'use client'
 
-import React, { useRef, useEffect } from 'react'
+import React, { useRef, useEffect, useState } from 'react'
+
+// Client-only small component to compute and display expiration timestamp
+function ExpirationTimestamp({ expirationMinutes, isOpen }: { expirationMinutes: number | null; isOpen: boolean }) {
+  const [info, setInfo] = useState<{ pretty: string; duration: string } | null>(null)
+
+  const compute = () => {
+    const effectiveMinutes = expirationMinutes !== null ? expirationMinutes : 7 * 24 * 60
+    // remaining milliseconds until expiration from now
+    const remainingMs = effectiveMinutes * 60 * 1000
+    const expDate = new Date(Date.now() + remainingMs)
+    const pretty = expDate.toLocaleString(undefined, {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    })
+
+    // compute remaining minutes (rounded down)
+    const minsLeft = Math.max(0, Math.floor(remainingMs / 60000))
+
+    let duration = ''
+    if (minsLeft <= 0) {
+      duration = 'Expires now'
+    } else if (minsLeft < 60) {
+      duration = `Expires in ${minsLeft} minute${minsLeft === 1 ? '' : 's'}`
+    } else if (minsLeft < 60 * 24) {
+      const hours = Math.floor(minsLeft / 60)
+      duration = `Expires in ${hours} hour${hours === 1 ? '' : 's'}`
+    } else {
+      const days = Math.floor(minsLeft / (60 * 24))
+      duration = `Expires in ${days} day${days === 1 ? '' : 's'}`
+    }
+
+    setInfo({ pretty, duration })
+  }
+
+  useEffect(() => {
+    // compute immediately
+    compute()
+
+    // when modal is open, refresh more frequently (every 1s). When closed, refresh every 30s to keep UI reasonably current.
+    const intervalMs = isOpen ? 1000 : 30000
+    const id = setInterval(compute, intervalMs)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [expirationMinutes, isOpen])
+
+  if (!info) return <p className="text-xs text-base-content/50 mt-1">&nbsp;</p>
+
+  return (
+    <div>
+      <p className="text-xs text-base-content/60 mt-1">{info.duration}</p>
+      <p className="text-xs text-base-content/50 mt-0">{info.pretty}</p>
+    </div>
+  )
+}
 import ExpirationInput from './ExpirationInput'
 import ExpirationModal from './ExpirationModal'
 
@@ -35,6 +93,16 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
 
     setExpirationError('')
     onSave({ isPublic, expirationMinutes: expirationMinutes || undefined })
+  }
+
+  const handleCancel = () => {
+    if (isSaving) return
+    setExpirationMinutes(null)
+    setExpirationError('')
+    onClose()
+    if (saveModalRef.current) {
+      saveModalRef.current.checked = false
+    }
   }
 
   return (
@@ -84,15 +152,17 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
               error={expirationError}
             />
 
+            {/* Expiration summary: show only when user set a custom expiration, otherwise show default 7 days */}
+            <div className="pl-4">
+              {/* Show human-friendly expiration date/time and duration (computed on client).
+                  Pass `isOpen` so the timestamp can refresh more frequently when the modal is visible. */}
+              <ExpirationTimestamp expirationMinutes={expirationMinutes} isOpen={isOpen} />
+            </div>
+
             <div className="modal-action gap-3">
               <button
                 type="button"
-                onClick={() => {
-                  onClose()
-                  if (saveModalRef.current) {
-                    saveModalRef.current.checked = false
-                  }
-                }}
+                onClick={handleCancel}
                 disabled={isSaving}
                 className="btn btn-ghost rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -120,7 +190,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
         <label
           className="modal-backdrop"
           htmlFor="save_modal"
-          onClick={() => !isSaving && onClose()}
+          onClick={handleCancel}
         ></label>
       </div>
 

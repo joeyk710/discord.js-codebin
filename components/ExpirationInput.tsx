@@ -60,8 +60,8 @@ export default function ExpirationInput({
                 className={`btn btn-sm w-full justify-start rounded-lg border-2 transition-colors hover:cursor-pointer ${isError
                     ? 'btn-error border-error text-error-content'
                     : value === null
-                        ? 'btn-ghost border-base-300 text-base-content/60'
-                        : 'btn-ghost border-success text-success'
+                        ? 'btn-ghost border-black/50 text-base-content/60 expiration-border'
+                        : 'btn-ghost border-black/50 border-success text-success expiration-border'
                     }`}
             >
                 <span className={value === null ? '' : '✓'}>
@@ -76,12 +76,7 @@ export default function ExpirationInput({
                 </p>
             )}
 
-            {/* Info Display */}
-            {value !== null && !isError && (
-                <p className="text-xs text-success mt-2">
-                    ✓ Expires in {getDisplayLabel()}
-                </p>
-            )}
+            {/* Info Display intentionally handled in SaveModal (client-only timestamp) */}
         </div>
     )
 }
