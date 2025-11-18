@@ -5,12 +5,41 @@ type RouteParams = {
     id: string
 }
 
+const API_TOKEN = process.env.API_TOKEN || 'default-unsafe-token'
+
+function verifyToken(request: NextRequest): boolean {
+    const authHeader = request.headers.get('Authorization')
+    const tokenFromHeader = authHeader?.replace('Bearer ', '')
+    const { searchParams } = new URL(request.url)
+    const tokenFromQuery = searchParams.get('token')
+    const providedToken = tokenFromHeader || tokenFromQuery
+    if (!providedToken) return false
+    return providedToken === API_TOKEN
+}
+
 export async function PUT(
     request: NextRequest,
     { params }: { params: Promise<RouteParams> }
 ) {
     try {
         const { id } = await params
+
+        // Require either the project's deletion token (owner) or the API admin token to update
+        const { searchParams } = new URL(request.url)
+        const token = searchParams.get('token')
+
+        const existing = await prisma.project.findUnique({ where: { id } })
+        if (!existing) {
+            return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+        }
+
+        const hasApiToken = verifyToken(request)
+        const hasDeletionToken = token && existing.deletionToken && token === existing.deletionToken
+
+        if (!hasApiToken && !hasDeletionToken) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
+
         const { title, description, isPublic } = await request.json()
 
         const project = await prisma.project.update({
@@ -23,10 +52,7 @@ export async function PUT(
             },
         })
 
-        return NextResponse.json({
-            success: true,
-            project,
-        })
+        return NextResponse.json({ success: true, project })
     } catch (error) {
         console.error('Error updating project:', error)
         const errorMessage = error instanceof Error ? error.message : String(error)

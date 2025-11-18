@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+const API_TOKEN = process.env.API_TOKEN || 'default-unsafe-token'
+
+function verifyTokenLocal(request: NextRequest): boolean {
+    const authHeader = request.headers.get('Authorization')
+    const tokenFromHeader = authHeader?.replace('Bearer ', '')
+    const { searchParams } = new URL(request.url)
+    const tokenFromQuery = searchParams.get('token')
+    const providedToken = tokenFromHeader || tokenFromQuery
+    if (!providedToken) return false
+    return providedToken === API_TOKEN
+}
+
 type RouteParams = {
     id: string
 }
@@ -29,9 +41,20 @@ export async function POST(
         }
 
         // Verify project exists and get current files
-        const project = await prisma.project.findUnique({
-            where: { id },
-        })
+        const project = await prisma.project.findUnique({ where: { id } })
+
+        if (!project) {
+            return NextResponse.json({ error: 'Project not found' }, { status: 404 })
+        }
+
+        // Require ownership (deletion token) or admin API token to modify files
+        const { searchParams } = new URL(request.url)
+        const token = searchParams.get('token')
+        const hasApiToken = verifyTokenLocal(request)
+        const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
+        if (!hasApiToken && !hasDeletionToken) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        }
 
         if (!project) {
             return NextResponse.json(
@@ -105,15 +128,16 @@ export async function PUT(
         }
 
         // Verify project exists
-        const project = await prisma.project.findUnique({
-            where: { id },
-        })
+        const project = await prisma.project.findUnique({ where: { id } })
+        if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-        if (!project) {
-            return NextResponse.json(
-                { error: 'Project not found' },
-                { status: 404 }
-            )
+        // Require ownership (deletion token) or admin API token to modify files
+        const { searchParams } = new URL(request.url)
+        const token = searchParams.get('token')
+        const hasApiToken = verifyTokenLocal(request)
+        const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
+        if (!hasApiToken && !hasDeletionToken) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         // Update project with all files
@@ -156,15 +180,15 @@ export async function DELETE(
         }
 
         // Verify project exists and get current files
-        const project = await prisma.project.findUnique({
-            where: { id },
-        })
+        const project = await prisma.project.findUnique({ where: { id } })
+        if (!project) return NextResponse.json({ error: 'Project not found' }, { status: 404 })
 
-        if (!project) {
-            return NextResponse.json(
-                { error: 'Project not found' },
-                { status: 404 }
-            )
+        // Require ownership (deletion token) or admin API token to modify files
+        const token = searchParams.get('token')
+        const hasApiToken = verifyTokenLocal(request)
+        const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
+        if (!hasApiToken && !hasDeletionToken) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
         const files = (project.files as unknown as FileData[]) || []

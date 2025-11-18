@@ -2,8 +2,29 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 import { randomUUID } from 'crypto'
 
+// API token for protecting endpoints (set via environment variable)
+const API_TOKEN = process.env.API_TOKEN || 'default-unsafe-token'
+
+// Helper to verify API token from Authorization header or query param
+function verifyToken(request: NextRequest): boolean {
+    const authHeader = request.headers.get('Authorization')
+    const tokenFromHeader = authHeader?.replace('Bearer ', '')
+    const { searchParams } = new URL(request.url)
+    const tokenFromQuery = searchParams.get('token')
+
+    const providedToken = tokenFromHeader || tokenFromQuery
+
+    if (!providedToken) {
+        return false
+    }
+
+    return providedToken === API_TOKEN
+}
+
 export async function POST(request: NextRequest) {
     try {
+        // Allow public creation so users can save/share projects without an API token.
+        // (Listing and admin endpoints remain protected.)
         const { title, description, files, isPublic = true, expirationDays } = await request.json()
 
         console.log('POST /api/projects - Request body:', { title, description, filesCount: files?.length, isPublic })
@@ -50,13 +71,13 @@ export async function POST(request: NextRequest) {
                     isPublic: isPublic,
                     expiresAt: expiresAt,
                     deletionToken: deletionToken,
-                    files: (files.map((file: any) => ({
+                    files: (files.map((file) => ({
                         id: randomUUID(),
                         path: file.path,
                         name: file.path.split('/').pop() || file.path,
                         code: file.code,
                         language: file.language || 'javascript',
-                    }))) as any,
+                    }))),
                 },
             })
 
@@ -163,17 +184,24 @@ export async function GET(request: NextRequest) {
                     { status: 404 }
                 )
             }
+            // If the project is public, allow unauthenticated viewing. Otherwise require a valid token
+            // - valid API token (verifyToken)
+            // - OR the project's deletionToken passed as ?token=DELETION_TOKEN
+            if (!project.isPublic) {
+                const { searchParams: sp } = new URL(request.url)
+                const token = sp.get('token')
+                const hasApiToken = verifyToken(request)
+                const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
 
-            // Increment views
-            await prisma.project.update({
-                where: { id },
-                data: { views: { increment: 1 } },
-            })
+                if (!hasApiToken && !hasDeletionToken) {
+                    return NextResponse.json({ error: 'Unauthorized: private project' }, { status: 401 })
+                }
+            }
 
-            return NextResponse.json({
-                ...project,
-                views: project.views + 1,
-            })
+            // Increment views only for public views (or when allowed)
+            await prisma.project.update({ where: { id }, data: { views: { increment: 1 } } })
+
+            return NextResponse.json({ ...project, views: project.views + 1 })
         }
 
         // Paginated listing path (safe numeric parsing to avoid quoted OFFSET)

@@ -11,7 +11,8 @@ model Project {
   id            String    @id @default(cuid())
   title         String
   description   String?
-  files         Json      @default("[]")
+  /// Large JSON field containing file contents; excluded from Studio bulk queries to avoid response size limits
+  files         Json      @db.JsonB @default("[]")
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   views         Int       @default(0)
