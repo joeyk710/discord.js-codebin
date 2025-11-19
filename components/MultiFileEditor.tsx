@@ -71,6 +71,7 @@ export default function MultiFileEditor({
     )
     const [activeFile, setActiveFile] = useState<string>(initialFiles[0]?.path || '')
     const prevInitialRef = useRef<FileData[] | null>(null)
+    const lastEmittedRef = useRef<string | null>(null)
 
     // Helper to update files. Parent will be notified by the effect below when `files` changes.
     const updateFiles = useCallback((newFiles: FileData[] | ((prev: FileData[]) => FileData[])) => {
@@ -109,6 +110,12 @@ export default function MultiFileEditor({
 
     // Update parent when files change
     useEffect(() => {
+        try {
+            // Remember the JSON we emit so we can distinguish local echoes from true parent restores
+            lastEmittedRef.current = JSON.stringify(files)
+        } catch (e) {
+            lastEmittedRef.current = null
+        }
         onFilesChange?.(files)
     }, [files, onFilesChange])
 
@@ -167,6 +174,12 @@ export default function MultiFileEditor({
         try {
             const prevJson = JSON.stringify(prevInitialRef.current)
             const currJson = JSON.stringify(initialFiles)
+            // If the current initialFiles matches the last set of files we emitted from this
+            // component, it's just an echo of a local change (e.g., language select). Ignore it.
+            if (lastEmittedRef.current && currJson === lastEmittedRef.current) {
+                prevInitialRef.current = initialFiles
+                return
+            }
             if (prevJson !== currJson) {
                 // Update editor state to reflect restored files
                 setFiles(initialFiles)
