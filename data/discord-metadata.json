@@ -1,5 +1,5 @@
 {
-  "version": "14.24.2",
+  "version": "14.25.0",
   "gatewayIntents": [
     "Guilds",
     "GuildMembers",

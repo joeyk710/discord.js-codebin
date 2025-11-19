@@ -1,5 +1,5 @@
 import type { Suggestion } from '../types'
-import { getDocLink, isComponentBuilder } from '../discordMetadata'
+import { getDocLink } from '../discordMetadata'
 
 /**
  * BestPracticesDetector - suggests Discord.js best practices and modern patterns

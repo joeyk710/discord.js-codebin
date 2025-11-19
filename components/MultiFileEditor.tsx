@@ -504,9 +504,9 @@ export default function MultiFileEditor({
                                         <div className="flex items-center gap-2 flex-shrink-0">
                                             <button
                                                 onClick={() => setShowSuggestionsModal(true)}
-                                                disabled={isAnalyzing || suggestions.length === 0}
-                                                className="tooltip btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
-                                                data-tip="View code suggestions"
+                                                disabled={true}
+                                                className="tooltip btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent opacity-50 cursor-not-allowed"
+                                                data-tip="Suggestions temporarily disabled"
                                             >
                                                 {isAnalyzing ? (
                                                     <>
@@ -615,9 +615,9 @@ export default function MultiFileEditor({
                                     <div className="ml-3 flex items-center gap-2 flex-shrink-0">
                                         <button
                                             onClick={() => setShowSuggestionsModal(true)}
-                                            disabled={isAnalyzing || suggestions.length === 0}
-                                            className="tooltip btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 hover:btn-info transition-colors"
-                                            data-tip="View code suggestions"
+                                            disabled={true}
+                                            className="tooltip btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 opacity-50 cursor-not-allowed"
+                                            data-tip="Suggestions temporarily disabled"
                                         >
                                             {isAnalyzing ? (
                                                 <>
