@@ -151,7 +151,7 @@ export default function ProjectViewerPage() {
 
     // Load Cloudflare Turnstile widget when delete modal is shown (if configured)
     useEffect(() => {
-        const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        const siteKey = process.env.NEXT_TURNSTILE_SITE_KEY
         if (!showDeleteModal || !siteKey) return
 
         let mounted = true
