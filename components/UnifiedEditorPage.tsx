@@ -103,6 +103,7 @@ export default function UnifiedEditorPage() {
     const metadataModalRef = useRef<HTMLInputElement>(null)
     const leaveModalRef = useRef<HTMLDialogElement>(null)
     const refreshModalRef = useRef<HTMLDialogElement>(null)
+    const draftModalRef = useRef<HTMLDialogElement>(null)
 
     // Only initialize on client side to prevent hydration mismatch
     const [draftAvailable, setDraftAvailable] = useState(false)
@@ -118,6 +119,20 @@ export default function UnifiedEditorPage() {
             setDraftAvailable(true)
         }
     }, [])
+
+    // Show/hide the draft modal when a draft is available
+    useEffect(() => {
+        if (!isMounted || !draftModalRef.current) return
+        if (draftAvailable) {
+            draftModalRef.current.showModal()
+        } else {
+            try {
+                draftModalRef.current.close()
+            } catch (e) {
+                // ignore
+            }
+        }
+    }, [draftAvailable, isMounted])
 
     // Warn before unload if there are unsaved files using daisyUI modal
     useEffect(() => {
@@ -314,38 +329,47 @@ export default function UnifiedEditorPage() {
 
     return (
         <div className="flex flex-col h-screen bg-base-100">
-            {draftAvailable && (
-                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 text-sm flex items-center gap-3">
-                    <div className="flex-1">You have a saved draft. Restore or discard?</div>
-                    <div className="flex gap-2">
-                        <button
-                            className="btn btn-sm btn-ghost"
-                            onClick={() => {
-                                const d = draftRef.current
-                                if (d) {
-                                    setProjectTitle(d.projectTitle)
-                                    setProjectDescription(d.projectDescription)
-                                    setFiles(d.files)
+            {/* Draft restore modal (replaces the non-blocking banner) */}
+            {isMounted && (
+                <dialog ref={draftModalRef} className="modal">
+                    <div className="modal-box rounded-2xl">
+                        <h3 className="font-bold text-lg">You have a saved draft</h3>
+                        <p className="py-2 text-base-content/70">Restore your saved draft or discard it.</p>
+                        <div className="modal-action">
+                            <button
+                                className="btn btn-ghost rounded-xl"
+                                onClick={() => {
                                     clearDraftCookie()
                                     draftRef.current = null
                                     setDraftAvailable(false)
-                                }
-                            }}
-                        >
-                            Restore Draft
-                        </button>
-                        <button
-                            className="btn btn-sm btn-outline"
-                            onClick={() => {
-                                clearDraftCookie()
-                                draftRef.current = null
-                                setDraftAvailable(false)
-                            }}
-                        >
-                            Discard
-                        </button>
+                                    try { draftModalRef.current?.close() } catch (e) { }
+                                }}
+                            >
+                                Discard
+                            </button>
+                            <button
+                                className="btn btn-primary rounded-xl"
+                                onClick={() => {
+                                    const d = draftRef.current
+                                    if (d) {
+                                        setProjectTitle(d.projectTitle)
+                                        setProjectDescription(d.projectDescription)
+                                        setFiles(d.files)
+                                        clearDraftCookie()
+                                        draftRef.current = null
+                                        setDraftAvailable(false)
+                                    }
+                                    try { draftModalRef.current?.close() } catch (e) { }
+                                }}
+                            >
+                                Restore Draft
+                            </button>
+                        </div>
                     </div>
-                </div>
+                    <form method="dialog" className="modal-backdrop">
+                        <button>close</button>
+                    </form>
+                </dialog>
             )}
             <Navbar
                 onSaveShare={() => setShowSaveModal(true)}

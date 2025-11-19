@@ -70,6 +70,7 @@ export default function MultiFileEditor({
         initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language }))
     )
     const [activeFile, setActiveFile] = useState<string>(initialFiles[0]?.path || '')
+    const prevInitialRef = useRef<FileData[] | null>(null)
 
     // Helper to update files. Parent will be notified by the effect below when `files` changes.
     const updateFiles = useCallback((newFiles: FileData[] | ((prev: FileData[]) => FileData[])) => {
@@ -103,6 +104,8 @@ export default function MultiFileEditor({
         )
         setFileTree(tree)
     }, [files])
+
+
 
     // Update parent when files change
     useEffect(() => {
@@ -152,6 +155,38 @@ export default function MultiFileEditor({
 
         analyzeCode()
     }, [activeFile, currentFile, isReadOnly])
+
+    // Sync when parent `initialFiles` changes (e.g., restoring a draft from UnifiedEditorPage)
+    useEffect(() => {
+        // On first mount, remember initial files but don't treat as a "restore" event
+        if (prevInitialRef.current === null) {
+            prevInitialRef.current = initialFiles
+            return
+        }
+
+        try {
+            const prevJson = JSON.stringify(prevInitialRef.current)
+            const currJson = JSON.stringify(initialFiles)
+            if (prevJson !== currJson) {
+                // Update editor state to reflect restored files
+                setFiles(initialFiles)
+                setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language })))
+                setActiveFile(initialFiles[0]?.path || '')
+                // Notify user
+                addToast('Draft restored', 'success', 3000)
+                prevInitialRef.current = initialFiles
+            }
+        } catch (e) {
+            // Fallback: if stringify fails, do a shallow compare by length
+            if ((prevInitialRef.current || []).length !== initialFiles.length) {
+                setFiles(initialFiles)
+                setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language })))
+                setActiveFile(initialFiles[0]?.path || '')
+                addToast('Draft restored', 'success', 3000)
+                prevInitialRef.current = initialFiles
+            }
+        }
+    }, [initialFiles, addToast])
 
     // Get file extension for language
     const getExtensionForLanguage = (lang: string): string => {
