@@ -65,55 +65,55 @@ const SUPPORTED_LANGUAGES = [
 const getLanguageIcon = (language: string) => {
     // Use static icons downloaded into public/material-icons when available
     const iconMap: Record<string, React.ReactNode> = {
-        'JavaScript': <img src="/material-icons/javascript.svg" alt="JavaScript" className="w-6 h-6" />,
-        'TypeScript': <img src="/material-icons/typescript.svg" alt="TypeScript" className="w-6 h-6" />,
-        'Python': <img src="/material-icons/python.svg" alt="Python" className="w-6 h-6" />,
-        'Java': <img src="/material-icons/java.svg" alt="Java" className="w-6 h-6" />,
-        'C++': <img src="/material-icons/cpp.svg" alt="C++" className="w-6 h-6" />,
+        'Ada': <img src="/material-icons/ada.svg" alt="Ada" className="w-6 h-6" />,
+        'Bash': <img src="/material-icons/bashly.svg" alt="Bash" className="w-6 h-6" />,
         'C#': <img src="/material-icons/csharp.svg" alt="C#" className="w-6 h-6" />,
-        'PHP': <img src="/material-icons/php.svg" alt="PHP" className="w-6 h-6" />,
-        'Ruby': <img src="/material-icons/ruby.svg" alt="Ruby" className="w-6 h-6" />,
-        'Go': <img src="/material-icons/go.svg" alt="Go" className="w-6 h-6" />,
-        'Rust': <img src="/material-icons/rust.svg" alt="Rust" className="w-6 h-6" />,
-        'Swift': <img src="/material-icons/swift.svg" alt="Swift" className="w-6 h-6" />,
-        'Kotlin': <img src="/material-icons/kotlin.svg" alt="Kotlin" className="w-6 h-6" />,
-        'Scala': <img src="/material-icons/scala.svg" alt="Scala" className="w-6 h-6" />,
-        'R': <img src="/material-icons/r.svg" alt="R" className="w-6 h-6" />,
-        'MATLAB': <img src="/material-icons/matlab.svg" alt="MATLAB" className="w-6 h-6" />,
-        'Objective-C': <img src="/material-icons/objective-c.svg" alt="Objective-C" className="w-6 h-6" />,
-        'Groovy': <img src="/material-icons/groovy.svg" alt="Groovy" className="w-6 h-6" />,
+        'C++': <img src="/material-icons/cpp.svg" alt="C++" className="w-6 h-6" />,
+        'COBOL': <img src="/material-icons/cobol.svg" alt="COBOL" className="w-6 h-6" />,
+        'CSS': <img src="/material-icons/css.svg" alt="CSS" className="w-6 h-6" />,
         'Clojure': <img src="/material-icons/clojure.svg" alt="Clojure" className="w-6 h-6" />,
-        'Haskell': <img src="/material-icons/haskell.svg" alt="Haskell" className="w-6 h-6" />,
+        'Dart': <img src="/material-icons/dart.svg" alt="Dart" className="w-6 h-6" />,
+        'Dockerfile': <img src="/material-icons/docker.svg" alt="Dockerfile" className="w-6 h-6" />,
         'Elixir': <img src="/material-icons/elixir.svg" alt="Elixir" className="w-6 h-6" />,
         'Erlang': <img src="/material-icons/erlang.svg" alt="Erlang" className="w-6 h-6" />,
-        'OCaml': <img src="/material-icons/ocaml.svg" alt="OCaml" className="w-6 h-6" />,
-        'Scheme': <img src="/material-icons/scheme.svg" alt="Scheme" className="w-6 h-6" />,
+        'F#': <img src="/material-icons/fsharp.svg" alt="F#" className="w-6 h-6" />,
+        'Fortran': <img src="/material-icons/fortran.svg" alt="Fortran" className="w-6 h-6" />,
+        'GraphQL': <img src="/material-icons/graphql.svg" alt="GraphQL" className="w-6 h-6" />,
+        'Go': <img src="/material-icons/go.svg" alt="Go" className="w-6 h-6" />,
+        'Groovy': <img src="/material-icons/groovy.svg" alt="Groovy" className="w-6 h-6" />,
+        'Haskell': <img src="/material-icons/haskell.svg" alt="Haskell" className="w-6 h-6" />,
+        'HTML': <img src="/material-icons/html.svg" alt="HTML" className="w-6 h-6" />,
+        'Java': <img src="/material-icons/java.svg" alt="Java" className="w-6 h-6" />,
+        'JavaScript': <img src="/material-icons/javascript.svg" alt="JavaScript" className="w-6 h-6" />,
+        'JSON': <img src="/material-icons/json.svg" alt="JSON" className="w-6 h-6" />,
+        'Kotlin': <img src="/material-icons/kotlin.svg" alt="Kotlin" className="w-6 h-6" />,
+        'Less': <img src="/material-icons/less.svg" alt="Less" className="w-6 h-6" />,
         'Lisp': <img src="/material-icons/lisp.svg" alt="Lisp" className="w-6 h-6" />,
         'Lua': <img src="/material-icons/lua.svg" alt="Lua" className="w-6 h-6" />,
-        'Perl': <img src="/material-icons/perl.svg" alt="Perl" className="w-6 h-6" />,
-        'PowerShell': <img src="/material-icons/powershell.svg" alt="PowerShell" className="w-6 h-6" />,
+        'Makefile': <img src="/material-icons/makefile.svg" alt="Makefile" className="w-6 h-6" />,
+        'MATLAB': <img src="/material-icons/matlab.svg" alt="MATLAB" className="w-6 h-6" />,
+        'Markdown': <img src="/material-icons/markdown.svg" alt="Markdown" className="w-6 h-6" />,
+        'OCaml': <img src="/material-icons/ocaml.svg" alt="OCaml" className="w-6 h-6" />,
+        'Objective-C': <img src="/material-icons/objective-c.svg" alt="Objective-C" className="w-6 h-6" />,
         'Pascal': <img src="/material-icons/pascal.svg" alt="Pascal" className="w-6 h-6" />,
-        'COBOL': <img src="/material-icons/cobol.svg" alt="COBOL" className="w-6 h-6" />,
-        'Fortran': <img src="/material-icons/fortran.svg" alt="Fortran" className="w-6 h-6" />,
-        'Ada': <img src="/material-icons/ada.svg" alt="Ada" className="w-6 h-6" />,
+        'Perl': <img src="/material-icons/perl.svg" alt="Perl" className="w-6 h-6" />,
+        'PHP': <img src="/material-icons/php.svg" alt="PHP" className="w-6 h-6" />,
+        'PowerShell': <img src="/material-icons/powershell.svg" alt="PowerShell" className="w-6 h-6" />,
         'Prolog': <img src="/material-icons/prolog.svg" alt="Prolog" className="w-6 h-6" />,
-        'Dart': <img src="/material-icons/dart.svg" alt="Dart" className="w-6 h-6" />,
-        'Solidity': <img src="/material-icons/solidity.svg" alt="Solidity" className="w-6 h-6" />,
-        'WebAssembly': <img src="/material-icons/webassembly.svg" alt="WebAssembly" className="w-6 h-6" />,
-        'HTML': <img src="/material-icons/html.svg" alt="HTML" className="w-6 h-6" />,
-        'CSS': <img src="/material-icons/css.svg" alt="CSS" className="w-6 h-6" />,
+        'Python': <img src="/material-icons/python.svg" alt="Python" className="w-6 h-6" />,
+        'R': <img src="/material-icons/r.svg" alt="R" className="w-6 h-6" />,
+        'Ruby': <img src="/material-icons/ruby.svg" alt="Ruby" className="w-6 h-6" />,
+        'Rust': <img src="/material-icons/rust.svg" alt="Rust" className="w-6 h-6" />,
         'SASS': <img src="/material-icons/sass.svg" alt="SASS" className="w-6 h-6" />,
-        'Less': <img src="/material-icons/less.svg" alt="Less" className="w-6 h-6" />,
-        'JSON': <img src="/material-icons/json.svg" alt="JSON" className="w-6 h-6" />,
+        'Scheme': <img src="/material-icons/scheme.svg" alt="Scheme" className="w-6 h-6" />,
+        'Scala': <img src="/material-icons/scala.svg" alt="Scala" className="w-6 h-6" />,
+        'Solidity': <img src="/material-icons/solidity.svg" alt="Solidity" className="w-6 h-6" />,
+        'Swift': <img src="/material-icons/swift.svg" alt="Swift" className="w-6 h-6" />,
+        'TOML': <img src="/material-icons/toml.svg" alt="TOML" className="w-6 h-6" />,
+        'TypeScript': <img src="/material-icons/typescript.svg" alt="TypeScript" className="w-6 h-6" />,
+        'WebAssembly': <img src="/material-icons/webassembly.svg" alt="WebAssembly" className="w-6 h-6" />,
         'XML': <img src="/material-icons/xml.svg" alt="XML" className="w-6 h-6" />,
         'YAML': <img src="/material-icons/yaml.svg" alt="YAML" className="w-6 h-6" />,
-        'TOML': <img src="/material-icons/toml.svg" alt="TOML" className="w-6 h-6" />,
-        'Markdown': <img src="/material-icons/markdown.svg" alt="Markdown" className="w-6 h-6" />,
-        'GraphQL': <img src="/material-icons/graphql.svg" alt="GraphQL" className="w-6 h-6" />,
-        'Dockerfile': <img src="/material-icons/docker.svg" alt="Dockerfile" className="w-6 h-6" />,
-        'Makefile': <img src="/material-icons/makefile.svg" alt="Makefile" className="w-6 h-6" />,
-        'F#': <img src="/material-icons/fsharp.svg" alt="F#" className="w-6 h-6" />,
-        'Bash': <img src="/material-icons/bashly.svg" alt="Bash" className="w-6 h-6" />,
     }
 
     if (iconMap[language]) {
@@ -162,6 +162,7 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
         const [searchQuery, setSearchQuery] = useState('')
         const [selectedIndex, setSelectedIndex] = useState(0)
         const inputRef = useRef<HTMLInputElement>(null)
+        const dialogRef = useRef<HTMLDialogElement | null>(null)
 
         const filteredLanguages = useMemo(
             () => fuzzySearch(searchQuery, SUPPORTED_LANGUAGES),
@@ -173,6 +174,31 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
                 inputRef.current.focus()
             }
         }, [])
+
+        // Clear search input whenever the dialog is closed so it's blank on next open
+        useEffect(() => {
+            const el = dialogRef.current ?? (ref && typeof ref === 'object' ? (ref as any).current : null)
+            if (!el) return
+
+            let timer: number | null = null
+            const handleClose = () => {
+                // Defer clearing slightly so it happens after the dialog close animation
+                // and after any parent state updates that may occur on close.
+                timer = window.setTimeout(() => {
+                    setSearchQuery('')
+                    setSelectedIndex(0)
+                    timer = null
+                }, 200)
+            }
+
+            el.addEventListener('close', handleClose)
+            return () => {
+                el.removeEventListener('close', handleClose)
+                if (timer) {
+                    clearTimeout(timer)
+                }
+            }
+        }, [ref])
 
         const handleSelect = (language: string) => {
             onSelect(language)
@@ -205,7 +231,19 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
         }
 
         return (
-            <dialog ref={ref} className="modal">
+            <dialog
+                ref={(el) => {
+                    // Keep forwarded ref in sync (supports object refs and callback refs)
+                    dialogRef.current = el
+                    if (!ref) return
+                    if (typeof ref === 'function') {
+                        try { ref(el) } catch (e) { /* ignore */ }
+                    } else {
+                        try { (ref as any).current = el } catch (e) { /* ignore */ }
+                    }
+                }}
+                className="modal"
+            >
                 <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
                     <h3 className="font-bold text-lg mb-4">Select Language</h3>
 

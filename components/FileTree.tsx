@@ -271,7 +271,7 @@ export default function FileTree({
                                         type="text"
                                         value={renameValue}
                                         onChange={(e) => setRenameValue(e.target.value)}
-                                        className="input input-bordered w-full mb-4"
+                                        className="input input-bordered w-full rounded-xl mb-4"
                                         onKeyDown={(e) => {
                                             if (e.key === 'Enter') submitRename()
                                             if (e.key === 'Escape') closeRenameModal()
