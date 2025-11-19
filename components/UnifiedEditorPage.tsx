@@ -105,15 +105,17 @@ export default function UnifiedEditorPage() {
     const refreshModalRef = useRef<HTMLDialogElement>(null)
 
     // Only initialize on client side to prevent hydration mismatch
+    const [draftAvailable, setDraftAvailable] = useState(false)
+    const draftRef = useRef<DraftState | null>(null)
+
     useEffect(() => {
         setIsMounted(true)
-        // Check for draft and restore if it exists
+        // Check for draft and *don't* auto-restore it. Offer explicit restore to avoid
+        // overwriting content when opening the editor from another context (e.g., viewing a paste).
         const draft = getDraftFromCookie()
         if (draft) {
-            // Restore draft without showing modal on initial load
-            setProjectTitle(draft.projectTitle)
-            setProjectDescription(draft.projectDescription)
-            setFiles(draft.files)
+            draftRef.current = draft
+            setDraftAvailable(true)
         }
     }, [])
 
@@ -312,6 +314,39 @@ export default function UnifiedEditorPage() {
 
     return (
         <div className="flex flex-col h-screen bg-base-100">
+            {draftAvailable && (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 p-3 text-sm flex items-center gap-3">
+                    <div className="flex-1">You have a saved draft. Restore or discard?</div>
+                    <div className="flex gap-2">
+                        <button
+                            className="btn btn-sm btn-ghost"
+                            onClick={() => {
+                                const d = draftRef.current
+                                if (d) {
+                                    setProjectTitle(d.projectTitle)
+                                    setProjectDescription(d.projectDescription)
+                                    setFiles(d.files)
+                                    clearDraftCookie()
+                                    draftRef.current = null
+                                    setDraftAvailable(false)
+                                }
+                            }}
+                        >
+                            Restore Draft
+                        </button>
+                        <button
+                            className="btn btn-sm btn-outline"
+                            onClick={() => {
+                                clearDraftCookie()
+                                draftRef.current = null
+                                setDraftAvailable(false)
+                            }}
+                        >
+                            Discard
+                        </button>
+                    </div>
+                </div>
+            )}
             <Navbar
                 onSaveShare={() => setShowSaveModal(true)}
                 onShowMetadata={() => setShowMetadataModal(true)}

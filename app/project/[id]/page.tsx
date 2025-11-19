@@ -112,9 +112,38 @@ export default function ProjectViewerPage() {
         async function loadProject() {
             try {
                 setLoading(true)
-                const response = await fetch(`/api/projects?id=${id}`)
+
+                // If the current user owns this project, include their deletion token
+                // from localStorage so private projects can be loaded for owners.
+                const ownedRaw = localStorage.getItem('ownedProjects') || '[]'
+                let ownedProjects: any[] = []
+                try {
+                    ownedProjects = JSON.parse(ownedRaw)
+                } catch (e) {
+                    ownedProjects = []
+                }
+
+                let token: string | null = null
+                for (const entry of ownedProjects) {
+                    if (typeof entry === 'string' && entry === id) {
+                        token = null
+                        break
+                    }
+                    if (entry && entry.id === id) {
+                        token = entry.deletionToken || null
+                        break
+                    }
+                }
+
+                const headers: Record<string, string> = {}
+                if (token) headers['Authorization'] = `Bearer ${token}`
+
+                const response = await fetch(`/api/projects?id=${id}`, { headers })
                 if (!response.ok) {
-                    throw new Error('Failed to load project')
+                    // Surface API error messages (401 for private projects without token)
+                    const body = await response.json().catch(() => ({}))
+                    const errMsg = body?.error || body?.message || 'Failed to load project'
+                    throw new Error(errMsg)
                 }
                 const data = await response.json()
                 setProject(data)
@@ -151,7 +180,7 @@ export default function ProjectViewerPage() {
 
     // Load Cloudflare Turnstile widget when delete modal is shown (if configured)
     useEffect(() => {
-        const siteKey = process.env.NEXT_TURNSTILE_SITE_KEY
+        const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
         if (!showDeleteModal || !siteKey) return
 
         let mounted = true
