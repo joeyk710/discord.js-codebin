@@ -15,6 +15,7 @@
     "@prisma/client": "^6.19.0",
     "@vercel/analytics": "^1.5.0",
     "daisyui": "^5.5.4",
+    "discord-api-types": "^0.38.34",
     "nanoid": "^5.1.6",
     "next": "^16.0.3",
     "prisma": "^6.19.0",
