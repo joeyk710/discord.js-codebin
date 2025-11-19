@@ -94,6 +94,8 @@ export default function UnifiedEditorPage() {
     const [expirationDays, setExpirationDays] = useState<number | null>(null)
     const [showSaveModal, setShowSaveModal] = useState(false)
     const [showShareModal, setShowShareModal] = useState(false)
+    const [showErrorModal, setShowErrorModal] = useState(false)
+    const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [showMetadataModal, setShowMetadataModal] = useState(false)
     const [showLeaveModal, setShowLeaveModal] = useState(false)
     const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null)
@@ -206,7 +208,8 @@ export default function UnifiedEditorPage() {
         try {
             // Validate title
             if (!projectTitle || projectTitle.trim() === '') {
-                alert('Project title is required')
+                setErrorMessage('Project title is required')
+                setShowErrorModal(true)
                 setIsSaving(false)
                 return
             }
@@ -240,7 +243,8 @@ export default function UnifiedEditorPage() {
             if (!response.ok) {
                 console.error('API Error:', data)
                 const errorMsg = data.error || data.message || 'Unknown error'
-                alert(`Failed to save project: ${errorMsg}`)
+                setErrorMessage(`Failed to save project: ${errorMsg}`)
+                setShowErrorModal(true)
                 setIsSaving(false)
                 setShowSaveModal(true)
                 return
@@ -295,7 +299,8 @@ export default function UnifiedEditorPage() {
             }
         } catch (error) {
             console.error(error)
-            alert('Failed to save project')
+            setErrorMessage('Failed to save project')
+            setShowErrorModal(true)
             setIsSaving(false)
             setShowSaveModal(true)
         }
@@ -495,6 +500,27 @@ export default function UnifiedEditorPage() {
                                 className="btn btn-warning rounded-xl"
                             >
                                 Refresh Anyway
+                            </button>
+                        </div>
+                    </div>
+                    <form method="dialog" className="modal-backdrop">
+                        <button>close</button>
+                    </form>
+                </dialog>
+            )}
+
+            {/* Error Modal (replaces browser alerts) */}
+            {showErrorModal && (
+                <dialog className="modal">
+                    <div className="modal-box rounded-2xl">
+                        <h3 className="font-bold text-lg text-error">❌ Error</h3>
+                        <p className="py-4 text-base-content/70">{errorMessage}</p>
+                        <div className="modal-action">
+                            <button
+                                className="btn btn-primary rounded-xl"
+                                onClick={() => setShowErrorModal(false)}
+                            >
+                                OK
                             </button>
                         </div>
                     </div>

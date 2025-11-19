@@ -104,6 +104,9 @@ export default function ProjectViewerPage() {
     const deleteModalRef = useRef<HTMLInputElement>(null)
     const successModalRef = useRef<HTMLDialogElement>(null)
     const errorModalRef = useRef<HTMLDialogElement>(null)
+    const [cfTurnstileToken, setCfTurnstileToken] = useState<string | null>(null)
+    const widgetIdRef = useRef<number | null>(null)
+    const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
 
     useEffect(() => {
         async function loadProject() {
@@ -146,6 +149,52 @@ export default function ProjectViewerPage() {
         }
     }, [showErrorModal])
 
+    // Load Cloudflare Turnstile widget when delete modal is shown (if configured)
+    useEffect(() => {
+        const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        if (!showDeleteModal || !siteKey) return
+
+        let mounted = true
+
+        const loadAndRender = async () => {
+            try {
+                if (!(window as any).turnstile) {
+                    const s = document.createElement('script')
+                    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
+                    s.async = true
+                    s.defer = true
+                    document.head.appendChild(s)
+                    await new Promise((res) => {
+                        s.onload = () => res(true)
+                        s.onerror = () => res(true)
+                    })
+                }
+
+                const container = document.getElementById('turnstile-container')
+                if (container && (window as any).turnstile && widgetIdRef.current == null && mounted) {
+                    try {
+                        widgetIdRef.current = (window as any).turnstile.render(container, {
+                            sitekey: siteKey,
+                            callback: (token: string) => setCfTurnstileToken(token),
+                            'expired-callback': () => setCfTurnstileToken(null),
+                        })
+                    } catch (e) {
+                        // ignore render errors
+                        console.error('Turnstile render error', e)
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading Turnstile', e)
+            }
+        }
+
+        loadAndRender()
+
+        return () => {
+            mounted = false
+        }
+    }, [showDeleteModal])
+
     const handleDeleteProject = async () => {
         try {
             setIsDeleting(true)
@@ -172,10 +221,26 @@ export default function ProjectViewerPage() {
                 }
             }
 
-            // If token exists, include it in the delete request
-            const deleteUrl = token ? `/api/projects/${id}?token=${encodeURIComponent(token)}` : `/api/projects/${id}`
+            // If token exists, include it in the Authorization header (safer than query param)
+            const deleteUrl = `/api/projects/${id}`
+            const headers: Record<string, string> = {}
+            if (token) headers['Authorization'] = `Bearer ${token}`
+
+            // If Turnstile site key is configured and we have a captcha token, include it
+            const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+            if (turnstileSiteKey) {
+                if (!cfTurnstileToken) {
+                    setErrorMessage('Please complete the CAPTCHA to confirm deletion.')
+                    setShowErrorModal(true)
+                    setIsDeleting(false)
+                    return
+                }
+                headers['cf-turnstile-token'] = cfTurnstileToken
+            }
+
             const response = await fetch(deleteUrl, {
                 method: 'DELETE',
+                headers: headers,
             })
 
             if (!response.ok) {
@@ -199,7 +264,8 @@ export default function ProjectViewerPage() {
             setShowDeleteModal(false)
             router.push('/editor')
         } catch (err) {
-            alert(err instanceof Error ? err.message : 'Failed to delete project')
+            setErrorMessage(err instanceof Error ? err.message : 'Failed to delete project')
+            setShowErrorModal(true)
             setIsDeleting(false)
         }
     }
@@ -359,6 +425,12 @@ export default function ProjectViewerPage() {
                     <p className="py-4 text-base-content/70">
                         Are you sure you want to delete this project? This action cannot be undone.
                     </p>
+                    {process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY && (
+                        <div className="mt-4 flex flex-col items-center gap-2">
+                            <p className="text-sm text-base-content/60">Please complete the CAPTCHA to confirm deletion.</p>
+                            <div id="turnstile-container" className="mx-auto" />
+                        </div>
+                    )}
                     <div className="modal-action">
                         <button
                             onClick={handleCancelDelete}
@@ -368,7 +440,7 @@ export default function ProjectViewerPage() {
                         </button>
                         <button
                             onClick={handleDeleteProject}
-                            disabled={isDeleting}
+                            disabled={isDeleting || (turnstileSiteKey ? !cfTurnstileToken : false)}
                             className="btn btn-error rounded-xl"
                         >
                             {isDeleting ? (
@@ -376,6 +448,8 @@ export default function ProjectViewerPage() {
                                     <span className="loading loading-spinner loading-sm"></span>
                                     Deleting...
                                 </>
+                            ) : turnstileSiteKey && !cfTurnstileToken ? (
+                                'Complete CAPTCHA'
                             ) : (
                                 '🗑️ Delete'
                             )}

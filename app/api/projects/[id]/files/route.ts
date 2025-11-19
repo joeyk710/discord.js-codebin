@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { createHash, randomUUID } from 'crypto'
 
 const API_TOKEN = process.env.API_TOKEN || 'default-unsafe-token'
 
@@ -11,6 +12,17 @@ function verifyTokenLocal(request: NextRequest): boolean {
     const providedToken = tokenFromHeader || tokenFromQuery
     if (!providedToken) return false
     return providedToken === API_TOKEN
+}
+
+function hashToken(token: string) {
+    return createHash('sha256').update(token).digest('hex')
+}
+
+function verifyDeletionMatch(providedToken: string | null | undefined, storedToken: string | null | undefined) {
+    if (!providedToken || !storedToken) return false
+    const isHashed = /^[0-9a-f]{64}$/.test(storedToken)
+    if (isHashed) return hashToken(providedToken) === storedToken
+    return providedToken === storedToken
 }
 
 type RouteParams = {
@@ -50,8 +62,11 @@ export async function POST(
         // Require ownership (deletion token) or admin API token to modify files
         const { searchParams } = new URL(request.url)
         const token = searchParams.get('token')
+        const authHeader = request.headers.get('Authorization')
+        const tokenFromHeader = authHeader?.replace('Bearer ', '')
+        const providedToken = tokenFromHeader || token
         const hasApiToken = verifyTokenLocal(request)
-        const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
+        const hasDeletionToken = verifyDeletionMatch(providedToken, project.deletionToken)
         if (!hasApiToken && !hasDeletionToken) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
@@ -79,7 +94,7 @@ export async function POST(
         } else {
             // Add new file
             files.push({
-                id: crypto.randomUUID(),
+                id: randomUUID(),
                 path,
                 name: fileName,
                 code,
@@ -134,8 +149,11 @@ export async function PUT(
         // Require ownership (deletion token) or admin API token to modify files
         const { searchParams } = new URL(request.url)
         const token = searchParams.get('token')
+        const authHeader = request.headers.get('Authorization')
+        const tokenFromHeader = authHeader?.replace('Bearer ', '')
+        const providedToken = tokenFromHeader || token
         const hasApiToken = verifyTokenLocal(request)
-        const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
+        const hasDeletionToken = verifyDeletionMatch(providedToken, project.deletionToken)
         if (!hasApiToken && !hasDeletionToken) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }
@@ -185,8 +203,11 @@ export async function DELETE(
 
         // Require ownership (deletion token) or admin API token to modify files
         const token = searchParams.get('token')
+        const authHeader = request.headers.get('Authorization')
+        const tokenFromHeader = authHeader?.replace('Bearer ', '')
+        const providedToken = tokenFromHeader || token
         const hasApiToken = verifyTokenLocal(request)
-        const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
+        const hasDeletionToken = verifyDeletionMatch(providedToken, project.deletionToken)
         if (!hasApiToken && !hasDeletionToken) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
         }

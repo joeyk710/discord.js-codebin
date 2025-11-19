@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { randomUUID } from 'crypto'
+import { randomUUID, createHash } from 'crypto'
 
 // API token for protecting endpoints (set via environment variable)
 const API_TOKEN = process.env.API_TOKEN || 'default-unsafe-token'
@@ -19,6 +19,21 @@ function verifyToken(request: NextRequest): boolean {
     }
 
     return providedToken === API_TOKEN
+}
+
+function hashToken(token: string) {
+    return createHash('sha256').update(token).digest('hex')
+}
+
+function verifyDeletionMatch(providedToken: string | null | undefined, storedToken: string | null | undefined) {
+    if (!providedToken || !storedToken) return false
+    // If stored token looks like a sha256 hex digest, compare hashed provided token
+    const isHashed = /^[0-9a-f]{64}$/.test(storedToken)
+    if (isHashed) {
+        return hashToken(providedToken) === storedToken
+    }
+    // fallback to plaintext comparison for existing entries
+    return providedToken === storedToken
 }
 
 export async function POST(request: NextRequest) {
@@ -61,8 +76,9 @@ export async function POST(request: NextRequest) {
         }
 
         try {
-            // Generate a secure deletion token for this project
-            const deletionToken = randomUUID()
+            // Generate a secure deletion token for this project (return raw to client, store hashed)
+            const deletionTokenRaw = randomUUID()
+            const deletionTokenHashed = hashToken(deletionTokenRaw)
 
             const project = await prisma.project.create({
                 data: {
@@ -70,7 +86,7 @@ export async function POST(request: NextRequest) {
                     description: description || '',
                     isPublic: isPublic,
                     expiresAt: expiresAt,
-                    deletionToken: deletionToken,
+                    deletionToken: deletionTokenHashed,
                     files: (files.map((file) => ({
                         id: randomUUID(),
                         path: file.path,
@@ -81,15 +97,18 @@ export async function POST(request: NextRequest) {
                 },
             })
 
+            // Log the created project id for debugging / dedupe checks
+            console.log('Created project id:', project.id)
+
             const origin = request.headers.get('origin') || request.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'http://localhost:3000'
 
-            // Return the deletion token only on creation so the client can store it locally.
+            // Return the raw deletion token only on creation so the client can store it locally.
             return NextResponse.json({
                 id: project.id,
                 success: true,
                 shortUrl: `${origin}/project/${project.id}`,
                 project,
-                deletionToken,
+                deletionToken: deletionTokenRaw,
             })
         } catch (dbError) {
             console.error('Database error:', dbError)
@@ -190,8 +209,11 @@ export async function GET(request: NextRequest) {
             if (!project.isPublic) {
                 const { searchParams: sp } = new URL(request.url)
                 const token = sp.get('token')
+                const authHeader = request.headers.get('Authorization')
+                const tokenFromHeader = authHeader?.replace('Bearer ', '')
+                const providedToken = tokenFromHeader || token
                 const hasApiToken = verifyToken(request)
-                const hasDeletionToken = token && project.deletionToken && token === project.deletionToken
+                const hasDeletionToken = verifyDeletionMatch(providedToken, project.deletionToken)
 
                 if (!hasApiToken && !hasDeletionToken) {
                     return NextResponse.json({ error: 'Unauthorized: private project' }, { status: 401 })
@@ -215,10 +237,27 @@ export async function GET(request: NextRequest) {
         // allow optional isPublic filter
         const isPublicParam = searchParams.get('isPublic')
         const where: any = {}
+
+        // Only show public projects by default to unauthenticated callers.
+        // If a client supplies `isPublic` explicitly and requests private results
+        // (`isPublic=false`), require a valid API token. If a client supplies
+        // `isPublic=true` that's allowed without auth.
+        const hasApiToken = verifyToken(request)
         if (isPublicParam !== null) {
             // coerce to boolean if possible
-            if (isPublicParam === 'true' || isPublicParam === '1') where.isPublic = true
-            else if (isPublicParam === 'false' || isPublicParam === '0') where.isPublic = false
+            if (isPublicParam === 'true' || isPublicParam === '1') {
+                where.isPublic = true
+            } else if (isPublicParam === 'false' || isPublicParam === '0') {
+                if (!hasApiToken) {
+                    return NextResponse.json({ error: 'Unauthorized: listing private projects requires an API token' }, { status: 401 })
+                }
+                where.isPublic = false
+            }
+        } else {
+            // no explicit filter provided -> only show public projects to unauthenticated requests
+            if (!hasApiToken) {
+                where.isPublic = true
+            }
         }
 
         const total = await prisma.project.count({ where })
