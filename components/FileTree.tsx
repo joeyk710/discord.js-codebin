@@ -67,11 +67,20 @@ function FileTreeNode({
                             e.stopPropagation()
                             setExpanded(!expanded)
                         }}
-                        className="p-0 w-4 h-4 flex items-center justify-center hover:bg-base-300 rounded transition-transform duration-200"
-                        style={{ transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}
+                        className="p-0 w-6 h-6 flex items-center justify-center hover:bg-base-300 rounded"
                         title={expanded ? 'Collapse' : 'Expand'}
+                        aria-label={expanded ? 'Collapse folder' : 'Expand folder'}
                     >
-                        ▶
+                        <svg
+                            className="w-6 h-6 transform transition-transform duration-150"
+                            style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={1.5}
+                            stroke="currentColor"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                        </svg>
                     </button>
                 )}
                 {isFile && (
@@ -104,8 +113,8 @@ function FileTreeNode({
                                 e.stopPropagation()
                                 onRequestRename?.(node.path, node.name)
                             }}
-                            className="tooltip tooltip-bottom btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20 z-50"
-                            data-tip="Rename"
+                            className="btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20 z-50"
+                            title="Rename"
                             aria-label="Rename file"
                         >
                             <PencilIcon className="w-4 h-4" />
@@ -115,8 +124,8 @@ function FileTreeNode({
                                 e.stopPropagation()
                                 onDeleteFile?.(node.path)
                             }}
-                            className="tooltip tooltip-bottom btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20 group transition-colors hover:bg-error/10 hover:border-error hover:text-error z-50"
-                            data-tip="Delete"
+                            className="btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20 group transition-colors hover:bg-error/10 hover:border-error hover:text-error z-50"
+                            title="Delete"
                             aria-label="Delete file"
                         >
                             <TrashIcon className="w-4 h-4 transition-colors" />
@@ -125,23 +134,41 @@ function FileTreeNode({
                 )}
             </div>
 
-            {!isFile && expanded && node.children && (
-                <div className="space-y-1">
-                    {node.children.map(child => (
-                        <FileTreeNode
-                            key={child.path}
-                            node={child}
-                            level={level + 1}
-                            activeFile={activeFile}
-                            onFileSelect={onFileSelect}
-                            onAddFile={onAddFile}
-                            onDeleteFile={onDeleteFile}
-                            onRenameFile={onRenameFile}
-                            onRequestRename={onRequestRename}
-                            isReadOnly={isReadOnly}
-                            openFiles={openFiles}
-                        />
-                    ))}
+            {!isFile && node.children && (
+                // Outer wrapper must allow overflow visible so tooltips can escape the folder container.
+                <div
+                    className="overflow-visible"
+                    style={{
+                        opacity: expanded ? 1 : 0,
+                        transform: expanded ? 'translateY(0)' : 'translateY(-4px)',
+                        transition: 'opacity 180ms ease, transform 180ms ease'
+                    }}
+                >
+                    <div
+                        className="overflow-hidden"
+                        style={{
+                            maxHeight: expanded ? `${node.children.length * 44}px` : '0px',
+                            transition: 'max-height 180ms ease'
+                        }}
+                    >
+                        <div className="space-y-1 pt-1">
+                            {node.children.map(child => (
+                                <FileTreeNode
+                                    key={child.path}
+                                    node={child}
+                                    level={level + 1}
+                                    activeFile={activeFile}
+                                    onFileSelect={onFileSelect}
+                                    onAddFile={onAddFile}
+                                    onDeleteFile={onDeleteFile}
+                                    onRenameFile={onRenameFile}
+                                    onRequestRename={onRequestRename}
+                                    isReadOnly={isReadOnly}
+                                    openFiles={openFiles}
+                                />
+                            ))}
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

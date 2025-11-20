@@ -135,7 +135,7 @@ export default function MultiFileEditor({
     const currentFile = files.find(f => f.path === activeFile)
 
     // Toast management
-    const addToast = useCallback((message: string, type: ToastProps['type'] = 'info', duration = 3000) => {
+    const addToast = useCallback((message: React.ReactNode, type: ToastProps['type'] = 'info', duration = 3000) => {
         const id = `toast-${Date.now()}-${Math.random()}`
         setToasts(prev => [...prev, { id, message, type, duration, onClose: removeToast }])
     }, [])
@@ -204,61 +204,59 @@ export default function MultiFileEditor({
     // Get file extension for language
     const getExtensionForLanguage = (lang: string): string => {
         const extensionMap: { [key: string]: string } = {
-            'javascript': 'js',
-            'typescript': 'ts',
-            'json': 'json',
-            'python': 'py',
-            'html': 'html',
-            'css': 'css',
-            'markdown': 'md',
-            'c++': 'cpp',
+            // Alphabetized by key
+            'ada': 'adb',
+            'bash': 'sh',
             'c': 'c',
             'c#': 'cs',
-            'php': 'php',
-            'ruby': 'rb',
-            'go': 'go',
-            'rust': 'rs',
-            'swift': 'swift',
-            'kotlin': 'kt',
-            'scala': 'scala',
-            'r': 'r',
-            'matlab': 'm',
-            'objective-c': 'm',
-            'groovy': 'groovy',
+            'c++': 'cpp',
             'clojure': 'clj',
-            'haskell': 'hs',
+            'cobol': 'cob',
+            'css': 'css',
+            'dart': 'dart',
+            'delphi': 'pas',
+            'dockerfile': '',
             'elixir': 'ex',
             'erlang': 'erl',
             'f#': 'fs',
-            'ocaml': 'ml',
-            'scheme': 'scm',
+            'fortran': 'f90',
+            'go': 'go',
+            'graphql': 'graphql',
+            'groovy': 'groovy',
+            'haskell': 'hs',
+            'html': 'html',
+            'java': 'java',
+            'javascript': 'js',
+            'json': 'json',
+            'kotlin': 'kt',
             'lisp': 'lisp',
             'lua': 'lua',
-            'perl': 'pl',
-            'shell': 'sh',
-            'bash': 'sh',
-            'powershell': 'ps1',
-            'vb.net': 'vb',
-            'delphi': 'pas',
+            'matlab': 'm',
+            'makefile': '',
+            'markdown': 'md',
+            'objective-c': 'm',
+            'ocaml': 'ml',
             'pascal': 'pas',
-            'cobol': 'cob',
-            'fortran': 'f90',
-            'ada': 'adb',
+            'php': 'php',
+            'powershell': 'ps1',
             'prolog': 'pl',
-            'dart': 'dart',
-            'solidity': 'sol',
-            'webassembly': 'wasm',
+            'python': 'py',
+            'ruby': 'rb',
+            'r': 'r',
+            'rust': 'rs',
+            'scala': 'scala',
             'scss': 'scss',
             'sass': 'sass',
-            'less': 'less',
+            'shell': 'sh',
+            'solidity': 'sol',
+            'sql': 'sql',
+            'swift': 'swift',
+            'toml': 'toml',
+            'typescript': 'ts',
+            'vb.net': 'vb',
+            'webassembly': 'wasm',
             'xml': 'xml',
             'yaml': 'yaml',
-            'toml': 'toml',
-            'sql': 'sql',
-            'graphql': 'graphql',
-            // special cases - no extension desired (Dockerfile/Makefile)
-            'dockerfile': '',
-            'makefile': '',
         }
 
         return extensionMap[lang.toLowerCase()] ?? 'txt'
@@ -324,9 +322,15 @@ export default function MultiFileEditor({
         [files, activeFile, openFiles, isReadOnly, updateFiles]
     )
 
-    const handleAddFile = useCallback(() => {
-        // Clear previous input so the modal opens with an empty field
-        setNewFilePath('')
+    const handleAddFile = useCallback((folderPath?: string) => {
+        // Prefill input with folder path (if provided) so new file is created in that folder
+        if (folderPath && folderPath !== '.') {
+            // ensure trailing slash
+            const prefix = folderPath.endsWith('/') ? folderPath : `${folderPath}/`
+            setNewFilePath(prefix)
+        } else {
+            setNewFilePath('')
+        }
         setShowNewFileDialog(true)
         setTimeout(() => newFileInputRef.current?.focus(), 0)
     }, [])
@@ -392,7 +396,13 @@ export default function MultiFileEditor({
 
             if (uniquePath.toLowerCase() !== pathWithExt.toLowerCase()) {
                 // Show non-blocking toast instead of alert
-                addToast(`File renamed to ${uniquePath.split('/').pop()} to avoid duplicate`, 'warning', 4000)
+                addToast(
+                    <>
+                        File renamed to <strong>{uniquePath.split('/').pop()}</strong> to avoid duplicate
+                    </>,
+                    'warning',
+                    4000
+                )
             }
 
             const fileName = uniquePath.split('/').pop() || uniquePath
@@ -409,7 +419,13 @@ export default function MultiFileEditor({
             updateFiles(prev => [...prev, newFile])
             handleFileSelect(newFile.path)
             handleCloseNewFileModal()
-            addToast(`Created ${fileName}`, 'success', 2000)
+            addToast(
+                <>
+                    Created <strong>{fileName}</strong>
+                </>,
+                'success',
+                2000
+            )
         },
         [files, newFilePath, currentFile, handleFileSelect, addToast]
     )
@@ -447,7 +463,13 @@ export default function MultiFileEditor({
         if (deleteConfirmModalRef.current) {
             deleteConfirmModalRef.current.close()
         }
-        addToast(`Deleted ${fileName}`, 'info', 2500)
+        addToast(
+            <>
+                Deleted <strong>{fileName}</strong>
+            </>,
+            'info',
+            2500
+        )
     }, [files, fileToDelete, handleTabClose, addToast])
 
     const handleCancelDelete = useCallback(() => {
@@ -460,16 +482,42 @@ export default function MultiFileEditor({
 
     const handleRenameFile = useCallback(
         (oldPath: string, newPath: string) => {
-            // Infer language from new filename extension
-            const newName = newPath.split('/').pop() || newPath
-            const inferredLang = inferLanguageFromFilename(newName) || undefined
+            // Infer language from new filename extension and avoid collisions with other files
+            const newNameCandidate = newPath.split('/').pop() || newPath
+            const oldName = oldPath.split('/').pop() || oldPath
+
+            // Other files (exclude the file we're renaming) to check for collisions
+            const otherFiles = files.filter(f => f.path !== oldPath)
+
+            const makeUniqueAmong = (basePath: string, language?: string) => {
+                const dirIndex = basePath.lastIndexOf('/')
+                const dir = dirIndex > -1 ? basePath.substring(0, dirIndex + 1) : ''
+                const filename = dirIndex > -1 ? basePath.substring(dirIndex + 1) : basePath
+                const hasDot = filename.includes('.')
+                const nameWithoutExt = hasDot ? filename.substring(0, filename.lastIndexOf('.')) : filename
+                const ext = hasDot ? filename.substring(filename.lastIndexOf('.') + 1) : (getExtensionForLanguage(language || 'javascript') || '')
+
+                let candidate = ext ? `${dir}${nameWithoutExt}.${ext}` : `${dir}${nameWithoutExt}`
+                let i = 1
+                const lowerExists = (p: string) => otherFiles.some(of => of.path.toLowerCase() === p.toLowerCase())
+                while (lowerExists(candidate)) {
+                    candidate = ext ? `${dir}${nameWithoutExt}(${i}).${ext}` : `${dir}${nameWithoutExt}(${i})`
+                    i++
+                }
+                return candidate
+            }
+
+            const inferredLangCandidate = inferLanguageFromFilename(newNameCandidate) || undefined
+            const finalPath = makeUniqueAmong(newPath, inferredLangCandidate ?? undefined)
+            const finalName = finalPath.split('/').pop() || finalPath
+            const inferredLang = inferLanguageFromFilename(finalName) || inferredLangCandidate
 
             updateFiles(files.map(f =>
                 f.path === oldPath
                     ? {
                         ...f,
-                        path: newPath,
-                        name: newName,
+                        path: finalPath,
+                        name: finalName,
                         language: inferredLang ?? f.language,
                     }
                     : f
@@ -477,17 +525,36 @@ export default function MultiFileEditor({
 
             // Update active file path if renaming the active file
             if (activeFile === oldPath) {
-                setActiveFile(newPath)
+                setActiveFile(finalPath)
             }
 
             // Update open files (also carry language change)
             setOpenFiles(openFiles.map(f =>
                 f.path === oldPath
-                    ? { ...f, path: newPath, name: newName, language: inferredLang ?? f.language }
+                    ? { ...f, path: finalPath, name: finalName, language: inferredLang ?? f.language }
                     : f
             ))
+
+            // Notify user: warn if we adjusted name to avoid collision, otherwise show success
+            if (finalPath.toLowerCase() !== newPath.toLowerCase()) {
+                addToast(
+                    <>
+                        File renamed to <strong>{finalName}</strong> to avoid duplicate
+                    </>,
+                    'warning',
+                    3500
+                )
+            } else {
+                addToast(
+                    <>
+                        Renamed <strong>{oldName}</strong> to <strong>{finalName}</strong>
+                    </>,
+                    'success',
+                    3000
+                )
+            }
         },
-        [files, activeFile, openFiles]
+        [files, activeFile, openFiles, addToast]
     )
 
     const handleLanguageSelect = useCallback(
@@ -544,7 +611,7 @@ export default function MultiFileEditor({
                                                 {currentFile.path}
                                             </span>
                                             {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
-                                                <span className="tooltip w-2 h-2 rounded-full bg-warning" data-tip="Unsaved changes"></span>
+                                                <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes" aria-label="Unsaved changes"></span>
                                             )}
                                         </div>
 
@@ -553,8 +620,8 @@ export default function MultiFileEditor({
                                             <button
                                                 onClick={() => setShowSuggestionsModal(true)}
                                                 disabled={true}
-                                                className="tooltip btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent opacity-50 cursor-not-allowed"
-                                                data-tip="Suggestions temporarily disabled"
+                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent opacity-50 cursor-not-allowed"
+                                                title="Suggestions temporarily disabled"
                                             >
                                                 {isAnalyzing ? (
                                                     <>
@@ -656,7 +723,7 @@ export default function MultiFileEditor({
                                         {currentFile.path}
                                     </span>
                                     {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
-                                        <span className="tooltip w-2 h-2 rounded-full bg-warning" data-tip="Unsaved changes"></span>
+                                        <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes" aria-label="Unsaved changes"></span>
                                     )}
 
                                     {/* Controls moved next to the filename for easier reach */}
@@ -664,8 +731,8 @@ export default function MultiFileEditor({
                                         <button
                                             onClick={() => setShowSuggestionsModal(true)}
                                             disabled={true}
-                                            className="tooltip btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 opacity-50 cursor-not-allowed"
-                                            data-tip="Suggestions temporarily disabled"
+                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 opacity-50 cursor-not-allowed"
+                                            title="Suggestions temporarily disabled"
                                         >
                                             {isAnalyzing ? (
                                                 <>
