@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useCallback, useId } from 'react'
+import React, { useState, useCallback, useId, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { FileNode, getLanguageIcon, getMaterialIconFilename } from '@/lib/fileTree'
 import { inferLanguageFromFilename } from '@/lib/fileTree'
@@ -188,6 +189,13 @@ export default function FileTree({
     // Manage rename modal state at the tree level (replace inline editing)
     const [renameTarget, setRenameTarget] = useState<{ path: string; name: string } | null>(null)
     const [renameValue, setRenameValue] = useState('')
+    const [mounted, setMounted] = useState(false)
+    // stable modal id for the portal-rendered modal
+    const modalId = `rename_modal_${useId()}`
+
+    useEffect(() => {
+        setMounted(true)
+    }, [])
 
     const openRenameModal = (path: string, name: string) => {
         setRenameTarget({ path, name })
@@ -264,57 +272,55 @@ export default function FileTree({
                 </div>
             </div>
 
-            {/* Rename Modal (daisyUI checkbox/modal-toggle pattern) */}
-            {
-                (() => {
-                    const modalId = `rename_modal_${useId()}`
-                    return (
-                        <>
+            {/* Rename Modal (portalled so it escapes the mobile drawer) */}
+            {mounted && createPortal(
+                <>
+                    <input
+                        type="checkbox"
+                        id={modalId}
+                        className="modal-toggle"
+                        checked={!!renameTarget}
+                        onChange={(e) => {
+                            // unchecking closes modal
+                            if (!e.target.checked) closeRenameModal()
+                        }}
+                    />
+
+                    <div className="modal">
+                        <div className="modal-box rounded-2xl max-w-lg">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg">Rename File</h3>
+                                    <p className="text-sm text-base-content/70">Rename <span className="font-mono">{renameTarget?.name}</span></p>
+                                </div>
+                            </div>
                             <input
-                                type="checkbox"
-                                id={modalId}
-                                className="modal-toggle"
-                                checked={!!renameTarget}
-                                onChange={(e) => {
-                                    // unchecking closes modal
-                                    if (!e.target.checked) closeRenameModal()
+                                type="text"
+                                value={renameValue}
+                                onChange={(e) => setRenameValue(e.target.value)}
+                                className="input input-bordered w-full rounded-xl mb-4"
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') submitRename()
+                                    if (e.key === 'Escape') closeRenameModal()
                                 }}
                             />
-
-                            <div className="modal">
-                                <div className="modal-box rounded-2xl max-w-lg">
-                                    <div className="flex items-center gap-3 mb-4">
-                                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                                            <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                            </svg>
-                                        </div>
-                                        <div>
-                                            <h3 className="font-bold text-lg">Rename File</h3>
-                                            <p className="text-sm text-base-content/70">Rename <span className="font-mono">{renameTarget?.name}</span></p>
-                                        </div>
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={renameValue}
-                                        onChange={(e) => setRenameValue(e.target.value)}
-                                        className="input input-bordered w-full rounded-xl mb-4"
-                                        onKeyDown={(e) => {
-                                            if (e.key === 'Enter') submitRename()
-                                            if (e.key === 'Escape') closeRenameModal()
-                                        }}
-                                    />
-                                    <div className="modal-action mt-2">
-                                        <button type="button" className="btn btn-ghost rounded-xl" onClick={closeRenameModal}>Cancel</button>
-                                        <button type="button" className="btn btn-primary rounded-xl" onClick={submitRename}>Rename</button>
-                                    </div>
-                                </div>
-                                <label className="modal-backdrop" htmlFor={modalId}></label>
+                            <div className="modal-action mt-2">
+                                <button type="button" className="btn btn-ghost rounded-xl" onClick={closeRenameModal}>Cancel</button>
+                                <button type="button" className="btn btn-primary rounded-xl" onClick={submitRename}>Rename</button>
                             </div>
-                        </>
-                    )
-                })()
-            }
+                        </div>
+                        <label className="modal-backdrop" htmlFor={modalId}></label>
+                    </div>
+                </>,
+                // portal target
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                document.body
+            )}
         </div>
     )
 }
