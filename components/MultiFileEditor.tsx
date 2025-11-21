@@ -93,6 +93,10 @@ export default function MultiFileEditor({
     const deleteConfirmModalRef = useRef<HTMLDialogElement>(null)
     const languageModalRef = useRef<HTMLDialogElement>(null)
 
+    // derived new-file validation helpers
+    const newFileBaseName = newFilePath.trim() ? (newFilePath.trim().split('/').pop() || '') : ''
+    const newFileBaseNameIsOnlyDots = newFileBaseName !== '' && /^[.]+$/.test(newFileBaseName)
+
     // Build file tree
     useEffect(() => {
         const tree = buildFileTree(
@@ -387,6 +391,17 @@ export default function MultiFileEditor({
             if (!newFilePath.trim()) return
 
             const userPath = newFilePath.trim()
+            const baseNameCheck = userPath.split('/').pop() || ''
+            if (!baseNameCheck || /^[.]+$/.test(baseNameCheck)) {
+                addToast(
+                    <>
+                        Invalid filename: <strong>{baseNameCheck || userPath}</strong>. Filenames cannot be empty or consist only of dots.
+                    </>,
+                    'error',
+                    4000
+                )
+                return
+            }
             const userHasExt = (userPath.split('/').pop() || '').includes('.')
             // Use current file's language as default, or fallback to javascript
             const defaultLang = currentFile?.language || 'javascript'
@@ -835,10 +850,22 @@ export default function MultiFileEditor({
                                 className="input input-bordered w-full focus:input-primary validator"
                                 maxLength={3000}
                             />
+                            <div className="flex items-center justify-between mt-2">
+                                <p className="validator-hint text-xs text-base-content/60">Filename max 50 characters</p>
+                                <span className="text-xs text-base-content/60 ml-3">{newFileBaseName.length}/50</span>
+                            </div>
 
                             {/* Preview of normalized filename */}
                             {newFilePath.trim() && (() => {
                                 const userPath = newFilePath.trim()
+                                const baseName = userPath.split('/').pop() || ''
+                                if (!baseName || /^[.]+$/.test(baseName)) {
+                                    return (
+                                        <div className="mt-3 p-3 bg-error/10 border border-error/30 rounded-lg">
+                                            <p className="text-sm text-error">Invalid filename: <span className="font-mono font-semibold">{baseName || userPath}</span>. Filenames cannot be empty or consist only of dots.</p>
+                                        </div>
+                                    )
+                                }
                                 const userHasExt = (userPath.split('/').pop() || '').includes('.')
                                 const defaultLang = currentFile?.language || 'javascript'
                                 const normalizedPath = userHasExt ? userPath : getPathWithExtension(userPath, defaultLang)
@@ -898,9 +925,9 @@ export default function MultiFileEditor({
                             </button>
                             <button
                                 type="submit"
-                                disabled={newFilePath.trim() === '' || ((newFilePath.trim().split('/').pop() || '').length > 50)}
+                                disabled={newFilePath.trim() === '' || newFileBaseNameIsOnlyDots || newFileBaseName.length > 50}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                                title={(newFilePath.trim().split('/').pop() || '').length > 50 ? 'Filename too long' : undefined}
+                                title={newFileBaseName.length > 50 ? 'Filename too long' : undefined}
                             >
                                 Create File
                             </button>

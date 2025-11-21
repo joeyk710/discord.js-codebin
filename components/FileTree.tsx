@@ -202,6 +202,10 @@ export default function FileTree({
         setRenameValue(name)
     }
 
+    // derived rename validation
+    const renameBaseName = renameValue.trim() ? (renameValue.trim().split('/').pop() || '') : ''
+    const renameBaseIsOnlyDots = renameBaseName !== '' && /^[.]+$/.test(renameBaseName)
+
     const closeRenameModal = () => {
         setRenameTarget(null)
         setRenameValue('')
@@ -211,6 +215,16 @@ export default function FileTree({
     const submitRename = () => {
         if (!renameTarget) return
         const trimmed = renameValue.trim()
+        // Prevent renaming to empty or dot-only names like '.' or '...'
+        const baseCandidate = trimmed.split('/').pop() || ''
+        if (!baseCandidate || /^[.]+$/.test(baseCandidate)) {
+            try {
+                alert('Invalid filename. Filenames cannot be empty or consist only of dots.')
+            } catch (e) {
+                // ignore
+            }
+            return
+        }
         if (trimmed && trimmed !== renameTarget.name) {
             // enforce filename limit
             if (trimmed.length > 50) {
@@ -338,10 +352,22 @@ export default function FileTree({
                                 />
                                 <span className="text-xs text-base-content/60 ml-3">{renameValue.length}/50</span>
                             </div>
+                            {renameBaseIsOnlyDots && (
+                                <div className="mt-3 p-3 bg-error/10 border border-error/30 rounded-lg">
+                                    <p className="text-sm text-error">Invalid filename: <span className="font-mono font-semibold">{renameBaseName || renameValue}</span>. Filenames cannot be empty or consist only of dots.</p>
+                                </div>
+                            )}
                             <p className="validator-hint text-xs text-base-content/60 mb-2">Filename max 50 characters</p>
                             <div className="modal-action mt-2">
                                 <button type="button" className="btn btn-ghost rounded-xl" onClick={() => { closeRenameModal(); try { localStorage.removeItem('djs_rename_draft') } catch (e) { } }}>Cancel</button>
-                                <button type="button" className="btn btn-primary rounded-xl" onClick={() => { submitRename(); try { localStorage.removeItem('djs_rename_draft') } catch (e) { } }}>Rename</button>
+                                <button
+                                    type="button"
+                                    className="btn btn-primary rounded-xl"
+                                    onClick={() => { submitRename(); try { localStorage.removeItem('djs_rename_draft') } catch (e) { } }}
+                                    disabled={!renameValue.trim() || renameBaseIsOnlyDots || renameValue.trim().length > 50}
+                                >
+                                    Rename
+                                </button>
                             </div>
                         </div>
                         <label className="modal-backdrop" htmlFor={modalId}></label>
