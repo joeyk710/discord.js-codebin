@@ -642,24 +642,7 @@ export default function MultiFileEditor({
 
                                         {/* Move controls closer to the filename so they're easier to reach */}
                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                            <button
-                                                onClick={() => setShowSuggestionsModal(true)}
-                                                disabled={true}
-                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent opacity-50 cursor-not-allowed"
-                                                title="Suggestions temporarily disabled"
-                                            >
-                                                {isAnalyzing ? (
-                                                    <>
-                                                        <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
-                                                        <span className="hidden sm:inline">Analyzing...</span>
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <span>💡</span>
-                                                        <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
-                                                    </>
-                                                )}
-                                            </button>
+                                            {/* Suggestions button removed temporarily while analyzer is disabled */}
                                             <button
                                                 onClick={() => languageModalRef.current?.showModal()}
                                                 className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300 dark:border-white/20 hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
@@ -753,24 +736,7 @@ export default function MultiFileEditor({
 
                                     {/* Controls moved next to the filename for easier reach */}
                                     <div className="ml-3 flex items-center gap-2 flex-shrink-0">
-                                        <button
-                                            onClick={() => setShowSuggestionsModal(true)}
-                                            disabled={true}
-                                            className="btn btn-xs sm:btn-sm btn-outline rounded-xl gap-1.5 sm:gap-2 opacity-50 cursor-not-allowed"
-                                            title="Suggestions temporarily disabled"
-                                        >
-                                            {isAnalyzing ? (
-                                                <>
-                                                    <span className="loading loading-spinner loading-xs sm:loading-sm"></span>
-                                                    <span className="hidden sm:inline">Analyzing...</span>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span>💡</span>
-                                                    <span className="hidden xs:inline">{suggestions.length > 0 ? suggestions.length : 'View'}</span>
-                                                </>
-                                            )}
-                                        </button>
+                                        {/* Suggestions button removed temporarily while analyzer is disabled */}
                                         <button
                                             onClick={() => languageModalRef.current?.showModal()}
                                             className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
