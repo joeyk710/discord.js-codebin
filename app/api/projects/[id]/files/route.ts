@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import prisma from '@/lib/db'
 import { createHash, randomUUID } from 'crypto'
 
 const API_TOKEN = process.env.API_TOKEN || 'default-unsafe-token'
