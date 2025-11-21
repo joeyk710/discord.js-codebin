@@ -7,18 +7,17 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postinstall": "prisma generate --no-engine"
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@monaco-editor/react": "^4.7.0",
-    "@prisma/client": "^6.19.0",
+    "@prisma/client": "^7.0.0",
     "@vercel/analytics": "^1.5.0",
     "daisyui": "^5.5.4",
     "discord-api-types": "^0.38.34",
     "nanoid": "^5.1.6",
     "next": "^16.0.3",
-    "prisma": "^6.19.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-markdown": "^10.1.0",
@@ -28,11 +27,12 @@
     "@tailwindcss/postcss": "^4.1.17",
     "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^24.10.1",
-    "@types/react": "^19.2.5",
+    "@types/react": "^19.2.6",
     "@types/react-dom": "^19.2.3",
     "autoprefixer": "^10.4.22",
     "eslint": "^8.57.1",
     "eslint-config-next": "14.2.5",
+    "prisma": "^7.0.0",
     "typescript": "^5.9.3"
   }
 }
