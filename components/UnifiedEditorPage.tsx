@@ -21,6 +21,8 @@ interface DraftState {
     projectDescription: string
     files: FileData[]
     timestamp: number
+    // optional in-progress rename draft saved separately from files
+    renameDraft?: { path: string; name: string; timestamp?: number }
 }
 
 const DRAFT_COOKIE_NAME = 'djs_editor_draft'
@@ -114,8 +116,30 @@ export default function UnifiedEditorPage() {
         // Check for draft and *don't* auto-restore it. Offer explicit restore to avoid
         // overwriting content when opening the editor from another context (e.g., viewing a paste).
         const draft = getDraftFromCookie()
+        // also check for an in-progress rename draft saved to localStorage
+        let renameDraft = null
+        try {
+            const raw = localStorage.getItem('djs_rename_draft')
+            if (raw) renameDraft = JSON.parse(raw)
+        } catch (e) {
+            // ignore parse errors
+            renameDraft = null
+        }
         if (draft) {
+            if (renameDraft) {
+                draft.renameDraft = renameDraft
+            }
             draftRef.current = draft
+            setDraftAvailable(true)
+        } else if (renameDraft) {
+            // If there's no full draft cookie but an in-progress rename exists, surface it as a draft
+            draftRef.current = {
+                projectTitle,
+                projectDescription,
+                files,
+                timestamp: Date.now(),
+                renameDraft,
+            }
             setDraftAvailable(true)
         }
     }, [])
@@ -335,11 +359,19 @@ export default function UnifiedEditorPage() {
                     <div className="modal-box rounded-2xl">
                         <h3 className="font-bold text-lg">You have a saved draft</h3>
                         <p className="py-2 text-base-content/70">Restore your saved draft or discard it.</p>
+                        {draftRef.current?.renameDraft && (
+                            <div className="mt-3 p-3 bg-info/10 border border-info/30 rounded-lg">
+                                <p className="text-sm text-info">
+                                    You were editing the filename of <span className="font-mono">{draftRef.current.renameDraft.path.split('/').pop()}</span> — unsaved name: <span className="font-mono font-semibold">{draftRef.current.renameDraft.name}</span>
+                                </p>
+                            </div>
+                        )}
                         <div className="modal-action">
                             <button
                                 className="btn btn-ghost rounded-xl"
                                 onClick={() => {
                                     clearDraftCookie()
+                                    try { localStorage.removeItem('djs_rename_draft') } catch (e) { }
                                     draftRef.current = null
                                     setDraftAvailable(false)
                                     try { draftModalRef.current?.close() } catch (e) { }
@@ -354,8 +386,39 @@ export default function UnifiedEditorPage() {
                                     if (d) {
                                         setProjectTitle(d.projectTitle)
                                         setProjectDescription(d.projectDescription)
-                                        setFiles(d.files)
+                                        // If draft contains files, use them (restore full draft). Otherwise prefer current files.
+                                        if (d.files && d.files.length > 0) {
+                                            let restoredFiles = d.files
+                                            // Apply any renameDraft if present
+                                            if (d.renameDraft) {
+                                                restoredFiles = restoredFiles.map(f => {
+                                                    if (f.path === d.renameDraft?.path) {
+                                                        const lastSlash = f.path.lastIndexOf('/')
+                                                        const dir = lastSlash > -1 ? f.path.substring(0, lastSlash + 1) : ''
+                                                        const newPath = `${dir}${d.renameDraft.name}`
+                                                        return { ...f, path: newPath, name: d.renameDraft.name }
+                                                    }
+                                                    return f
+                                                })
+                                            }
+                                            setFiles(restoredFiles)
+                                        } else {
+                                            // No full files in cookie; apply renameDraft to current files if present
+                                            if (d.renameDraft) {
+                                                setFiles(prev => prev.map(f => {
+                                                    if (f.path === d.renameDraft?.path) {
+                                                        const lastSlash = f.path.lastIndexOf('/')
+                                                        const dir = lastSlash > -1 ? f.path.substring(0, lastSlash + 1) : ''
+                                                        const newPath = `${dir}${d.renameDraft!.name}`
+                                                        return { ...f, path: newPath, name: d.renameDraft!.name }
+                                                    }
+                                                    return f
+                                                }))
+                                            }
+                                        }
+
                                         clearDraftCookie()
+                                        try { localStorage.removeItem('djs_rename_draft') } catch (e) { }
                                         draftRef.current = null
                                         setDraftAvailable(false)
                                     }
@@ -437,28 +500,39 @@ export default function UnifiedEditorPage() {
                     <form className="space-y-5">
                         <div className="divider my-0"></div>
                         <div>
-                            <label className="label">
-                                <span className="label-text font-semibold">Project Title</span>
-                            </label>
+                            <div className="flex items-center justify-between">
+                                <label className="label m-0 p-0">
+                                    <span className="label-text font-semibold">Project Title</span>
+                                </label>
+                                <span className="text-xs text-base-content/60">{projectTitle.length}/100</span>
+                            </div>
                             <input
                                 type="text"
                                 value={projectTitle}
                                 onChange={(e) => setProjectTitle(e.target.value)}
                                 placeholder="My Awesome Project"
-                                className="input input-bordered w-full rounded-xl"
+                                className="input input-bordered w-full rounded-xl validator"
+                                maxLength={100}
+                                required
                             />
+                            <p className="validator-hint text-xs text-base-content/60 mt-2">Project title max 100 characters</p>
                         </div>
                         <div>
-                            <label className="label">
-                                <span className="label-text font-semibold">Description</span>
-                            </label>
+                            <div className="flex items-center justify-between">
+                                <label className="label m-0 p-0">
+                                    <span className="label-text font-semibold">Description</span>
+                                </label>
+                                <span className="text-xs text-base-content/60">{projectDescription.length}/1024</span>
+                            </div>
                             <textarea
                                 value={projectDescription}
                                 onChange={(e) => setProjectDescription(e.target.value)}
                                 placeholder="Describe your project..."
-                                className="textarea textarea-bordered w-full rounded-xl"
+                                className="textarea textarea-bordered w-full rounded-xl validator"
                                 rows={4}
+                                maxLength={1024}
                             />
+                            <p className="validator-hint text-xs text-base-content/60 mt-2">Description max 1024 characters</p>
                         </div>
                         <div className="modal-action gap-3">
                             <button

@@ -205,12 +205,24 @@ export default function FileTree({
     const closeRenameModal = () => {
         setRenameTarget(null)
         setRenameValue('')
+        try { localStorage.removeItem('djs_rename_draft') } catch (e) { }
     }
 
     const submitRename = () => {
         if (!renameTarget) return
         const trimmed = renameValue.trim()
         if (trimmed && trimmed !== renameTarget.name) {
+            // enforce filename limit
+            if (trimmed.length > 50) {
+                try {
+                    // use parent toast if available via event - fall back to alert
+                    // There's no direct access to addToast here; use local alert for now
+                    alert(`Filename is too long (${trimmed.length}/50). Shorten the name.`)
+                } catch (e) {
+                    // ignore
+                }
+                return
+            }
             const lastSlashIndex = renameTarget.path.lastIndexOf('/')
             const dirPath = lastSlashIndex > -1 ? renameTarget.path.substring(0, lastSlashIndex + 1) : ''
             const newPath = `${dirPath}${trimmed}`
@@ -299,19 +311,37 @@ export default function FileTree({
                                     <p className="text-sm text-base-content/70">Rename <span className="font-mono">{renameTarget?.name}</span></p>
                                 </div>
                             </div>
-                            <input
-                                type="text"
-                                value={renameValue}
-                                onChange={(e) => setRenameValue(e.target.value)}
-                                className="input input-bordered w-full rounded-xl mb-4"
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') submitRename()
-                                    if (e.key === 'Escape') closeRenameModal()
-                                }}
-                            />
+                            <div className="flex items-center justify-between">
+                                <input
+                                    type="text"
+                                    value={renameValue}
+                                    onChange={(e) => {
+                                        const v = e.target.value
+                                        // enforce filename max length client-side (50)
+                                        if (v.length <= 50) {
+                                            setRenameValue(v)
+                                            try {
+                                                if (renameTarget) {
+                                                    localStorage.setItem('djs_rename_draft', JSON.stringify({ path: renameTarget.path, name: v, timestamp: Date.now() }))
+                                                }
+                                            } catch (err) {
+                                                // ignore storage errors
+                                            }
+                                        }
+                                    }}
+                                    className="input input-bordered w-full rounded-xl mb-2 validator"
+                                    maxLength={50}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') submitRename()
+                                        if (e.key === 'Escape') closeRenameModal()
+                                    }}
+                                />
+                                <span className="text-xs text-base-content/60 ml-3">{renameValue.length}/50</span>
+                            </div>
+                            <p className="validator-hint text-xs text-base-content/60 mb-2">Filename max 50 characters</p>
                             <div className="modal-action mt-2">
-                                <button type="button" className="btn btn-ghost rounded-xl" onClick={closeRenameModal}>Cancel</button>
-                                <button type="button" className="btn btn-primary rounded-xl" onClick={submitRename}>Rename</button>
+                                <button type="button" className="btn btn-ghost rounded-xl" onClick={() => { closeRenameModal(); try { localStorage.removeItem('djs_rename_draft') } catch (e) { } }}>Cancel</button>
+                                <button type="button" className="btn btn-primary rounded-xl" onClick={() => { submitRename(); try { localStorage.removeItem('djs_rename_draft') } catch (e) { } }}>Rename</button>
                             </div>
                         </div>
                         <label className="modal-backdrop" htmlFor={modalId}></label>

@@ -406,6 +406,16 @@ export default function MultiFileEditor({
             }
 
             const fileName = uniquePath.split('/').pop() || uniquePath
+            if (fileName.length > 50) {
+                addToast(
+                    <>
+                        Filename too long: <strong>{fileName}</strong> ({fileName.length}/50)
+                    </>,
+                    'error',
+                    4000
+                )
+                return
+            }
             const inferredLang = inferLanguageFromFilename(fileName) || defaultLang
 
             const newFile: FileData = {
@@ -817,9 +827,13 @@ export default function MultiFileEditor({
                                 type="text"
                                 placeholder="e.g., src/index or src/index.ts"
                                 value={newFilePath}
-                                onChange={(e) => setNewFilePath(e.target.value)}
+                                onChange={(e) => {
+                                    // enforce overall path length but particularly filename length limit
+                                    setNewFilePath(e.target.value.slice(0, 3000))
+                                }}
                                 required
-                                className="input input-bordered w-full focus:input-primary"
+                                className="input input-bordered w-full focus:input-primary validator"
+                                maxLength={3000}
                             />
 
                             {/* Preview of normalized filename */}
@@ -840,6 +854,16 @@ export default function MultiFileEditor({
                                                 </svg>
                                                 File exists, will create: <span className="font-mono font-semibold">{uniquePath}</span>
                                             </p>
+                                        </div>
+                                    )
+                                }
+
+                                // Filename length preview (enforce 50 chars)
+                                const previewFilename = (normalizedPath.split('/').pop() || '')
+                                if (previewFilename.length > 50) {
+                                    return (
+                                        <div className="mt-3 p-3 bg-error/10 border border-error/30 rounded-lg">
+                                            <p className="text-sm text-error">Filename is too long ({previewFilename.length}/50). Shorten the name to continue.</p>
                                         </div>
                                     )
                                 }
@@ -874,8 +898,9 @@ export default function MultiFileEditor({
                             </button>
                             <button
                                 type="submit"
-                                disabled={newFilePath.trim() === ''}
+                                disabled={newFilePath.trim() === '' || ((newFilePath.trim().split('/').pop() || '').length > 50)}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={(newFilePath.trim().split('/').pop() || '').length > 50 ? 'Filename too long' : undefined}
                             >
                                 Create File
                             </button>
