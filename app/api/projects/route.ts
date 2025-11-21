@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import prisma from '@/lib/db'
+import { prisma } from '@/lib/db'
 import { randomUUID, createHash } from 'crypto'
 
 // API token for protecting endpoints (set via environment variable)
