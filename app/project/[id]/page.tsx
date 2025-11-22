@@ -310,10 +310,35 @@ export default function ProjectViewerPage() {
         try {
             setIsSaving(true)
 
+            // Read deletion token from localStorage (ownedProjects may contain strings or objects)
+            const ownedRaw = localStorage.getItem('ownedProjects') || '[]'
+            let ownedProjects: any[] = []
+            try {
+                ownedProjects = JSON.parse(ownedRaw)
+            } catch (e) {
+                ownedProjects = []
+            }
+
+            let token: string | null = null
+            for (const entry of ownedProjects) {
+                if (typeof entry === 'string' && entry === id) {
+                    // No token stored for legacy entries
+                    token = null
+                    break
+                }
+                if (entry && entry.id === id) {
+                    token = entry.deletionToken || null
+                    break
+                }
+            }
+
             // Update all files in the project
+            const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+            if (token) headers['Authorization'] = `Bearer ${token}`
+
             const response = await fetch(`/api/projects/${id}/files`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ files: editedFiles }),
             })
 
