@@ -50,7 +50,7 @@ export default function Navbar({ onSaveShare, onShowMetadata, isSaving, onEdit, 
                         <>
                             <button
                                 onClick={onShowMetadata}
-                                className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2"
+                                className="btn btn-xs sm:btn-sm btn-ghost rounded-xl flex items-center gap-2 border border-base-400 dark:border-white/5 hover:border-base-500 dark:hover:border-white/30 transition-colors"
                                 title="Edit project metadata"
                             >
                                 <PencilIcon className="w-4 h-4" />

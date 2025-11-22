@@ -645,7 +645,7 @@ export default function MultiFileEditor({
                                             {/* Suggestions button removed temporarily while analyzer is disabled */}
                                             <button
                                                 onClick={() => languageModalRef.current?.showModal()}
-                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300 dark:border-white/20 hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
+                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-400 dark:border-white/5 hover:border-base-500 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
                                                 aria-label={`Select language (${currentFile.language})`}
                                                 disabled={isReadOnly}
                                             >
@@ -690,7 +690,7 @@ export default function MultiFileEditor({
                 {/* Drawer sidebar - mobile only */}
                 <div className="drawer-side md:hidden">
                     <label htmlFor="file-drawer" className="drawer-overlay"></label>
-                    <div className="w-64 bg-base-100 border-r border-base-300 flex flex-col h-screen overflow-y-auto overflow-visible">
+                    <div className="w-64 bg-base-100 border-r border-base-300/50 dark:border-white/5 flex flex-col h-screen overflow-y-auto overflow-visible">
                         <FileTree
                             files={fileTree}
                             activeFile={activeFile}
@@ -708,7 +708,7 @@ export default function MultiFileEditor({
             {/* Desktop sidebar + Editor layout */}
             <div className="hidden md:flex flex-1 overflow-visible">
                 {/* File Tree Sidebar - desktop only */}
-                <div className="w-64 min-w-64 border-r border-base-300/50 bg-base-100 overflow-visible">
+                <div className="w-64 min-w-64 border-r border-base-300/50 dark:border-white/5 bg-base-100 overflow-visible">
                     <FileTree
                         files={fileTree}
                         activeFile={activeFile}
@@ -739,7 +739,7 @@ export default function MultiFileEditor({
                                         {/* Suggestions button removed temporarily while analyzer is disabled */}
                                         <button
                                             onClick={() => languageModalRef.current?.showModal()}
-                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-300/60 dark:border-white/20 bg-base-200/80 dark:bg-transparent hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
+                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-400 dark:border-white/5 bg-base-200/80 dark:bg-transparent hover:border-base-500 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
                                             aria-label={`Select language (${currentFile.language})`}
                                             disabled={isReadOnly}
                                         >

@@ -32,6 +32,7 @@ function FileTreeNode({
     onRequestRename,
     isReadOnly,
     openFiles,
+    filesCount,
 }: {
     node: FileNode
     level: number
@@ -43,6 +44,7 @@ function FileTreeNode({
     onRequestRename?: (path: string, name: string) => void
     isReadOnly?: boolean
     openFiles?: string[]
+    filesCount?: number
 }) {
     const [expanded, setExpanded] = useState(level === 0)
     const isFile = node.type === 'file'
@@ -55,9 +57,9 @@ function FileTreeNode({
         <div key={node.path}>
             <div
                 className={`
-                    flex items-center min-w-0 gap-2 px-3 py-2 rounded-lg border border-base-300/10 dark:border-white/5 transition-colors relative focus:outline-none focus:ring-0 overflow-visible
+                    flex items-center min-w-0 gap-2 px-3 py-2 rounded-lg border border-base-400 dark:border-white/5 transition-colors relative focus:outline-none focus:ring-0 overflow-visible
                     ${isFile ? 'cursor-pointer hover:bg-base-300/60' : 'hover:bg-base-200/40'}
-                    ${isActive && isFile ? 'bg-base-200/50 text-base-content/80 border-l-2 border-base-300' : ''}
+                    ${isActive && isFile ? 'bg-base-200/50 text-base-content/80 border-l-2 border-base-400' : ''}
                 `}
                 style={{ paddingLeft: `${level * 1.5 + 0.5}rem` }}
                 onClick={() => isFile && onFileSelect(node.path)}
@@ -114,7 +116,7 @@ function FileTreeNode({
                                 e.stopPropagation()
                                 onRequestRename?.(node.path, node.name)
                             }}
-                            className="btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20 z-50"
+                            className="btn btn-ghost btn-xs rounded-xl border border-base-400 dark:border-white/5 hover:border-base-500 z-50"
                             title="Rename"
                             aria-label="Rename file"
                         >
@@ -123,11 +125,14 @@ function FileTreeNode({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation()
+                                // Prevent delete when there's only one file
+                                if (filesCount && filesCount <= 1) return
                                 onDeleteFile?.(node.path)
                             }}
-                            className="btn btn-ghost btn-xs rounded-xl border border-base-300 dark:border-white/20 group transition-colors hover:bg-error/10 hover:border-error hover:text-error z-50"
+                            className={`btn btn-ghost btn-xs rounded-xl border border-base-400 dark:border-white/5 group transition-colors hover:bg-error/10 hover:border-error hover:text-error z-50 ${filesCount && filesCount <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
                             title="Delete"
                             aria-label="Delete file"
+                            disabled={!!(filesCount && filesCount <= 1)}
                         >
                             <TrashIcon className="w-4 h-4 transition-colors" />
                         </button>
@@ -166,6 +171,7 @@ function FileTreeNode({
                                     onRequestRename={onRequestRename}
                                     isReadOnly={isReadOnly}
                                     openFiles={openFiles}
+                                    filesCount={filesCount}
                                 />
                             ))}
                         </div>
@@ -256,7 +262,7 @@ export default function FileTree({
                 {!isReadOnly && onAddFile && (
                     <button
                         onClick={() => onAddFile('.')}
-                        className="btn btn-xs w-full justify-start rounded-xl gap-2 px-3 py-2 min-h-[40px] border border-base-300 dark:border-white/20 hover:border-base-400 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
+                        className="btn btn-xs w-full justify-start rounded-xl gap-2 px-3 py-2 min-h-[40px] border border-base-400 dark:border-white/5 hover:border-base-500 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -291,6 +297,7 @@ export default function FileTree({
                                     onRequestRename={openRenameModal}
                                     isReadOnly={isReadOnly}
                                     openFiles={openFiles}
+                                    filesCount={files.length}
                                 />
                             </div>
                         ))

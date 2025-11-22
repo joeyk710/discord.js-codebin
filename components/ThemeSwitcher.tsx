@@ -23,7 +23,7 @@ const ThemeSwitcher: React.FC = () => {
   if (!mounted) return null
 
   return (
-    <label className="swap swap-rotate btn btn-ghost btn-sm rounded-xl">
+    <label className="swap swap-rotate btn btn-ghost btn-sm rounded-xl border border-base-400 dark:border-white/5 hover:border-base-500 dark:hover:border-white/30 transition-colors">
       <input
         type="checkbox"
         checked={currentTheme === 'light'}

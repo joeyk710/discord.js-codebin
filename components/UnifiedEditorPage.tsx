@@ -545,7 +545,9 @@ export default function UnifiedEditorPage() {
                             <button
                                 type="button"
                                 onClick={() => setShowMetadataModal(false)}
-                                className="btn btn-primary rounded-xl"
+                                className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                                disabled={!projectTitle || projectTitle.trim() === ''}
+                                aria-disabled={!projectTitle || projectTitle.trim() === ''}
                             >
                                 Done
                             </button>
