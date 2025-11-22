@@ -99,6 +99,9 @@ export default function UnifiedEditorPage() {
     const [showErrorModal, setShowErrorModal] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [showMetadataModal, setShowMetadataModal] = useState(false)
+    const [metadataDraftTitle, setMetadataDraftTitle] = useState(projectTitle)
+    const [metadataDraftDescription, setMetadataDraftDescription] = useState(projectDescription)
+    const metadataOriginalRef = useRef<{ title: string; description: string }>({ title: projectTitle, description: projectDescription })
     const [showLeaveModal, setShowLeaveModal] = useState(false)
     const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null)
     const [showRefreshWarning, setShowRefreshWarning] = useState(false)
@@ -242,6 +245,15 @@ export default function UnifiedEditorPage() {
             metadataModalRef.current.checked = showMetadataModal
         }
     }, [showMetadataModal])
+
+    // When opening the metadata modal, snapshot current values into drafts so Cancel can restore them
+    useEffect(() => {
+        if (showMetadataModal) {
+            metadataOriginalRef.current = { title: projectTitle, description: projectDescription }
+            setMetadataDraftTitle(projectTitle)
+            setMetadataDraftDescription(projectDescription)
+        }
+    }, [showMetadataModal, projectTitle, projectDescription])
 
     const handleSaveWithMetadata = async (metadata: any) => {
         setIsSaving(true)
@@ -504,12 +516,12 @@ export default function UnifiedEditorPage() {
                                 <label className="label m-0 p-0">
                                     <span className="label-text font-semibold">Project Title</span>
                                 </label>
-                                <span className="text-xs text-base-content/60">{projectTitle.length}/100</span>
+                                <span className="text-xs text-base-content/60">{metadataDraftTitle.length}/100</span>
                             </div>
                             <input
                                 type="text"
-                                value={projectTitle}
-                                onChange={(e) => setProjectTitle(e.target.value)}
+                                value={metadataDraftTitle}
+                                onChange={(e) => setMetadataDraftTitle(e.target.value)}
                                 placeholder="My Awesome Project"
                                 className="input input-bordered w-full rounded-xl validator"
                                 maxLength={100}
@@ -522,11 +534,11 @@ export default function UnifiedEditorPage() {
                                 <label className="label m-0 p-0">
                                     <span className="label-text font-semibold">Description</span>
                                 </label>
-                                <span className="text-xs text-base-content/60">{projectDescription.length}/1024</span>
+                                <span className="text-xs text-base-content/60">{metadataDraftDescription.length}/1024</span>
                             </div>
                             <textarea
-                                value={projectDescription}
-                                onChange={(e) => setProjectDescription(e.target.value)}
+                                value={metadataDraftDescription}
+                                onChange={(e) => setMetadataDraftDescription(e.target.value)}
                                 placeholder="Describe your project..."
                                 className="textarea textarea-bordered w-full rounded-xl validator"
                                 rows={4}
@@ -537,17 +549,27 @@ export default function UnifiedEditorPage() {
                         <div className="modal-action gap-3">
                             <button
                                 type="button"
-                                onClick={() => setShowMetadataModal(false)}
+                                onClick={() => {
+                                    // restore original values and close
+                                    setMetadataDraftTitle(metadataOriginalRef.current.title)
+                                    setMetadataDraftDescription(metadataOriginalRef.current.description)
+                                    setShowMetadataModal(false)
+                                }}
                                 className="btn btn-ghost rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                             >
                                 Cancel
                             </button>
                             <button
                                 type="button"
-                                onClick={() => setShowMetadataModal(false)}
+                                onClick={() => {
+                                    // commit drafts to main state and close
+                                    setProjectTitle(metadataDraftTitle)
+                                    setProjectDescription(metadataDraftDescription)
+                                    setShowMetadataModal(false)
+                                }}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!projectTitle || projectTitle.trim() === ''}
-                                aria-disabled={!projectTitle || projectTitle.trim() === ''}
+                                disabled={!metadataDraftTitle || metadataDraftTitle.trim() === ''}
+                                aria-disabled={!metadataDraftTitle || metadataDraftTitle.trim() === ''}
                             >
                                 Done
                             </button>
