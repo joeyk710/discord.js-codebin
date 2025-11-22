@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import ErrorModal from '@/components/ErrorModal'
 import { useParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/Navbar'
 import MultiFileEditor from '@/components/MultiFileEditor'
@@ -103,7 +104,7 @@ export default function ProjectViewerPage() {
     const [errorMessage, setErrorMessage] = useState('')
     const deleteModalRef = useRef<HTMLInputElement>(null)
     const successModalRef = useRef<HTMLDialogElement>(null)
-    const errorModalRef = useRef<HTMLDialogElement>(null)
+    // errorModalRef removed in favor of portaled ErrorModal
     const [cfTurnstileToken, setCfTurnstileToken] = useState<string | null>(null)
     const widgetIdRef = useRef<number | null>(null)
     const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
@@ -171,12 +172,7 @@ export default function ProjectViewerPage() {
         }
     }, [showSuccessModal])
 
-    // Control error modal
-    useEffect(() => {
-        if (showErrorModal && errorModalRef.current) {
-            errorModalRef.current.showModal()
-        }
-    }, [showErrorModal])
+    // Error modal shown via ErrorModal component below
 
     // Load Cloudflare Turnstile widget when delete modal is shown (if configured)
     useEffect(() => {
@@ -550,38 +546,7 @@ export default function ProjectViewerPage() {
                 </form>
             </dialog>
 
-            {/* Error Modal */}
-            <dialog ref={errorModalRef} className="modal">
-                <div className="modal-box w-full sm:max-w-md">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="flex items-center justify-center w-12 h-12 rounded-full bg-error/20">
-                            <span className="text-2xl">✕</span>
-                        </div>
-                        <div>
-                            <h3 className="font-bold text-xl text-base-content">Error</h3>
-                            <p className="text-sm text-base-content/60">Failed to update project</p>
-                        </div>
-                    </div>
-                    <div className="divider my-2"></div>
-                    <p className="text-base-content/70 mb-4">
-                        {errorMessage}
-                    </p>
-                    <div className="modal-action">
-                        <button
-                            onClick={() => {
-                                setShowErrorModal(false)
-                                errorModalRef.current?.close()
-                            }}
-                            className="btn btn-ghost rounded-xl w-full"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
-                <form method="dialog" className="modal-backdrop">
-                    <button onClick={() => setShowErrorModal(false)}>close</button>
-                </form>
-            </dialog>
+            <ErrorModal open={showErrorModal} title="Error" message={errorMessage} onClose={() => setShowErrorModal(false)} />
         </div>
     )
 }
