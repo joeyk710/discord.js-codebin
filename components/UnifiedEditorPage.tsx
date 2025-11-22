@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useEffect, useRef } from 'react'
+import ErrorModal from './ErrorModal'
 import { PencilIcon } from '@heroicons/react/24/outline'
 import Navbar from './Navbar'
 import MultiFileEditor from './MultiFileEditor'
@@ -666,26 +667,7 @@ export default function UnifiedEditorPage() {
                 </dialog>
             )}
 
-            {/* Error Modal (replaces browser alerts) */}
-            {showErrorModal && (
-                <dialog className="modal">
-                    <div className="modal-box rounded-2xl">
-                        <h3 className="font-bold text-lg text-error">❌ Error</h3>
-                        <p className="py-4 text-base-content/70">{errorMessage}</p>
-                        <div className="modal-action">
-                            <button
-                                className="btn btn-primary rounded-xl"
-                                onClick={() => setShowErrorModal(false)}
-                            >
-                                OK
-                            </button>
-                        </div>
-                    </div>
-                    <form method="dialog" className="modal-backdrop">
-                        <button>close</button>
-                    </form>
-                </dialog>
-            )}
+            <ErrorModal open={showErrorModal} title="Error" message={errorMessage} onClose={() => setShowErrorModal(false)} />
         </div>
     )
 }

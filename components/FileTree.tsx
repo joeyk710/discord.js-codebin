@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback, useId, useEffect } from 'react'
+import React, { useState, useCallback, useId, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { FileNode, getLanguageIcon, getMaterialIconFilename } from '@/lib/fileTree'
@@ -33,6 +33,9 @@ function FileTreeNode({
     isReadOnly,
     openFiles,
     filesCount,
+    isExpanded,
+    onToggleExpand,
+    isFolderExpanded,
 }: {
     node: FileNode
     level: number
@@ -45,11 +48,14 @@ function FileTreeNode({
     isReadOnly?: boolean
     openFiles?: string[]
     filesCount?: number
+    isExpanded?: boolean
+    onToggleExpand?: (path: string) => void
+    isFolderExpanded?: (path: string) => boolean
 }) {
-    const [expanded, setExpanded] = useState(level === 0)
     const isFile = node.type === 'file'
     const isActive = activeFile === node.path
     const isOpen = !!openFiles?.includes(node.path)
+    const contentRef = useRef<HTMLDivElement | null>(null)
 
     // Inline rename removed — FileTree manages a modal-based rename flow via onRequestRename
 
@@ -68,15 +74,15 @@ function FileTreeNode({
                     <button
                         onClick={(e) => {
                             e.stopPropagation()
-                            setExpanded(!expanded)
+                            onToggleExpand?.(node.path)
                         }}
                         className="p-0 w-6 h-6 flex items-center justify-center hover:bg-base-300 rounded"
-                        title={expanded ? 'Collapse' : 'Expand'}
-                        aria-label={expanded ? 'Collapse folder' : 'Expand folder'}
+                        title={isExpanded ? 'Collapse' : 'Expand'}
+                        aria-label={isExpanded ? 'Collapse folder' : 'Expand folder'}
                     >
                         <svg
                             className="w-6 h-6 transform transition-transform duration-150"
-                            style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+                            style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
                             fill="none"
                             viewBox="0 0 24 24"
                             strokeWidth={1.5}
@@ -141,20 +147,16 @@ function FileTreeNode({
             </div>
 
             {!isFile && node.children && (
-                // Outer wrapper must allow overflow visible so tooltips can escape the folder container.
-                <div
-                    className="overflow-visible"
-                    style={{
-                        opacity: expanded ? 1 : 0,
-                        transform: expanded ? 'translateY(0)' : 'translateY(-4px)',
-                        transition: 'opacity 180ms ease, transform 180ms ease'
-                    }}
-                >
+                // Animate children height/opacity when folder opens or closes. Keep overflow visible for tooltips.
+                <div className="overflow-visible">
                     <div
                         className="overflow-hidden"
+                        ref={contentRef}
                         style={{
-                            maxHeight: expanded ? `${node.children.length * 44}px` : '0px',
-                            transition: 'max-height 180ms ease'
+                            maxHeight: isExpanded ? undefined : '0px',
+                            opacity: isExpanded ? 1 : 0,
+                            transform: isExpanded ? 'translateY(0)' : 'translateY(-4px)',
+                            transition: 'max-height 200ms ease, opacity 180ms ease, transform 180ms ease'
                         }}
                     >
                         <div className="space-y-1 pt-1">
@@ -172,6 +174,9 @@ function FileTreeNode({
                                     isReadOnly={isReadOnly}
                                     openFiles={openFiles}
                                     filesCount={filesCount}
+                                    isExpanded={isFolderExpanded ? isFolderExpanded(child.path) : undefined}
+                                    onToggleExpand={onToggleExpand}
+                                    isFolderExpanded={isFolderExpanded}
                                 />
                             ))}
                         </div>
@@ -192,9 +197,33 @@ export default function FileTree({
     isReadOnly = false,
     openFiles = [],
 }: FileTreeProps) {
+    const listRef = useRef<HTMLDivElement | null>(null)
+    const [isOverflowing, setIsOverflowing] = useState(false)
+    const containerRef = useRef<HTMLDivElement | null>(null)
+    const headerRef = useRef<HTMLDivElement | null>(null)
+    const [expandedFolders, setExpandedFolders] = useState<Set<string>>(() => {
+        // Start with only root-level folders expanded by default
+        const roots = files
+            .filter(n => n.type === 'folder' && n.path.split('/').length === 1)
+            .map(n => n.path)
+        return new Set(roots)
+    })
+
+    const toggleFolder = useCallback((path: string) => {
+        setExpandedFolders(prev => {
+            const next = new Set(prev)
+            if (next.has(path)) next.delete(path)
+            else next.add(path)
+            return next
+        })
+    }, [])
+
+    const isFolderExpanded = useCallback((path: string) => expandedFolders.has(path), [expandedFolders])
     // Manage rename modal state at the tree level (replace inline editing)
     const [renameTarget, setRenameTarget] = useState<{ path: string; name: string } | null>(null)
     const [renameValue, setRenameValue] = useState('')
+    const [errorMessage, setErrorMessage] = useState('')
+    const [showErrorModal, setShowErrorModal] = useState(false)
     const [mounted, setMounted] = useState(false)
     // stable modal id for the portal-rendered modal
     const modalId = `rename_modal_${useId()}`
@@ -202,6 +231,54 @@ export default function FileTree({
     useEffect(() => {
         setMounted(true)
     }, [])
+
+    // Detect whether the file list content overflows its container and toggle scrolling.
+    // Compute desired height based on expanded folders and node count, and clamp to available container height.
+    useEffect(() => {
+        const ROW_HEIGHT = 44 // estimated per-row height in px
+        const el = listRef.current
+        const container = containerRef.current
+        const header = headerRef.current
+        if (!el || !container) return
+
+        const countVisibleNodes = (nodes: FileNode[]): number => {
+            let count = 0
+            for (const n of nodes) {
+                count += 1
+                if (n.type === 'folder' && n.children && expandedFolders.has(n.path)) {
+                    count += countVisibleNodes(n.children)
+                }
+            }
+            return count
+        }
+
+        const visibleCount = countVisibleNodes(files)
+        const headerHeight = header ? header.clientHeight : 72
+        const desiredHeight = headerHeight + visibleCount * ROW_HEIGHT + 16 // padding
+        const availableHeight = container.clientHeight
+
+        const maxH = Math.max(0, Math.min(desiredHeight, availableHeight))
+        el.style.maxHeight = `${maxH}px`
+        setIsOverflowing(desiredHeight > availableHeight)
+
+        const check = () => {
+            const visibleCountNow = countVisibleNodes(files)
+            const desiredNow = headerHeight + visibleCountNow * ROW_HEIGHT + 16
+            const availNow = container.clientHeight
+            el.style.maxHeight = `${Math.max(0, Math.min(desiredNow, availNow))}px`
+            setIsOverflowing(desiredNow > availNow)
+        }
+
+        const ro = new (window as any).ResizeObserver(() => check())
+        ro.observe(container)
+        ro.observe(el)
+        window.addEventListener('resize', check)
+
+        return () => {
+            ro.disconnect()
+            window.removeEventListener('resize', check)
+        }
+    }, [files, expandedFolders])
 
     const openRenameModal = (path: string, name: string) => {
         setRenameTarget({ path, name })
@@ -218,29 +295,34 @@ export default function FileTree({
         try { localStorage.removeItem('djs_rename_draft') } catch (e) { }
     }
 
+    const showErrorAndCloseRename = (msg: string) => {
+        // Close the rename modal first so the portaled ErrorModal is visible on top
+        closeRenameModal()
+        setErrorMessage(msg)
+        // small delay to ensure modal DOM updated before opening error modal
+        setTimeout(() => setShowErrorModal(true), 50)
+    }
+
     const submitRename = () => {
         if (!renameTarget) return
         const trimmed = renameValue.trim()
-        // Prevent renaming to empty or dot-only names like '.' or '...'
-        const baseCandidate = trimmed.split('/').pop() || ''
-        if (!baseCandidate || /^[.]+$/.test(baseCandidate)) {
-            try {
-                alert('Invalid filename. Filenames cannot be empty or consist only of dots.')
-            } catch (e) {
-                // ignore
-            }
+        // Disallow creating folders via rename: no slashes allowed
+        if (trimmed.includes('/')) {
+            showErrorAndCloseRename('Renaming cannot change folder structure. Create folders using the New Folder action.')
             return
         }
+
+        // Prevent renaming to empty or dot-only names like '.' or '...'
+        const baseCandidate = trimmed || ''
+        if (!baseCandidate || /^[.]+$/.test(baseCandidate)) {
+            showErrorAndCloseRename('Invalid filename. Filenames cannot be empty or consist only of dots.')
+            return
+        }
+
         if (trimmed && trimmed !== renameTarget.name) {
             // enforce filename limit
             if (trimmed.length > 50) {
-                try {
-                    // use parent toast if available via event - fall back to alert
-                    // There's no direct access to addToast here; use local alert for now
-                    alert(`Filename is too long (${trimmed.length}/50). Shorten the name.`)
-                } catch (e) {
-                    // ignore
-                }
+                showErrorAndCloseRename(`Filename is too long (${trimmed.length}/50). Shorten the name.`)
                 return
             }
             const lastSlashIndex = renameTarget.path.lastIndexOf('/')
@@ -253,9 +335,9 @@ export default function FileTree({
 
     return (
         // ensure tooltips can render outside the explorer card
-        <div className="flex flex-col h-full bg-base-100 overflow-visible">
+        <div ref={containerRef} className="flex flex-col h-full bg-base-100 overflow-visible">
             {/* Enhanced header */}
-            <div className="px-4 py-3 border-b border-base-300/50 bg-base-200/30 flex flex-col gap-2 overflow-visible">
+            <div ref={headerRef} className="px-4 py-3 border-b border-base-300/50 bg-base-200/30 flex flex-col gap-2 overflow-visible">
                 <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-sm text-base-content/90 uppercase tracking-wider">Explorer</h3>
                 </div>
@@ -274,7 +356,11 @@ export default function FileTree({
 
             {/* File list wrapper - scrollable but allows overflow for tooltips */}
             <div className="flex-1 flex flex-col">
-                <div className="flex-1 overflow-y-auto px-2 py-3 space-y-1" style={{ overflowY: 'auto', overflowX: 'hidden' }}>
+                <div
+                    ref={listRef}
+                    className={`flex-1 px-2 py-3 space-y-1 ${isOverflowing ? 'overflow-y-auto' : 'overflow-y-hidden'} overflow-x-hidden`}
+                    style={{ WebkitOverflowScrolling: isOverflowing ? 'touch' : undefined }}
+                >
                     {files.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-center px-4 py-8">
                             <svg className="w-12 h-12 text-base-content/20 mb-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -298,6 +384,9 @@ export default function FileTree({
                                     isReadOnly={isReadOnly}
                                     openFiles={openFiles}
                                     filesCount={files.length}
+                                    isExpanded={isFolderExpanded(node.path)}
+                                    onToggleExpand={toggleFolder}
+                                    isFolderExpanded={isFolderExpanded}
                                 />
                             </div>
                         ))

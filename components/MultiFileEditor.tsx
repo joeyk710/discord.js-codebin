@@ -9,6 +9,7 @@ import SuggestionsModal from './SuggestionsModal'
 import LanguageSelectorModal from './LanguageSelectorModal'
 import ToastContainer from './ToastContainer'
 import { ToastProps } from './Toast'
+import ErrorModal from './ErrorModal'
 import { getMaterialIconFilename, inferLanguageFromFilename } from '@/lib/fileTree'
 import { buildFileTree, FileNode } from '@/lib/fileTree'
 import { analyzeDiscordJsCode, type Suggestion } from '@/lib/analyzer'
@@ -79,6 +80,7 @@ export default function MultiFileEditor({
     }, [])
     const [fileTree, setFileTree] = useState<FileNode[]>([])
     const [showNewFileDialog, setShowNewFileDialog] = useState(false)
+
     const [newFilePath, setNewFilePath] = useState('')
     const [suggestions, setSuggestions] = useState<Suggestion[]>([])
     const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
@@ -89,7 +91,6 @@ export default function MultiFileEditor({
     const [toasts, setToasts] = useState<ToastProps[]>([])
     const newFileInputRef = useRef<HTMLInputElement>(null)
     const newFileModalRef = useRef<HTMLInputElement>(null)
-    const deleteErrorModalRef = useRef<HTMLDialogElement>(null)
     const deleteConfirmModalRef = useRef<HTMLDialogElement>(null)
     const languageModalRef = useRef<HTMLDialogElement>(null)
 
@@ -339,6 +340,8 @@ export default function MultiFileEditor({
         setTimeout(() => newFileInputRef.current?.focus(), 0)
     }, [])
 
+
+
     const handleCloseNewFileModal = useCallback(() => {
         setShowNewFileDialog(false)
         if (newFileModalRef.current) {
@@ -390,7 +393,16 @@ export default function MultiFileEditor({
 
             if (!newFilePath.trim()) return
 
-            const userPath = newFilePath.trim()
+            // Normalize path: collapse consecutive slashes, remove leading/trailing slash
+            const raw = newFilePath.trim()
+            let userPath = raw.replace(/\/+/g, '/').replace(/(^\/|\/$)/g, '')
+
+            // Prevent empty path segments (consecutive slashes were removed above, but double-check)
+            const segments = userPath.split('/')
+            if (segments.some(s => s.trim() === '')) {
+                addToast('Invalid path. Path segments cannot be empty.', 'error', 4000)
+                return
+            }
             const baseNameCheck = userPath.split('/').pop() || ''
             if (!baseNameCheck || /^[.]+$/.test(baseNameCheck)) {
                 addToast(
@@ -402,7 +414,59 @@ export default function MultiFileEditor({
                 )
                 return
             }
-            const userHasExt = (userPath.split('/').pop() || '').includes('.')
+            const parts = userPath.split('/')
+            let filenameCandidate = parts[parts.length - 1] || ''
+            let folderParts = parts.slice(0, -1)
+
+            // Prevent creating more than one new folder in a single file creation.
+            // Build set of existing folder paths from current files.
+            const existingFolders = new Set<string>()
+            for (const f of files) {
+                const p = f.path.split('/')
+                let curr = ''
+                for (let i = 0; i < p.length - 1; i++) {
+                    curr = curr ? `${curr}/${p[i]}` : p[i]
+                    existingFolders.add(curr)
+                }
+            }
+
+            // Count how many cumulative folder segments in the requested path do not exist yet.
+            if (folderParts.length > 0) {
+                let cum = ''
+                let missing = 0
+                for (let i = 0; i < folderParts.length; i++) {
+                    cum = cum ? `${cum}/${folderParts[i]}` : folderParts[i]
+                    if (!existingFolders.has(cum)) missing++
+                }
+
+                if (missing > 1) {
+                    addToast(
+                        'Please create folders one at a time. Create the parent folder first, then add nested folders or files.',
+                        'error',
+                        5000
+                    )
+                    return
+                }
+            }
+
+            // If user attempted to create more than 2 folder segments, clamp to two and notify.
+            if (folderParts.length > 2) {
+                const allowed = folderParts.slice(0, 2)
+                const newDir = allowed.join('/')
+                addToast(
+                    `Paths deeper than 2 folders are not supported. File will be created in ${newDir}/`,
+                    'warning',
+                    5000
+                )
+                // Move filename into the second folder
+                filenameCandidate = filenameCandidate || 'index'
+                // Reconstruct userPath limited to two folders
+                const clampedUserPath = `${newDir}/${filenameCandidate}`
+                userPath = clampedUserPath
+                folderParts = allowed
+            }
+
+            const userHasExt = (filenameCandidate || '').includes('.')
             // Use current file's language as default, or fallback to javascript
             const defaultLang = currentFile?.language || 'javascript'
             const pathWithExt = userHasExt ? userPath : getPathWithExtension(userPath, defaultLang)
@@ -421,6 +485,11 @@ export default function MultiFileEditor({
             }
 
             const fileName = uniquePath.split('/').pop() || uniquePath
+            // Ensure we actually have a filename
+            if (!fileName) {
+                addToast('Invalid path. A filename is required.', 'error', 4000)
+                return
+            }
             if (fileName.length > 50) {
                 addToast(
                     <>
@@ -442,7 +511,9 @@ export default function MultiFileEditor({
             }
 
             updateFiles(prev => [...prev, newFile])
-            handleFileSelect(newFile.path)
+            // Immediately set active/open state using the new file object (avoid relying on async state update)
+            setActiveFile(newFile.path)
+            setOpenFiles(prev => [...prev, { path: newFile.path, name: newFile.name, language: newFile.language }])
             handleCloseNewFileModal()
             addToast(
                 <>
@@ -459,9 +530,6 @@ export default function MultiFileEditor({
         (path: string) => {
             if (files.length <= 1) {
                 setShowDeleteErrorModal(true)
-                if (deleteErrorModalRef.current) {
-                    deleteErrorModalRef.current.showModal()
-                }
                 return
             }
 
@@ -690,7 +758,7 @@ export default function MultiFileEditor({
                 {/* Drawer sidebar - mobile only */}
                 <div className="drawer-side md:hidden">
                     <label htmlFor="file-drawer" className="drawer-overlay"></label>
-                    <div className="w-64 bg-base-100 border-r border-base-300/50 dark:border-white/5 flex flex-col h-screen overflow-y-auto overflow-visible">
+                    <div className="w-64 bg-base-100 border-r-2 border-base-300/50 dark:border-white/5 flex flex-col h-screen overflow-y-auto overflow-visible">
                         <FileTree
                             files={fileTree}
                             activeFile={activeFile}
@@ -708,7 +776,7 @@ export default function MultiFileEditor({
             {/* Desktop sidebar + Editor layout */}
             <div className="hidden md:flex flex-1 overflow-visible">
                 {/* File Tree Sidebar - desktop only */}
-                <div className="w-64 min-w-64 border-r border-base-300/50 dark:border-white/5 bg-base-100 overflow-visible">
+                <div className="w-64 min-w-64 border-r-2 border-base-300/50 dark:border-white/5 bg-base-100 overflow-visible">
                     <FileTree
                         files={fileTree}
                         activeFile={activeFile}
@@ -965,32 +1033,6 @@ export default function MultiFileEditor({
                 </form>
             </dialog>
 
-            {/* Delete Error Modal */}
-            <dialog ref={deleteErrorModalRef} className="modal">
-                <div className="modal-box rounded-2xl max-w-md">
-                    <div className="flex items-start gap-4">
-                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-warning/10 flex items-center justify-center">
-                            <svg className="w-6 h-6 text-warning" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                        </div>
-                        <div className="flex-1">
-                            <h3 className="font-bold text-lg mb-2">Cannot Delete File</h3>
-                            <p className="text-sm text-base-content/70">
-                                You cannot delete the last file. Every project must have at least one file.
-                            </p>
-                        </div>
-                    </div>
-                    <div className="modal-action mt-6">
-                        <form method="dialog">
-                            <button className="btn btn-primary rounded-xl">Got it</button>
-                        </form>
-                    </div>
-                </div>
-            </dialog>
-
-            {/* Toast Notifications */}
-            <ToastContainer toasts={toasts} onClose={removeToast} />
         </div>
     )
-}
+}          

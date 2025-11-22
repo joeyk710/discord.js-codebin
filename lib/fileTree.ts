@@ -7,7 +7,7 @@ export interface FileNode {
     children?: FileNode[]
 }
 
-export function buildFileTree(files: Array<{ id: string; path: string; name: string; language: string }>): FileNode[] {
+export function buildFileTree(files: Array<{ id: string; path: string; name: string; language: string }>, extraFolders: string[] = []): FileNode[] {
     const tree: { [key: string]: FileNode } = {}
     const root: FileNode[] = []
 
@@ -40,6 +40,26 @@ export function buildFileTree(files: Array<{ id: string; path: string; name: str
                     type: 'folder',
                     children: [],
                 }
+            }
+        }
+    }
+
+    // Include extraFolders (created via UI) so empty folders are shown
+    for (const f of extraFolders) {
+        const fp = f.trim()
+        if (!fp) continue
+        // normalize no leading/trailing slash
+        const norm = fp.replace(/^\/|\/$/g, '')
+        if (!folders.has(norm)) {
+            const parts = norm.split('/')
+            const name = parts[parts.length - 1]
+            folders.add(norm)
+            tree[norm] = {
+                id: norm,
+                name,
+                path: norm,
+                type: 'folder',
+                children: [],
             }
         }
     }
