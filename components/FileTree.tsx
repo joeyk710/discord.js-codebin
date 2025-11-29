@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useCallback, useId, useEffect, useRef } from 'react'
+import { SUPPORTED_LANGUAGES, getExtensionForLanguage } from '@/lib/languages'
 import { createPortal } from 'react-dom'
 import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline'
 import { FileNode, getLanguageIcon, getMaterialIconFilename } from '@/lib/fileTree'
@@ -117,31 +118,33 @@ function FileTreeNode({
 
                 {!isReadOnly && isFile && (
                     <div className="flex items-center gap-1 overflow-visible">
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                onRequestRename?.(node.path, node.name)
-                            }}
-                            className="btn btn-ghost btn-xs rounded-xl border border-base-400 dark:border-white/5 hover:border-base-500 z-50"
-                            title="Rename"
-                            aria-label="Rename file"
-                        >
-                            <PencilIcon className="w-4 h-4" />
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation()
-                                // Prevent delete when there's only one file
-                                if (filesCount && filesCount <= 1) return
-                                onDeleteFile?.(node.path)
-                            }}
-                            className={`btn btn-ghost btn-xs rounded-xl border border-base-400 dark:border-white/5 group transition-colors hover:bg-error/10 hover:border-error hover:text-error z-50 ${filesCount && filesCount <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
-                            title="Delete"
-                            aria-label="Delete file"
-                            disabled={!!(filesCount && filesCount <= 1)}
-                        >
-                            <TrashIcon className="w-4 h-4 transition-colors" />
-                        </button>
+                        <div className="tooltip tooltip-bottom" data-tip="Rename">
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    onRequestRename?.(node.path, node.name)
+                                }}
+                                className="btn btn-xs rounded-xl border z-50 hover:bg-cyan-500/10 hover:border-accent hover:text-cyan-300"
+                                aria-label="Rename file"
+                            >
+                                <PencilIcon className="w-4 h-4 transition-colors" />
+                            </button>
+                        </div>
+                        <div className="tooltip tooltip-bottom" data-tip={filesCount && filesCount <= 1 ? '' : 'Delete'}>
+                            <button
+                                onClick={(e) => {
+                                    e.stopPropagation()
+                                    // Prevent delete when there's only one file
+                                    if (filesCount && filesCount <= 1) return
+                                    onDeleteFile?.(node.path)
+                                }}
+                                className={`btn btn-xs rounded-xl group transition-colors hover:bg-error/10 hover:border-error hover:text-error z-50 ${filesCount && filesCount <= 1 ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+                                aria-label="Delete file"
+                                disabled={!!(filesCount && filesCount <= 1)}
+                            >
+                                <TrashIcon className="w-4 h-4 transition-colors" />
+                            </button>
+                        </div>
                     </div>
                 )}
             </div>
@@ -225,6 +228,9 @@ export default function FileTree({
     const [errorMessage, setErrorMessage] = useState('')
     const [showErrorModal, setShowErrorModal] = useState(false)
     const [mounted, setMounted] = useState(false)
+    // control modal open separately so we can delay clearing the text until after close animation
+    const [isRenameModalOpen, setIsRenameModalOpen] = useState(false)
+    const clearRenameTimeoutRef = useRef<number | null>(null)
     // stable modal id for the portal-rendered modal
     const modalId = `rename_modal_${useId()}`
 
@@ -281,18 +287,48 @@ export default function FileTree({
     }, [files, expandedFolders])
 
     const openRenameModal = (path: string, name: string) => {
+        // Cancel any pending clear so we don't wipe the target while opening
+        if (clearRenameTimeoutRef.current) {
+            window.clearTimeout(clearRenameTimeoutRef.current)
+            clearRenameTimeoutRef.current = null
+        }
         setRenameTarget({ path, name })
         setRenameValue(name)
+        setIsRenameModalOpen(true)
     }
 
     // derived rename validation
     const renameBaseName = renameValue.trim() ? (renameValue.trim().split('/').pop() || '') : ''
     const renameBaseIsOnlyDots = renameBaseName !== '' && /^[.]+$/.test(renameBaseName)
 
+    // computed extension validation for rename (do not set state during render)
+    const renameExtensionError = (() => {
+        const v = renameValue.trim()
+        if (!v) return null
+        // Only validate explicit extensions (user typed a dot)
+        const base = v.split('/').pop() || ''
+        if (!base.includes('.')) return null
+        const ext = base.split('.').pop() || ''
+        const allowedExts = SUPPORTED_LANGUAGES.map(l => getExtensionForLanguage(l)).filter(Boolean).map(s => s.toLowerCase())
+        return allowedExts.includes(ext.toLowerCase()) ? null : `Extension .${ext} is not supported by the available languages. Choose a language from the selector.`
+    })()
+
+    const scheduleClearRename = (delay = 220) => {
+        if (clearRenameTimeoutRef.current) {
+            window.clearTimeout(clearRenameTimeoutRef.current)
+        }
+        clearRenameTimeoutRef.current = window.setTimeout(() => {
+            setRenameTarget(null)
+            setRenameValue('')
+            try { localStorage.removeItem('djs_rename_draft') } catch (e) { }
+            clearRenameTimeoutRef.current = null
+        }, delay)
+    }
+
     const closeRenameModal = () => {
-        setRenameTarget(null)
-        setRenameValue('')
-        try { localStorage.removeItem('djs_rename_draft') } catch (e) { }
+        // Close visually first, then clear the target/value after the modal animation
+        setIsRenameModalOpen(false)
+        scheduleClearRename()
     }
 
     const showErrorAndCloseRename = (msg: string) => {
@@ -344,7 +380,7 @@ export default function FileTree({
                 {!isReadOnly && onAddFile && (
                     <button
                         onClick={() => onAddFile('.')}
-                        className="btn btn-xs w-full justify-start rounded-xl gap-2 px-3 py-2 min-h-[40px] border border-base-400 dark:border-white/5 hover:border-base-500 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
+                        className="btn rounded-xl gap-2 sm:gap-3 h-auto p-2 sm:p-3 flex-col sm:flex-row"
                     >
                         <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -401,9 +437,9 @@ export default function FileTree({
                         type="checkbox"
                         id={modalId}
                         className="modal-toggle"
-                        checked={!!renameTarget}
+                        checked={isRenameModalOpen}
                         onChange={(e) => {
-                            // unchecking closes modal
+                            // unchecking closes modal (visual close) and schedule clear
                             if (!e.target.checked) closeRenameModal()
                         }}
                     />
@@ -439,7 +475,7 @@ export default function FileTree({
                                             }
                                         }
                                     }}
-                                    className="input input-bordered w-full rounded-xl mb-2 validator"
+                                    className={`input input-bordered w-full rounded-xl mb-2 validator ${!renameValue.trim() ? 'input-error' : ''}`}
                                     maxLength={50}
                                     onKeyDown={(e) => {
                                         if (e.key === 'Enter') submitRename()
@@ -453,14 +489,19 @@ export default function FileTree({
                                     <p className="text-sm text-error">Invalid filename: <span className="font-mono font-semibold">{renameBaseName || renameValue}</span>. Filenames cannot be empty or consist only of dots.</p>
                                 </div>
                             )}
-                            <p className="validator-hint text-xs text-base-content/60 mb-2">Filename max 50 characters</p>
+                            {renameExtensionError && (
+                                <div className="mt-3 p-3 bg-error/10 border border-error/30 rounded-lg">
+                                    <p className="text-sm text-error">{renameExtensionError}</p>
+                                </div>
+                            )}
+                            <p className={`validator-hint text-xs mb-2 ${!renameValue.trim() ? 'text-error' : (renameTarget ? 'text-base-content' : 'text-base-content/60')}`}>Filename max 50 characters</p>
                             <div className="modal-action mt-2">
                                 <button type="button" className="btn btn-ghost rounded-xl" onClick={() => { closeRenameModal(); try { localStorage.removeItem('djs_rename_draft') } catch (e) { } }}>Cancel</button>
                                 <button
                                     type="button"
                                     className="btn btn-primary rounded-xl"
                                     onClick={() => { submitRename(); try { localStorage.removeItem('djs_rename_draft') } catch (e) { } }}
-                                    disabled={!renameValue.trim() || renameBaseIsOnlyDots || renameValue.trim().length > 50}
+                                    disabled={!renameValue.trim() || renameBaseIsOnlyDots || renameValue.trim().length > 50 || !!renameExtensionError}
                                 >
                                     Rename
                                 </button>
