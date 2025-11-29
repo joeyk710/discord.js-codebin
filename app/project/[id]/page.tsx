@@ -8,6 +8,22 @@ import MultiFileEditor from '@/components/MultiFileEditor'
 import Footer from '@/components/Footer'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 import Link from 'next/link'
+import TrashIcon from '@heroicons/react/24/outline/TrashIcon'
+
+// Minimal typing for Cloudflare Turnstile client to avoid `any` casts.
+type Turnstile = {
+    render: (
+        el: HTMLElement,
+        opts: { sitekey: string; callback: (token: string) => void; 'expired-callback'?: () => void }
+    ) => number
+    reset: (id?: number) => void
+}
+
+declare global {
+    interface Window {
+        turnstile?: Turnstile
+    }
+}
 function ExpirationDisplay({ createdAt, expirationDays }: { createdAt: string; expirationDays: number }) {
     const [info, setInfo] = useState<{ pretty: string; duration: string } | null>(null)
 
@@ -183,7 +199,7 @@ export default function ProjectViewerPage() {
 
         const loadAndRender = async () => {
             try {
-                if (!(window as any).turnstile) {
+                if (!window.turnstile) {
                     const s = document.createElement('script')
                     s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
                     s.async = true
@@ -196,13 +212,29 @@ export default function ProjectViewerPage() {
                 }
 
                 const container = document.getElementById('turnstile-container')
-                if (container && (window as any).turnstile && widgetIdRef.current == null && mounted) {
+                if (container && window.turnstile && mounted) {
                     try {
-                        widgetIdRef.current = (window as any).turnstile.render(container, {
-                            sitekey: siteKey,
-                            callback: (token: string) => setCfTurnstileToken(token),
-                            'expired-callback': () => setCfTurnstileToken(null),
-                        })
+                        // If we haven't rendered the widget yet, render it.
+                        if (widgetIdRef.current == null) {
+                            widgetIdRef.current = window.turnstile.render(container, {
+                                sitekey: siteKey,
+                                callback: (token: string) => setCfTurnstileToken(token),
+                                'expired-callback': () => setCfTurnstileToken(null),
+                            })
+                        } else {
+                            // If the widget already exists (modal reopened), reset it so a fresh
+                            // challenge/token is issued each time the modal opens.
+                            try {
+                                window.turnstile.reset(widgetIdRef.current)
+                                // Clear stored token so the UI requires the new CAPTCHA completion
+                                setCfTurnstileToken(null)
+                            } catch (e) {
+                                console.error('Turnstile reset error', e)
+                                // As a fallback, attempt to re-render by clearing the ref so above
+                                // branch renders a new widget on the next effect run.
+                                widgetIdRef.current = null
+                            }
+                        }
                     } catch (e) {
                         // ignore render errors
                         console.error('Turnstile render error', e)
@@ -491,7 +523,7 @@ export default function ProjectViewerPage() {
                         <button
                             onClick={handleDeleteProject}
                             disabled={isDeleting || (turnstileSiteKey ? !cfTurnstileToken : false)}
-                            className="btn btn-error rounded-xl"
+                            className="btn btn-error text-white rounded-xl"
                         >
                             {isDeleting ? (
                                 <>
@@ -501,7 +533,11 @@ export default function ProjectViewerPage() {
                             ) : turnstileSiteKey && !cfTurnstileToken ? (
                                 'Complete CAPTCHA'
                             ) : (
-                                '🗑️ Delete'
+                                <div className='flex sm:flex-row items-center gap-1'>
+                                    <TrashIcon className='size-6' />
+
+                                    <span>Delete</span>
+                                </div>
                             )}
                         </button>
                     </div>
