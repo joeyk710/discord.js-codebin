@@ -55,9 +55,11 @@ export default function Navbar({
 									className="btn rounded-xl gap-2 sm:gap-3 h-auto p-2 sm:p-3 flex-col sm:flex-row"
 									aria-label="Edit project metadata"
 								>
-									<PencilIcon className="size-6" />
+									<div className="flex flex-col items-center gap-2 sm:flex-row">
+										<PencilIcon className="size-6" />
 
-									<span className="hidden sm:inline">Metadata</span>
+										<span className="hidden sm:inline">Metadata</span>
+									</div>
 								</button>
 							</div>
 
@@ -65,15 +67,13 @@ export default function Navbar({
 								<button
 									onClick={onSaveShare}
 									disabled={isSaving}
-									className="btn btn-primary rounded-xl gap-2 sm:gap-2 h-auto p-2 sm:p-3 flex-col sm:flex-row"
+									className="btn btn-primary rounded-xl gap-2 sm:gap-3 h-auto p-2 sm:p-3 flex-col sm:flex-row"
 									aria-label="Save and share your project"
 								>
-									<div className="flex-col sm:flex-row">
+									<div className="flex flex-col items-center gap-2 sm:flex-row">
 										<PlusIcon className="size-6" />
 
-										<span className="hidden sm:inline">{isSaving ? "Saving..." : "Save & Share"}</span>
-
-										<span className="sm:hidden">{isSaving ? "Saving..." : "Save"}</span>
+										<span className="hidden sm:inline">{isSaving ? "Saving..." : "Save"}</span>
 									</div>
 								</button>
 							</div>
