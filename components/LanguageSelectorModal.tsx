@@ -1,65 +1,13 @@
 'use client'
 
 import React, { useState, useMemo, useRef, useEffect, forwardRef } from 'react'
+import { SUPPORTED_LANGUAGES } from '@/lib/languages'
 
 interface LanguageSelectorModalProps {
     onClose: () => void
     onSelect: (language: string) => void
     currentLanguage: string
 }
-
-const SUPPORTED_LANGUAGES = [
-    'Ada',
-    'Bash',
-    'C#',
-    'C++',
-    'COBOL',
-    'CSS',
-    'Clojure',
-    'Dart',
-    'Dockerfile',
-    'Elixir',
-    'Erlang',
-    'F#',
-    'Fortran',
-    'Go',
-    'GraphQL',
-    'Groovy',
-    'Haskell',
-    'HTML',
-    'Java',
-    'JavaScript',
-    'JSON',
-    'Kotlin',
-    'Less',
-    'Lisp',
-    'Lua',
-    'Makefile',
-    'MATLAB',
-    'Markdown',
-    'OCaml',
-    'Objective-C',
-    'Pascal',
-    'Perl',
-    'PHP',
-    'PowerShell',
-    'Prolog',
-    'Python',
-    'R',
-    'Ruby',
-    'Rust',
-    'SASS',
-    'Scheme',
-    'Scala',
-    'Solidity',
-    'SQL',
-    'Swift',
-    'TypeScript',
-    'TOML',
-    'WebAssembly',
-    'XML',
-    'YAML',
-]
 
 
 const getLanguageIcon = (language: string) => {
