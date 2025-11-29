@@ -7,6 +7,7 @@ import CodeEditor from './CodeEditor'
 import FileTree from './FileTree'
 import SuggestionsModal from './SuggestionsModal'
 import LanguageSelectorModal from './LanguageSelectorModal'
+import { SUPPORTED_LANGUAGES, getExtensionForLanguage } from '@/lib/languages'
 import ToastContainer from './ToastContainer'
 import { ToastProps } from './Toast'
 import ErrorModal from './ErrorModal'
@@ -82,12 +83,15 @@ export default function MultiFileEditor({
     const [showNewFileDialog, setShowNewFileDialog] = useState(false)
 
     const [newFilePath, setNewFilePath] = useState('')
+    const [newFileExtensionError, setNewFileExtensionError] = useState<string | null>(null)
     const [suggestions, setSuggestions] = useState<Suggestion[]>([])
     const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
     const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
     const [fileToDelete, setFileToDelete] = useState<string | null>(null)
     const [isAnalyzing, setIsAnalyzing] = useState(false)
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+    const clearDeleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [toasts, setToasts] = useState<ToastProps[]>([])
     const newFileInputRef = useRef<HTMLInputElement>(null)
     const newFileModalRef = useRef<HTMLInputElement>(null)
@@ -110,8 +114,6 @@ export default function MultiFileEditor({
         )
         setFileTree(tree)
     }, [files])
-
-
 
     // Update parent when files change
     useEffect(() => {
@@ -138,6 +140,8 @@ export default function MultiFileEditor({
     }, [showNewFileDialog])
 
     const currentFile = files.find(f => f.path === activeFile)
+
+    // (moved) computed extension validation will be defined after helper functions
 
     // Toast management
     const addToast = useCallback((message: React.ReactNode, type: ToastProps['type'] = 'info', duration = 3000) => {
@@ -206,66 +210,17 @@ export default function MultiFileEditor({
         }
     }, [initialFiles, addToast])
 
-    // Get file extension for language
-    const getExtensionForLanguage = (lang: string): string => {
-        const extensionMap: { [key: string]: string } = {
-            // Alphabetized by key
-            'ada': 'adb',
-            'bash': 'sh',
-            'c': 'c',
-            'c#': 'cs',
-            'c++': 'cpp',
-            'clojure': 'clj',
-            'cobol': 'cob',
-            'css': 'css',
-            'dart': 'dart',
-            'delphi': 'pas',
-            'dockerfile': '',
-            'elixir': 'ex',
-            'erlang': 'erl',
-            'f#': 'fs',
-            'fortran': 'f90',
-            'go': 'go',
-            'graphql': 'graphql',
-            'groovy': 'groovy',
-            'haskell': 'hs',
-            'html': 'html',
-            'java': 'java',
-            'javascript': 'js',
-            'json': 'json',
-            'kotlin': 'kt',
-            'lisp': 'lisp',
-            'lua': 'lua',
-            'matlab': 'm',
-            'makefile': '',
-            'markdown': 'md',
-            'objective-c': 'm',
-            'ocaml': 'ml',
-            'pascal': 'pas',
-            'php': 'php',
-            'powershell': 'ps1',
-            'prolog': 'pl',
-            'python': 'py',
-            'ruby': 'rb',
-            'r': 'r',
-            'rust': 'rs',
-            'scala': 'scala',
-            'scss': 'scss',
-            'sass': 'sass',
-            'shell': 'sh',
-            'solidity': 'sol',
-            'sql': 'sql',
-            'swift': 'swift',
-            'toml': 'toml',
-            'typescript': 'ts',
-            'vb.net': 'vb',
-            'webassembly': 'wasm',
-            'xml': 'xml',
-            'yaml': 'yaml',
+    // Cleanup any scheduled clear timeout on unmount to avoid leaks
+    useEffect(() => {
+        return () => {
+            if (clearDeleteTimeoutRef.current) {
+                clearTimeout(clearDeleteTimeoutRef.current)
+                clearDeleteTimeoutRef.current = null
+            }
         }
+    }, [])
 
-        return extensionMap[lang.toLowerCase()] ?? 'txt'
-    }
+    // Using shared helper `getExtensionForLanguage` from `lib/languages.ts`
 
     // Get new file path with updated extension
     const getPathWithExtension = (path: string, language: string): string => {
@@ -292,6 +247,26 @@ export default function MultiFileEditor({
             }
         }
     }, [files, openFiles])
+
+    // Compute extension validation from the current newFilePath without setting state during render
+    const computedNewFileExtensionError = (() => {
+        const userPath = newFilePath.trim()
+        if (!userPath) return null
+        const baseName = userPath.split('/').pop() || ''
+        if (!baseName) return null
+        const userHasExt = baseName.includes('.')
+        if (!userHasExt) return null
+        const ext = baseName.split('.').pop() || ''
+
+        // Build allowed extensions from SUPPORTED_LANGUAGES using the existing helper
+        const allowedExts = SUPPORTED_LANGUAGES
+            .map(l => getExtensionForLanguage(l))
+            .filter(Boolean)
+            .map(s => s.toLowerCase())
+
+        // If extension matches one of the allowed extensions, accept it. Otherwise show a generic guidance message.
+        return allowedExts.includes(ext.toLowerCase()) ? null : `Extension .${ext} is not supported by the available languages. Choose a language from the selector.`
+    })()
 
     const handleTabClose = useCallback(
         (path: string) => {
@@ -347,8 +322,6 @@ export default function MultiFileEditor({
         if (newFileModalRef.current) {
             newFileModalRef.current.checked = false
         }
-        // Reset the input when closing to avoid keeping stale text
-        setNewFilePath('')
     }, [])
 
     const isValidFilePath = (path: string): boolean => {
@@ -467,6 +440,15 @@ export default function MultiFileEditor({
             }
 
             const userHasExt = (filenameCandidate || '').includes('.')
+            // If user provided an explicit extension, validate it against allowed languages
+            if (userHasExt) {
+                const ext = (filenameCandidate || '').split('.').pop() || ''
+                const allowedExts = SUPPORTED_LANGUAGES.map(l => getExtensionForLanguage(l)).filter(Boolean).map(s => s.toLowerCase())
+                if (!allowedExts.includes(ext.toLowerCase())) {
+                    setNewFileExtensionError(`Extension .${ext} is not supported by the available languages. Choose a language from the selector.`)
+                    return
+                }
+            }
             // Use current file's language as default, or fallback to javascript
             const defaultLang = currentFile?.language || 'javascript'
             const pathWithExt = userHasExt ? userPath : getPathWithExtension(userPath, defaultLang)
@@ -510,11 +492,16 @@ export default function MultiFileEditor({
                 language: inferredLang,
             }
 
+            // Clear any extension error on successful create
+            setNewFileExtensionError(null)
+
             updateFiles(prev => [...prev, newFile])
             // Immediately set active/open state using the new file object (avoid relying on async state update)
             setActiveFile(newFile.path)
             setOpenFiles(prev => [...prev, { path: newFile.path, name: newFile.name, language: newFile.language }])
             handleCloseNewFileModal()
+            // Clear the input after successfully creating the file
+            setNewFilePath('')
             addToast(
                 <>
                     Created <strong>{fileName}</strong>
@@ -534,7 +521,13 @@ export default function MultiFileEditor({
             }
 
             // Show confirmation modal
+            // Clear any previously scheduled clear (we're opening a modal now)
+            if (clearDeleteTimeoutRef.current) {
+                clearTimeout(clearDeleteTimeoutRef.current)
+                clearDeleteTimeoutRef.current = null
+            }
             setFileToDelete(path)
+            setIsDeleteModalOpen(true)
             setShowDeleteConfirmModal(true)
             setTimeout(() => {
                 if (deleteConfirmModalRef.current) {
@@ -551,11 +544,18 @@ export default function MultiFileEditor({
         const fileName = fileToDelete.split('/').pop() || fileToDelete
         updateFiles(files.filter(f => f.path !== fileToDelete))
         handleTabClose(fileToDelete)
-        setFileToDelete(null)
+        // Close modal visually first, then clear the `fileToDelete` after the modal close animation
         setShowDeleteConfirmModal(false)
+        setIsDeleteModalOpen(false)
         if (deleteConfirmModalRef.current) {
             deleteConfirmModalRef.current.close()
         }
+        // Schedule clearing the filename after a short delay so the modal close animation can finish
+        if (clearDeleteTimeoutRef.current) clearTimeout(clearDeleteTimeoutRef.current)
+        clearDeleteTimeoutRef.current = setTimeout(() => {
+            setFileToDelete(null)
+            clearDeleteTimeoutRef.current = null
+        }, 220)
         addToast(
             <>
                 Deleted <strong>{fileName}</strong>
@@ -566,11 +566,19 @@ export default function MultiFileEditor({
     }, [files, fileToDelete, handleTabClose, addToast])
 
     const handleCancelDelete = useCallback(() => {
-        setFileToDelete(null)
+        // Close modal visually first, then clear the `fileToDelete` after close animation
         setShowDeleteConfirmModal(false)
+        setIsDeleteModalOpen(false)
+
         if (deleteConfirmModalRef.current) {
             deleteConfirmModalRef.current.close()
         }
+
+        if (clearDeleteTimeoutRef.current) clearTimeout(clearDeleteTimeoutRef.current)
+        clearDeleteTimeoutRef.current = setTimeout(() => {
+            setFileToDelete(null)
+            clearDeleteTimeoutRef.current = null
+        }, 220)
     }, [])
 
     const handleRenameFile = useCallback(
@@ -578,6 +586,17 @@ export default function MultiFileEditor({
             // Infer language from new filename extension and avoid collisions with other files
             const newNameCandidate = newPath.split('/').pop() || newPath
             const oldName = oldPath.split('/').pop() || oldPath
+
+            // If the user provided an explicit extension in the new name, validate it against supported languages
+            const newHasExt = newNameCandidate.includes('.')
+            if (newHasExt) {
+                const ext = newNameCandidate.split('.').pop() || ''
+                const allowedExts = SUPPORTED_LANGUAGES.map(l => getExtensionForLanguage(l)).filter(Boolean).map(s => s.toLowerCase())
+                if (!allowedExts.includes(ext.toLowerCase())) {
+                    addToast(`Extension .${ext} is not supported by the available languages. Choose a language from the selector.`, 'error', 4000)
+                    return
+                }
+            }
 
             // Other files (exclude the file we're renaming) to check for collisions
             const otherFiles = files.filter(f => f.path !== oldPath)
@@ -704,7 +723,9 @@ export default function MultiFileEditor({
                                                 {currentFile.path}
                                             </span>
                                             {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
-                                                <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes" aria-label="Unsaved changes"></span>
+                                                <div className="tooltip tooltip-bottom" data-tip="Unsaved changes">
+                                                    <span className="w-2 h-2 rounded-full bg-warning" aria-label="Unsaved changes"></span>
+                                                </div>
                                             )}
                                         </div>
 
@@ -713,7 +734,7 @@ export default function MultiFileEditor({
                                             {/* Suggestions button removed temporarily while analyzer is disabled */}
                                             <button
                                                 onClick={() => languageModalRef.current?.showModal()}
-                                                className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-400 dark:border-white/5 hover:border-base-500 dark:hover:border-white/30 hover:bg-base-200/40 transition-colors"
+                                                className="btn btn-ori"
                                                 aria-label={`Select language (${currentFile.language})`}
                                                 disabled={isReadOnly}
                                             >
@@ -799,7 +820,9 @@ export default function MultiFileEditor({
                                         {currentFile.path}
                                     </span>
                                     {openFiles.find(f => f.path === currentFile.path)?.isDirty && (
-                                        <span className="w-2 h-2 rounded-full bg-warning" title="Unsaved changes" aria-label="Unsaved changes"></span>
+                                        <div className="tooltip tooltip-bottom" data-tip="Unsaved changes">
+                                            <span className="w-2 h-2 rounded-full bg-warning" aria-label="Unsaved changes"></span>
+                                        </div>
                                     )}
 
                                     {/* Controls moved next to the filename for easier reach */}
@@ -807,7 +830,7 @@ export default function MultiFileEditor({
                                         {/* Suggestions button removed temporarily while analyzer is disabled */}
                                         <button
                                             onClick={() => languageModalRef.current?.showModal()}
-                                            className="btn btn-ghost btn-xs px-3 py-2 min-h-[40px] rounded-xl gap-2 border border-base-400 dark:border-white/5 bg-base-200/80 dark:bg-transparent hover:border-base-500 dark:hover:border-white/30 hover:bg-base-200/90 transition-colors"
+                                            className="btn btn-xs sm:btn-sm rounded-xl gap-2 sm:gap-3 h-auto p-2 sm:p-3 flex-col sm:flex-row"
                                             aria-label={`Select language (${currentFile.language})`}
                                             disabled={isReadOnly}
                                         >
@@ -877,6 +900,8 @@ export default function MultiFileEditor({
                                 placeholder="e.g., src/index or src/index.ts"
                                 value={newFilePath}
                                 onChange={(e) => {
+                                    // Clear any prior extension validation error when user edits
+                                    setNewFileExtensionError(null)
                                     // enforce overall path length but particularly filename length limit
                                     setNewFilePath(e.target.value.slice(0, 3000))
                                 }}
@@ -905,6 +930,9 @@ export default function MultiFileEditor({
                                 const normalizedPath = userHasExt ? userPath : getPathWithExtension(userPath, defaultLang)
                                 const willBeRenamed = doesFileExistWithLang(newFilePath, undefined)
 
+                                // Determine extension error from computed value (avoid updating state during render)
+                                const extErrorLocal = computedNewFileExtensionError
+
                                 if (willBeRenamed) {
                                     const uniquePath = generateUniquePath(normalizedPath, defaultLang)
                                     return (
@@ -928,7 +956,14 @@ export default function MultiFileEditor({
                                         </div>
                                     )
                                 }
-
+                                // Show explicit extension validation error (if any)
+                                if (extErrorLocal || newFileExtensionError) {
+                                    return (
+                                        <div className="mt-3 p-3 bg-error/10 border border-error/30 rounded-lg">
+                                            <p className="text-sm text-error">{extErrorLocal ?? newFileExtensionError}</p>
+                                        </div>
+                                    )
+                                }
                                 if (!userHasExt) {
                                     return (
                                         <div className="mt-3 p-3 bg-info/10 border border-info/30 rounded-lg">
@@ -959,7 +994,7 @@ export default function MultiFileEditor({
                             </button>
                             <button
                                 type="submit"
-                                disabled={newFilePath.trim() === '' || newFileBaseNameIsOnlyDots || newFileBaseName.length > 50}
+                                disabled={newFilePath.trim() === '' || newFileBaseNameIsOnlyDots || newFileBaseName.length > 50 || !!newFileExtensionError || !!computedNewFileExtensionError}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                                 title={newFileBaseName.length > 50 ? 'Filename too long' : undefined}
                             >
@@ -1018,7 +1053,7 @@ export default function MultiFileEditor({
                         </button>
                         <button
                             type="button"
-                            className="btn btn-error rounded-xl gap-2"
+                            className="btn btn-error text-gray-200 rounded-xl gap-2"
                             onClick={handleConfirmDelete}
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1032,6 +1067,9 @@ export default function MultiFileEditor({
                     <button onClick={handleCancelDelete}>close</button>
                 </form>
             </dialog>
+
+            {/* Toast container (render toasts added via `addToast`) */}
+            <ToastContainer toasts={toasts} onClose={removeToast} />
 
         </div>
     )
