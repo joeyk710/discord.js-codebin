@@ -5,7 +5,6 @@ import { Bars3Icon } from '@heroicons/react/24/outline'
 import CodeEditor from './CodeEditor'
 // FileTabs removed — tabs UI is unused; keep sidebar only
 import FileTree from './FileTree'
-import SuggestionsModal from './SuggestionsModal'
 import LanguageSelectorModal from './LanguageSelectorModal'
 import { SUPPORTED_LANGUAGES, getExtensionForLanguage } from '@/lib/languages'
 import ToastContainer from './ToastContainer'
@@ -13,7 +12,6 @@ import { ToastProps } from './Toast'
 import ErrorModal from './ErrorModal'
 import { getMaterialIconFilename, inferLanguageFromFilename } from '@/lib/fileTree'
 import { buildFileTree, FileNode } from '@/lib/fileTree'
-import { analyzeDiscordJsCode, type Suggestion } from '@/lib/analyzer'
 
 interface FileData {
     id: string
@@ -84,8 +82,6 @@ export default function MultiFileEditor({
 
     const [newFilePath, setNewFilePath] = useState('')
     const [newFileExtensionError, setNewFileExtensionError] = useState<string | null>(null)
-    const [suggestions, setSuggestions] = useState<Suggestion[]>([])
-    const [showSuggestionsModal, setShowSuggestionsModal] = useState(false)
     const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false)
     const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false)
     const [fileToDelete, setFileToDelete] = useState<string | null>(null)
@@ -152,25 +148,6 @@ export default function MultiFileEditor({
     const removeToast = useCallback((id: string) => {
         setToasts(prev => prev.filter(t => t.id !== id))
     }, [])
-
-    // Analyze code when active file changes
-    useEffect(() => {
-        const analyzeCode = async () => {
-            if (!currentFile || isReadOnly) return
-
-            try {
-                setIsAnalyzing(true)
-                const results = await analyzeDiscordJsCode(currentFile.code)
-                setSuggestions(results)
-            } catch (error) {
-                console.error('Error analyzing code:', error)
-            } finally {
-                setIsAnalyzing(false)
-            }
-        }
-
-        analyzeCode()
-    }, [activeFile, currentFile, isReadOnly])
 
     // Sync when parent `initialFiles` changes (e.g., restoring a draft from UnifiedEditorPage)
     useEffect(() => {
@@ -731,7 +708,6 @@ export default function MultiFileEditor({
 
                                         {/* Move controls closer to the filename so they're easier to reach */}
                                         <div className="flex items-center gap-2 flex-shrink-0">
-                                            {/* Suggestions button removed temporarily while analyzer is disabled */}
                                             <button
                                                 onClick={() => languageModalRef.current?.showModal()}
                                                 className="btn btn-ori"
@@ -827,7 +803,6 @@ export default function MultiFileEditor({
 
                                     {/* Controls moved next to the filename for easier reach */}
                                     <div className="ml-3 flex items-center gap-2 flex-shrink-0">
-                                        {/* Suggestions button removed temporarily while analyzer is disabled */}
                                         <button
                                             onClick={() => languageModalRef.current?.showModal()}
                                             className="btn btn-xs sm:btn-sm rounded-xl gap-2 sm:gap-3 h-auto p-2 sm:p-3 flex-col sm:flex-row"
@@ -1009,13 +984,6 @@ export default function MultiFileEditor({
                     onClick={handleCloseNewFileModal}
                 />
             </div>
-
-            {/* Suggestions Modal */}
-            <SuggestionsModal
-                isOpen={showSuggestionsModal}
-                onClose={() => setShowSuggestionsModal(false)}
-                suggestions={suggestions}
-            />
 
             {/* Language Selector Modal */}
             <LanguageSelectorModal
