@@ -34,8 +34,6 @@ interface OpenFile {
     language?: string
 }
 
-const LANGUAGES = ['JavaScript', 'TypeScript', 'JSON', 'Python', 'HTML', 'CSS', 'Markdown']
-
 // Map internal language keys to user-facing labels
 const formatLanguageDisplay = (lang: string) => {
     const key = (lang || '').toLowerCase()
