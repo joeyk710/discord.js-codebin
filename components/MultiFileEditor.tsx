@@ -170,7 +170,8 @@ export default function MultiFileEditor({
                 setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language })))
                 setActiveFile(initialFiles[0]?.path || '')
                 // Notify user
-                addToast('Draft restored', 'success', 3000)
+                const id = `toast-${Date.now()}-${Math.random()}`
+                setToasts(prev => [...prev, { id, message: 'Draft restored', type: 'success', duration: 3000, onClose: removeToast }])
                 prevInitialRef.current = initialFiles
             }
         } catch (e) {
@@ -179,11 +180,12 @@ export default function MultiFileEditor({
                 setFiles(initialFiles)
                 setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language })))
                 setActiveFile(initialFiles[0]?.path || '')
-                addToast('Draft restored', 'success', 3000)
+                const id = `toast-${Date.now()}-${Math.random()}`
+                setToasts(prev => [...prev, { id, message: 'Draft restored', type: 'success', duration: 3000, onClose: removeToast }])
                 prevInitialRef.current = initialFiles
             }
         }
-    }, [initialFiles, addToast])
+    }, [initialFiles, removeToast])
 
     // Cleanup any scheduled clear timeout on unmount to avoid leaks
     useEffect(() => {
