@@ -147,45 +147,16 @@ export default function MultiFileEditor({
         setToasts(prev => prev.filter(t => t.id !== id))
     }, [])
 
-    // Sync when parent `initialFiles` changes (e.g., restoring a draft from UnifiedEditorPage)
+    // Initialize component state from initialFiles on mount only
     useEffect(() => {
-        // On first mount, remember initial files but don't treat as a "restore" event
-        if (prevInitialRef.current === null) {
+        // Only sync on mount (first time initialFiles is populated)
+        if (prevInitialRef.current === null && initialFiles.length > 0) {
+            setFiles(initialFiles)
+            setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language })))
+            setActiveFile(initialFiles[0]?.path || '')
             prevInitialRef.current = initialFiles
-            return
         }
-
-        try {
-            const prevJson = JSON.stringify(prevInitialRef.current)
-            const currJson = JSON.stringify(initialFiles)
-            // If the current initialFiles matches the last set of files we emitted from this
-            // component, it's just an echo of a local change (e.g., language select). Ignore it.
-            if (lastEmittedRef.current && currJson === lastEmittedRef.current) {
-                prevInitialRef.current = initialFiles
-                return
-            }
-            if (prevJson !== currJson) {
-                // Update editor state to reflect restored files
-                setFiles(initialFiles)
-                setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language })))
-                setActiveFile(initialFiles[0]?.path || '')
-                // Notify user
-                const id = `toast-${Date.now()}-${Math.random()}`
-                setToasts(prev => [...prev, { id, message: 'Draft restored', type: 'success', duration: 3000, onClose: removeToast }])
-                prevInitialRef.current = initialFiles
-            }
-        } catch (e) {
-            // Fallback: if stringify fails, do a shallow compare by length
-            if ((prevInitialRef.current || []).length !== initialFiles.length) {
-                setFiles(initialFiles)
-                setOpenFiles(initialFiles.slice(0, 1).map(f => ({ path: f.path, name: f.name, language: f.language })))
-                setActiveFile(initialFiles[0]?.path || '')
-                const id = `toast-${Date.now()}-${Math.random()}`
-                setToasts(prev => [...prev, { id, message: 'Draft restored', type: 'success', duration: 3000, onClose: removeToast }])
-                prevInitialRef.current = initialFiles
-            }
-        }
-    }, [initialFiles, removeToast])
+    }, []) // Empty dependency array - run only once on mount
 
     // Cleanup any scheduled clear timeout on unmount to avoid leaks
     useEffect(() => {
