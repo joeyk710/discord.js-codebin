@@ -88,7 +88,7 @@ export default function MultiFileEditor({
     const clearDeleteTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const [toasts, setToasts] = useState<ToastProps[]>([])
     const newFileInputRef = useRef<HTMLInputElement>(null)
-    const newFileModalRef = useRef<HTMLInputElement>(null)
+    const newFileModalRef = useRef<HTMLDialogElement>(null)
     const deleteConfirmModalRef = useRef<HTMLDialogElement>(null)
     const languageModalRef = useRef<HTMLDialogElement>(null)
 
@@ -123,7 +123,11 @@ export default function MultiFileEditor({
     // Handle modal state
     useEffect(() => {
         if (newFileModalRef.current) {
-            newFileModalRef.current.checked = showNewFileDialog
+            if (showNewFileDialog) {
+                newFileModalRef.current.showModal()
+            } else {
+                newFileModalRef.current.close()
+            }
         }
     }, [showNewFileDialog])
 
@@ -267,9 +271,6 @@ export default function MultiFileEditor({
 
     const handleCloseNewFileModal = useCallback(() => {
         setShowNewFileDialog(false)
-        if (newFileModalRef.current) {
-            newFileModalRef.current.checked = false
-        }
     }, [])
 
     const isValidFilePath = (path: string): boolean => {
@@ -819,14 +820,11 @@ export default function MultiFileEditor({
             </div>
 
             {/* New File Dialog */}
-            <input
+            <dialog
                 ref={newFileModalRef}
-                type="checkbox"
-                id="new_file_modal"
-                className="modal-toggle"
-            />
-            <div className="modal">
-                <div className="modal-box rounded-2xl max-w-lg">
+                className="modal"
+            >
+                <form method="dialog" className="modal-box rounded-2xl max-w-lg">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                             <svg className="w-5 h-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -835,7 +833,7 @@ export default function MultiFileEditor({
                         </div>
                         <h3 className="font-bold text-lg">Create New File</h3>
                     </div>
-                    <form onSubmit={handleCreateNewFile} className="space-y-5">
+                    <div className="space-y-5">
                         <div>
                             <label className="label">
                                 <span className="label-text font-medium">File Path</span>
@@ -939,7 +937,8 @@ export default function MultiFileEditor({
                                 Cancel
                             </button>
                             <button
-                                type="submit"
+                                type="button"
+                                onClick={handleCreateNewFile}
                                 disabled={newFilePath.trim() === '' || newFileBaseNameIsOnlyDots || newFileBaseName.length > 50 || !!newFileExtensionError || !!computedNewFileExtensionError}
                                 className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
                                 title={newFileBaseName.length > 50 ? 'Filename too long' : undefined}
@@ -947,14 +946,12 @@ export default function MultiFileEditor({
                                 Create File
                             </button>
                         </div>
-                    </form>
-                </div>
-                <label
-                    className="modal-backdrop"
-                    htmlFor="new_file_modal"
-                    onClick={handleCloseNewFileModal}
-                />
-            </div>
+                    </div>
+                </form>
+                <form method="dialog" className="modal-backdrop">
+                    <button onClick={handleCloseNewFileModal} />
+                </form>
+            </dialog>
 
             {/* Language Selector Modal */}
             <LanguageSelectorModal
