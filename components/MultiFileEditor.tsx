@@ -131,11 +131,7 @@ export default function MultiFileEditor({
         }
     }, [showNewFileDialog])
 
-    useEffect(() => {
-        if (showNewFileDialog) {
-            setTimeout(() => newFileInputRef.current?.focus(), 0)
-        }
-    }, [showNewFileDialog])
+
 
     const currentFile = files.find(f => f.path === activeFile)
 
@@ -264,7 +260,6 @@ export default function MultiFileEditor({
             setNewFilePath('')
         }
         setShowNewFileDialog(true)
-        setTimeout(() => newFileInputRef.current?.focus(), 0)
     }, [])
 
 

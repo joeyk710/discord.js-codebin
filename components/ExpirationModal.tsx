@@ -34,13 +34,17 @@ export default function ExpirationModal({
     const [searchInput, setSearchInput] = useState('')
     const [filteredPresets, setFilteredPresets] = useState<ExpirationPreset[]>(PRESETS)
     const [inputMode, setInputMode] = useState<'search' | 'custom'>('search')
-    const modalRef = useRef<HTMLInputElement>(null)
+    const modalRef = useRef<HTMLDialogElement>(null)
     const [selectedMinutes, setSelectedMinutes] = useState<number | null>(value ?? null)
 
     // Sync modal state
     useEffect(() => {
         if (modalRef.current) {
-            modalRef.current.checked = isOpen
+            if (isOpen) {
+                modalRef.current.showModal()
+            } else {
+                modalRef.current.close()
+            }
         }
     }, [isOpen])
 
@@ -189,124 +193,129 @@ export default function ExpirationModal({
     const parsedCustom = inputMode === 'custom' ? parseDuration(searchInput) : null
     const customIsValid = parsedCustom !== null && parsedCustom >= 5 && parsedCustom <= 10080
 
-    return (
-        <>
-            <input
-                ref={modalRef}
-                type="checkbox"
-                id="expiration_modal"
-                className="modal-toggle"
-            />
-            <div className="modal">
-                <div className="modal-box w-full sm:max-w-md">
-                    <h3 className="font-bold text-lg mb-4">Select Expiration Time</h3>
+    const handleDialogClick = (e: React.MouseEvent<HTMLDialogElement>) => {
+        // Close if clicking on the backdrop (outside the modal-box)
+        if (e.target === modalRef.current) {
+            onClose()
+        }
+    }
 
-                    {/* Search Input */}
-                    <div className="mb-4">
-                        <input
-                            type="text"
-                            placeholder="Search presets or enter custom — e.g. 90, 1.5h, 2 days"
-                            value={searchInput}
-                            onChange={handleSearchInput}
-                            className="input input-sm w-full rounded-lg text-sm input-bordered"
-                        />
-                    </div>
+    const dialogContent = (
+        <dialog
+            ref={modalRef}
+            className="modal"
+            onClick={handleDialogClick}
+        >
+            <form method="dialog" className="modal-box w-full sm:max-w-md">
+                <h3 className="font-bold text-lg mb-4">Select Expiration Time</h3>
 
-                    {/* Presets List (shown when searching presets or empty) */}
-                    {inputMode === 'search' && (
-                        <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
-                            {filteredPresets.length > 0 ? (
-                                filteredPresets.map((preset) => (
-                                    <button
-                                        key={preset.minutes}
-                                        type="button"
-                                        onClick={() => handleSelectPreset(preset)}
-                                        className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm hover:cursor-pointer ${((selectedMinutes ?? value) === preset.minutes)
-                                            ? 'bg-primary text-primary-content'
-                                            : 'hover:bg-base-200'
-                                            }`}
-                                    >
-                                        {preset.label}
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="px-3 py-2 text-sm text-base-content/50">
-                                    No presets match
-                                </div>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Custom Duration Input (shown when user enters a custom duration) */}
-                    {inputMode === 'custom' && (
-                        <div className="space-y-2 mb-4">
-                            {customIsValid && (
-                                <>
-                                    <p className="text-xs text-success font-semibold">
-                                        ✓ Parsed: {getDisplayLabelFor(parsedCustom!)}
-                                    </p>
-                                    <button
-                                        type="button"
-                                        onClick={handleApplyCustom}
-                                        className="w-full btn btn-sm btn-primary rounded-lg"
-                                    >
-                                        Apply {getDisplayLabelFor(parsedCustom!)}
-                                    </button>
-                                </>
-                            )}
-                            {parsedCustom !== null && parsedCustom < 5 && (
-                                <p className="text-xs text-error font-semibold">
-                                    ⚠️ Minimum is 5 minutes (you entered {parsedCustom} {parsedCustom === 1 ? 'minute' : 'minutes'})
-                                </p>
-                            )}
-                            {parsedCustom !== null && parsedCustom > 10080 && (
-                                <p className="text-xs text-error font-semibold">
-                                    ⚠️ Maximum is 7 days (you entered {getDisplayLabelFor(parsedCustom)})
-                                </p>
-                            )}
-                            {parsedCustom === null && (
-                                <p className="text-xs text-error font-semibold">
-                                    ⚠️ Could not parse. Try formats: 90, 1.5h, 2 days, etc.
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Modal Actions */}
-                    <div className="modal-action gap-2">
-                        <button
-                            type="button"
-                            onClick={handleClose}
-                            className="btn btn-sm btn-ghost rounded-xl"
-                        >
-                            Cancel
-                        </button>
-                        {(selectedMinutes !== null || value !== null) && (
-                            <button
-                                type="button"
-                                onClick={handleReset}
-                                className="btn btn-sm btn-outline rounded-xl"
-                            >
-                                ✕ Reset
-                            </button>
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => {
-                                // Persist the selectedMinutes if user chose one, otherwise keep existing value.
-                                if (selectedMinutes !== null) {
-                                    onChange(selectedMinutes)
-                                }
-                                onClose()
-                                setSearchInput('')
-                            }}
-                            className="btn btn-sm btn-primary rounded-xl"
-                        >
-                            Done
-                        </button>
-                    </div>
+                {/* Search Input */}
+                <div className="mb-4">
+                    <input
+                        type="text"
+                        placeholder="Search presets or enter custom — e.g. 90, 1.5h, 2 days"
+                        value={searchInput}
+                        onChange={handleSearchInput}
+                        className="input input-sm w-full rounded-lg text-sm input-bordered"
+                    />
                 </div>
-            </div>
-        </>
+
+                {/* Presets List (shown when searching presets or empty) */}
+                {inputMode === 'search' && (
+                    <div className="space-y-2 mb-4 max-h-64 overflow-y-auto">
+                        {filteredPresets.length > 0 ? (
+                            filteredPresets.map((preset) => (
+                                <button
+                                    key={preset.minutes}
+                                    type="button"
+                                    onClick={() => handleSelectPreset(preset)}
+                                    className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm hover:cursor-pointer ${((selectedMinutes ?? value) === preset.minutes)
+                                        ? 'bg-primary text-primary-content'
+                                        : 'hover:bg-base-200'
+                                        }`}
+                                >
+                                    {preset.label}
+                                </button>
+                            ))
+                        ) : (
+                            <div className="px-3 py-2 text-sm text-base-content/50">
+                                No presets match
+                            </div>
+                        )}
+                    </div>
+                )}
+
+                {/* Custom Duration Input (shown when user enters a custom duration) */}
+                {inputMode === 'custom' && (
+                    <div className="space-y-2 mb-4">
+                        {customIsValid && (
+                            <>
+                                <p className="text-xs text-success font-semibold">
+                                    ✓ Parsed: {getDisplayLabelFor(parsedCustom!)}
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleApplyCustom}
+                                    className="w-full btn btn-sm btn-primary rounded-lg"
+                                >
+                                    Apply {getDisplayLabelFor(parsedCustom!)}
+                                </button>
+                            </>
+                        )}
+                        {parsedCustom !== null && parsedCustom < 5 && (
+                            <p className="text-xs text-error font-semibold">
+                                ⚠️ Minimum is 5 minutes (you entered {parsedCustom} {parsedCustom === 1 ? 'minute' : 'minutes'})
+                            </p>
+                        )}
+                        {parsedCustom !== null && parsedCustom > 10080 && (
+                            <p className="text-xs text-error font-semibold">
+                                ⚠️ Maximum is 7 days (you entered {getDisplayLabelFor(parsedCustom)})
+                            </p>
+                        )}
+                        {parsedCustom === null && (
+                            <p className="text-xs text-error font-semibold">
+                                ⚠️ Could not parse. Try formats: 90, 1.5h, 2 days, etc.
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Modal Actions */}
+                <div className="modal-action gap-2">
+                    <button
+                        type="button"
+                        onClick={handleClose}
+                        className="btn btn-sm btn-ghost rounded-xl"
+                    >
+                        Cancel
+                    </button>
+                    {(selectedMinutes !== null || value !== null) && (
+                        <button
+                            type="button"
+                            onClick={handleReset}
+                            className="btn btn-sm btn-outline rounded-xl"
+                        >
+                            ✕ Reset
+                        </button>
+                    )}
+                    <button
+                        type="button"
+                        onClick={() => {
+                            // Persist the selectedMinutes if user chose one, otherwise keep existing value.
+                            if (selectedMinutes !== null) {
+                                onChange(selectedMinutes)
+                            }
+                            onClose()
+                            setSearchInput('')
+                        }}
+                        className="btn btn-sm btn-primary rounded-xl"
+                    >
+                        Done
+                    </button>
+                </div>
+            </form>
+        </dialog>
     )
+
+    return dialogContent
 }

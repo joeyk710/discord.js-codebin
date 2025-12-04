@@ -110,6 +110,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
       <dialog
         ref={saveModalRef}
         className="modal"
+        style={{ zIndex: 1000 }}
       >
         <form method="dialog" className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
           <div className="flex items-center gap-3 mb-6">

@@ -72,11 +72,7 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
             [searchQuery]
         )
 
-        useEffect(() => {
-            if (inputRef.current) {
-                inputRef.current.focus()
-            }
-        }, [])
+
 
         // Clear search input whenever the dialog is closed so it's blank on next open
         useEffect(() => {
