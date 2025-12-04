@@ -73,11 +73,15 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
   const [expirationMinutes, setExpirationMinutes] = React.useState<number | null>(null)
   const [expirationError, setExpirationError] = React.useState<string>('')
   const [showExpirationModal, setShowExpirationModal] = React.useState(false)
-  const saveModalRef = useRef<HTMLInputElement>(null)
+  const saveModalRef = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
     if (saveModalRef.current) {
-      saveModalRef.current.checked = isOpen
+      if (isOpen) {
+        saveModalRef.current.showModal()
+      } else {
+        saveModalRef.current.close()
+      }
     }
   }, [isOpen])
 
@@ -99,21 +103,15 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
     setExpirationMinutes(null)
     setExpirationError('')
     onClose()
-    if (saveModalRef.current) {
-      saveModalRef.current.checked = false
-    }
   }
 
   return (
     <>
-      <input
+      <dialog
         ref={saveModalRef}
-        type="checkbox"
-        id="save_modal"
-        className="modal-toggle"
-      />
-      <div className="modal">
-        <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
+        className="modal"
+      >
+        <form method="dialog" className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <span className="text-2xl">💾</span>
@@ -124,7 +122,7 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-5">
             <div className="divider my-0"></div>
 
             <div className="form-control">
@@ -168,7 +166,8 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
                 Cancel
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
                 className="btn btn-primary rounded-xl gap-2"
                 disabled={isSaving}
               >
@@ -184,14 +183,12 @@ export default function SaveModal({ isOpen, onClose, onSave, isSaving }: SaveMod
                 )}
               </button>
             </div>
-          </form>
-        </div>
-        <label
-          className="modal-backdrop"
-          htmlFor="save_modal"
-          onClick={handleCancel}
-        ></label>
-      </div>
+          </div>
+        </form>
+        <form method="dialog" className="modal-backdrop">
+          <button onClick={handleCancel} />
+        </form>
+      </dialog>
 
       {/* Separate Expiration Modal */}
       <ExpirationModal

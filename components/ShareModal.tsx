@@ -77,12 +77,16 @@ export default function ShareModal({
     onExpirationChange,
     onNew
 }: ShareModalProps) {
-    const shareModalRef = useRef<HTMLInputElement>(null)
+    const shareModalRef = useRef<HTMLDialogElement>(null)
     const [copied, setCopied] = useState(false)
 
     useEffect(() => {
         if (shareModalRef.current) {
-            shareModalRef.current.checked = isOpen
+            if (isOpen) {
+                shareModalRef.current.showModal()
+            } else {
+                shareModalRef.current.close()
+            }
         }
     }, [isOpen])
 
@@ -96,9 +100,6 @@ export default function ShareModal({
 
     const handleNewPaste = () => {
         onClose()
-        if (shareModalRef.current) {
-            shareModalRef.current.checked = false
-        }
         onNew?.()
     }
 
@@ -106,21 +107,15 @@ export default function ShareModal({
         // Reset expiration when user cancels/closes the share modal
         onExpirationChange?.(null)
         onClose()
-        if (shareModalRef.current) {
-            shareModalRef.current.checked = false
-        }
     }
 
     return (
         <>
-            <input
+            <dialog
                 ref={shareModalRef}
-                type="checkbox"
-                id="share_modal"
-                className="modal-toggle"
-            />
-            <div className="modal">
-                <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
+                className="modal"
+            >
+                <form method="dialog" className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
                             <span className="text-2xl">🎉</span>
@@ -208,13 +203,11 @@ export default function ShareModal({
                             </button>
                         </div>
                     </div>
-                </div>
-                <label
-                    className="modal-backdrop"
-                    htmlFor="share_modal"
-                    onClick={handleCancel}
-                ></label>
-            </div>
+                </form>
+                <form method="dialog" className="modal-backdrop">
+                    <button onClick={handleCancel} />
+                </form>
+            </dialog>
 
             {/* expiration modal removed - controlled via Save/Share flow elsewhere if needed */}
         </>

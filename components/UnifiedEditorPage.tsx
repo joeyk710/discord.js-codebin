@@ -106,7 +106,7 @@ export default function UnifiedEditorPage() {
     const [showLeaveModal, setShowLeaveModal] = useState(false)
     const [pendingNavigation, setPendingNavigation] = useState<(() => void) | null>(null)
     const [showRefreshWarning, setShowRefreshWarning] = useState(false)
-    const metadataModalRef = useRef<HTMLInputElement>(null)
+    const metadataModalRef = useRef<HTMLDialogElement>(null)
     const leaveModalRef = useRef<HTMLDialogElement>(null)
     const refreshModalRef = useRef<HTMLDialogElement>(null)
     const draftModalRef = useRef<HTMLDialogElement>(null)
@@ -240,10 +240,14 @@ export default function UnifiedEditorPage() {
         return () => clearTimeout(timer)
     }, [projectTitle, projectDescription, files])
 
-    // Sync checkbox state for metadata modal
+    // Sync dialog state for metadata modal
     useEffect(() => {
         if (metadataModalRef.current) {
-            metadataModalRef.current.checked = showMetadataModal
+            if (showMetadataModal) {
+                metadataModalRef.current.showModal()
+            } else {
+                metadataModalRef.current.close()
+            }
         }
     }, [showMetadataModal])
 
@@ -493,14 +497,11 @@ export default function UnifiedEditorPage() {
             />
 
             {/* Metadata Modal */}
-            <input
+            <dialog
                 ref={metadataModalRef}
-                type="checkbox"
-                id="metadata_modal"
-                className="modal-toggle"
-            />
-            <div className="modal">
-                <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
+                className="modal"
+            >
+                <form method="dialog" className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto space-y-5">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="flex items-center justify-center w-12 h-12 rounded-full bg-primary/20">
                             <PencilIcon className="w-6 h-6 text-primary" />
@@ -510,79 +511,75 @@ export default function UnifiedEditorPage() {
                             <p className="text-sm text-base-content/60">Update your project details</p>
                         </div>
                     </div>
-                    <form className="space-y-5">
-                        <div className="divider my-0"></div>
-                        <div>
-                            <div className="flex items-center justify-between">
-                                <label className="label m-0 p-0">
-                                    <span className="label-text font-semibold">Project Title</span>
-                                </label>
-                                <span className="text-xs text-base-content/60">{metadataDraftTitle.length}/100</span>
-                            </div>
-                            <input
-                                type="text"
-                                value={metadataDraftTitle}
-                                onChange={(e) => setMetadataDraftTitle(e.target.value)}
-                                placeholder="My Awesome Project"
-                                className="input input-bordered w-full rounded-xl validator"
-                                maxLength={100}
-                                required
-                            />
-                            <p className="validator-hint text-xs text-base-content/60 mt-2">Project title max 100 characters</p>
+                    <div className="divider my-0"></div>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <label className="label m-0 p-0">
+                                <span className="label-text font-semibold">Project Title</span>
+                            </label>
+                            <span className="text-xs text-base-content/60">{metadataDraftTitle.length}/100</span>
                         </div>
-                        <div>
-                            <div className="flex items-center justify-between">
-                                <label className="label m-0 p-0">
-                                    <span className="label-text font-semibold">Description</span>
-                                </label>
-                                <span className="text-xs text-base-content/60">{metadataDraftDescription.length}/1024</span>
-                            </div>
-                            <textarea
-                                value={metadataDraftDescription}
-                                onChange={(e) => setMetadataDraftDescription(e.target.value)}
-                                placeholder="Describe your project..."
-                                className="textarea textarea-bordered w-full rounded-xl validator"
-                                rows={4}
-                                maxLength={1024}
-                            />
-                            <p className="validator-hint text-xs text-base-content/60 mt-2">Description max 1024 characters</p>
+                        <input
+                            type="text"
+                            value={metadataDraftTitle}
+                            onChange={(e) => setMetadataDraftTitle(e.target.value)}
+                            placeholder="My Awesome Project"
+                            className="input input-bordered w-full rounded-xl validator"
+                            maxLength={100}
+                            required
+                        />
+                        <p className="validator-hint text-xs text-base-content/60 mt-2">Project title max 100 characters</p>
+                    </div>
+                    <div>
+                        <div className="flex items-center justify-between">
+                            <label className="label m-0 p-0">
+                                <span className="label-text font-semibold">Description</span>
+                            </label>
+                            <span className="text-xs text-base-content/60">{metadataDraftDescription.length}/1024</span>
                         </div>
-                        <div className="modal-action gap-3">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    // restore original values and close
-                                    setMetadataDraftTitle(metadataOriginalRef.current.title)
-                                    setMetadataDraftDescription(metadataOriginalRef.current.description)
-                                    setShowMetadataModal(false)
-                                }}
-                                className="btn btn-ghost rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    // commit drafts to main state and close
-                                    setProjectTitle(metadataDraftTitle)
-                                    setProjectDescription(metadataDraftDescription)
-                                    setShowMetadataModal(false)
-                                }}
-                                className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
-                                disabled={!metadataDraftTitle || metadataDraftTitle.trim() === ''}
-                                aria-disabled={!metadataDraftTitle || metadataDraftTitle.trim() === ''}
-                            >
-                                Done
-                            </button>
-                        </div>
-                    </form>
-                </div>
-                <label
-                    className="modal-backdrop"
-                    htmlFor="metadata_modal"
-                    onClick={() => setShowMetadataModal(false)}
-                />
-            </div>
+                        <textarea
+                            value={metadataDraftDescription}
+                            onChange={(e) => setMetadataDraftDescription(e.target.value)}
+                            placeholder="Describe your project..."
+                            className="textarea textarea-bordered w-full rounded-xl validator"
+                            rows={4}
+                            maxLength={1024}
+                        />
+                        <p className="validator-hint text-xs text-base-content/60 mt-2">Description max 1024 characters</p>
+                    </div>
+                    <div className="modal-action gap-3">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                // restore original values and close
+                                setMetadataDraftTitle(metadataOriginalRef.current.title)
+                                setMetadataDraftDescription(metadataOriginalRef.current.description)
+                                setShowMetadataModal(false)
+                            }}
+                            className="btn btn-ghost rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                // commit drafts to main state and close
+                                setProjectTitle(metadataDraftTitle)
+                                setProjectDescription(metadataDraftDescription)
+                                setShowMetadataModal(false)
+                            }}
+                            className="btn btn-primary rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={!metadataDraftTitle || metadataDraftTitle.trim() === ''}
+                            aria-disabled={!metadataDraftTitle || metadataDraftTitle.trim() === ''}
+                        >
+                            Done
+                        </button>
+                    </div>
+                </form>
+                <form method="dialog" className="modal-backdrop">
+                    <button onClick={() => setShowMetadataModal(false)} />
+                </form>
+            </dialog>
             {/* Leave Confirmation Modal */}
             {isMounted && (
                 <dialog
