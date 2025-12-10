@@ -500,6 +500,12 @@ export default function UnifiedEditorPage() {
             <dialog
                 ref={metadataModalRef}
                 className="modal"
+                onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                        e.preventDefault()
+                        setShowMetadataModal(false)
+                    }
+                }}
             >
                 <form method="dialog" className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto space-y-5">
                     <div className="flex items-center gap-3 mb-6">

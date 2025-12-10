@@ -122,10 +122,6 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
                         handleSelect(filteredLanguages[selectedIndex])
                     }
                     break
-                case 'Escape':
-                    e.preventDefault()
-                    onClose()
-                    break
             }
         }
 
@@ -142,6 +138,12 @@ export default forwardRef<HTMLDialogElement, LanguageSelectorModalProps>(
                     }
                 }}
                 className="modal"
+                onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                        e.preventDefault()
+                        onClose()
+                    }
+                }}
             >
                 <div className="modal-box rounded-2xl max-w-lg max-h-[90vh] overflow-y-auto">
                     <h3 className="font-bold text-lg mb-4">Select Language</h3>

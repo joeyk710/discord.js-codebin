@@ -818,6 +818,12 @@ export default function MultiFileEditor({
             <dialog
                 ref={newFileModalRef}
                 className="modal"
+                onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                        e.preventDefault()
+                        handleCloseNewFileModal()
+                    }
+                }}
             >
                 <form method="dialog" className="modal-box rounded-2xl max-w-lg">
                     <div className="flex items-center gap-3 mb-6">
