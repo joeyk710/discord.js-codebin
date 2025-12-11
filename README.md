@@ -6,14 +6,7 @@ A modern website to store one or more files of code relating to the [discord.js]
 
 ### Code Analysis
 
-When analyzing code, the system checks for numerous elements that may be considered problematic or differed from suggested usage based on the [discord.js guide](https://discordjs.guide). Some examples include primarily checking for intents that are differentiated based on the latest version of the library (e.g., SCREAMING_SNAKE_CASE to PascalCase) or intents that may be hard-coded using [magic numbers](<https://en.wikipedia.org/wiki/Magic_number*(programming)>).
-
-In addition, it also checks for missing intents that may be required throughout the entire project such as the MessageContent intent when using the MessageCreate event.
-
-Moreover, the system also provides relevant resources such as the [discord.js documentation](https://discord.js.org) or [discord.js guide](https://discordjs.guide) for extensive elaboration and clarification based on the issues present.
-
--   Real-time detection of common discord.js issues
--   Direct links to relevant resources such as the [discord.js documentation](https://discord.js.org) or suggestions based on the [discord.js guide](https://discord.js.guide)
+> Section has been temporarily removed until a newer solution can be established
 
 **Code Sharing**
 
