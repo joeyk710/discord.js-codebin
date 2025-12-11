@@ -15,14 +15,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: 'discord.js Code Bin',
-  description: 'Write and share discord.js code with intelligent suggestions',
-  metadataBase: new URL('https://discord-js-codebin.vercel.app') || new URL('http://localhost:3000'),
+  description: 'Write and share discord.js code',
+  metadataBase: new URL('https://discordjs-codebin.vercel.app') || new URL('http://localhost:3000'),
   icons: {
     icon: '/djs.png',
     apple: '/djs.png',
   },
   openGraph: {
-    description: 'Write and share discord.js code with intelligent suggestions',
+    description: 'Write and share discord.js code',
     images: [
       {
         url: '/djs.png',
@@ -31,13 +31,13 @@ export const metadata: Metadata = {
         alt: 'discord.js Code Bin',
       },
     ],
-    //url: 'https://discord-js-codebin.vercel.app',
+    //url: 'https://discordjs-codebin.vercel.app',
     type: 'website',
     siteName: 'discord.js Code Bin',
   },
   twitter: {
     card: 'summary',
-    description: 'Write and share discord.js code with intelligent suggestions',
+    description: 'Write and share discord.js code',
     images: [
       {
         url: '/djs.png',
