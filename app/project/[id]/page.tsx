@@ -9,6 +9,9 @@ import Footer from '@/components/Footer'
 import ThemeSwitcher from '@/components/ThemeSwitcher'
 import Link from 'next/link'
 import TrashIcon from '@heroicons/react/24/outline/TrashIcon'
+import CommentsPanel from '@/components/CommentsPanel'
+import DiffViewer from '@/components/DiffViewer'
+import { useCurrentUser } from '@/lib/useCurrentUser'
 
 // Minimal typing for Cloudflare Turnstile client to avoid `any` casts.
 type Turnstile = {
@@ -107,6 +110,7 @@ export default function ProjectViewerPage() {
     const params = useParams()
     const router = useRouter()
     const id = params.id as string
+    const currentUser = useCurrentUser()
     const [project, setProject] = useState<ProjectData | null>(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -124,6 +128,19 @@ export default function ProjectViewerPage() {
     const [cfTurnstileToken, setCfTurnstileToken] = useState<string | null>(null)
     const widgetIdRef = useRef<number | null>(null)
     const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY
+    const [showCommentsSidebar, setShowCommentsSidebar] = useState(false)
+    const [showChangesModal, setShowChangesModal] = useState(false)
+    const [activeFilePath, setActiveFilePath] = useState<string>('')
+    const changesModalRef = useRef<HTMLDialogElement>(null)
+    const multiFileEditorRef = useRef<any>(null)
+    const deleteCommentModalRef = useRef<HTMLDialogElement | null>(null)
+    const [deleteCommentId, setDeleteCommentId] = useState<string | null>(null)
+    const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null)
+
+    const handleHighlightLine = (filePath: string, lineNumber: number) => {
+        // Call the MultiFileEditor's highlight method via ref
+        multiFileEditorRef.current?.highlightLine?.(filePath, lineNumber)
+    }
 
     useEffect(() => {
         async function loadProject() {
@@ -187,6 +204,26 @@ export default function ProjectViewerPage() {
             successModalRef.current.showModal()
         }
     }, [showSuccessModal])
+
+    // Control changes modal
+    useEffect(() => {
+        const dialog = changesModalRef.current
+        if (!dialog) return
+
+        if (showChangesModal) {
+            dialog.showModal()
+        } else {
+            dialog.close()
+        }
+
+        // Handle modal close button or backdrop click
+        const handleClose = () => {
+            setShowChangesModal(false)
+        }
+
+        dialog.addEventListener('close', handleClose)
+        return () => dialog.removeEventListener('close', handleClose)
+    }, [showChangesModal])
 
     // Error modal shown via ErrorModal component below
 
@@ -447,13 +484,35 @@ export default function ProjectViewerPage() {
                 <div className="flex-1 overflow-hidden bg-base-100 flex flex-col">
                     {/* outer metadata removed - header lives inside editor container for seamless rounding */}
 
-                    {/* Content Container */}
-                    <div className="w-full flex-1 flex flex-col overflow-hidden">
-                        {/* Editor (with internal metadata header so rounding is seamless) */}
-                        <div className="flex-1 overflow-hidden rounded-xl border border-base-300 min-h-0 relative flex flex-col">
-                            {/* Project metadata header placed inside rounded container */}
-                            <div className="flex items-center px-3 sm:px-4 py-0 bg-base-200/50 backdrop-blur-sm border-b border-base-300/30 overflow-x-auto overflow-y-visible gap-3 min-h-[48px]">
-                                <div className="flex items-center min-w-0 gap-4">
+                    {/* Main Editor Container */}
+                    <div className="w-full flex-1 overflow-hidden rounded-2xl border border-base-300 shadow-lg flex flex-col bg-base-100">
+                        {/* Main Editor Section */}
+                        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+                            {/* Project metadata header */}
+                            <div className="flex items-center px-3 sm:px-4 py-0 bg-base-200/30 border-b border-base-300/50 overflow-x-auto overflow-y-visible gap-3 min-h-[48px]">
+                                <div className="flex items-center min-w-0 gap-2">
+                                    {/* Comments Sidebar Hamburger Button - Hidden when sidebar is open */}
+                                    {!showCommentsSidebar && (
+                                        <button
+                                            onClick={() => setShowCommentsSidebar(true)}
+                                            className="btn btn-ghost btn-sm rounded-lg flex-shrink-0"
+                                            title="Open comments"
+                                        >
+                                            <svg
+                                                className="w-5 h-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M4 6h16M4 12h16M4 18h16"
+                                                />
+                                            </svg>
+                                        </button>
+                                    )}
                                     <h1 className="text-lg sm:text-xl font-semibold truncate">{project.title}</h1>
                                     {project.description && (
                                         <span className="text-sm text-base-content/60 hidden md:inline truncate max-w-md">{project.description}</span>
@@ -477,22 +536,125 @@ export default function ProjectViewerPage() {
                                     {project.expirationDays !== undefined && project.expirationDays !== null && (
                                         <ExpirationDisplay createdAt={project.createdAt} expirationDays={project.expirationDays} />
                                     )}
+
+                                    {/* View Changes Modal Button */}
+                                    <button
+                                        onClick={() => setShowChangesModal(true)}
+                                        className="btn btn-ghost btn-sm rounded-lg"
+                                        aria-label="View changes"
+                                        title="View changes"
+                                    >
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
 
                             <div className="flex-1 relative">
                                 <MultiFileEditor
+                                    ref={multiFileEditorRef}
                                     initialFiles={isEditMode ? editedFiles : (project.projectFiles || project.files || [])}
                                     isReadOnly={!isEditMode}
                                     onFilesChange={isEditMode ? handleFilesChange : undefined}
+                                    onActiveFileChange={setActiveFilePath}
+                                    onHighlightLine={handleHighlightLine}
                                 />
                             </div>
                         </div>
+
+
                     </div>
                 </div>
             </main>
 
             <Footer />
+
+            {/* Changes Modal */}
+            <dialog ref={changesModalRef} className="modal">
+                <div className="modal-box w-11/12 max-w-5xl max-h-[90vh] flex flex-col p-0 overflow-hidden">
+                    {/* Modal Header */}
+                    <div className="border-b border-base-300 bg-base-100 px-6 py-4">
+                        <h3 className="font-bold text-lg">📝 Changes</h3>
+                    </div>
+
+                    {/* Modal Content */}
+                    <div className="flex-1 overflow-y-auto px-6 py-4">
+                        <div className="space-y-6">
+                            {(project?.projectFiles || project?.files || []).map((file: any) => (
+                                <DiffViewer
+                                    key={file.path}
+                                    oldContent={null}
+                                    newContent={file.code}
+                                    filePath={file.path}
+                                    isCollapsed={false}
+                                />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Modal Action */}
+                    <div className="border-t border-base-300 bg-base-100 px-6 py-3 flex justify-end">
+                        <button
+                            onClick={() => setShowChangesModal(false)}
+                            className="btn btn-ghost btn-sm"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button>close</button>
+                </form>
+            </dialog>
+
+            {/* Comments Sidebar */}
+            <div className={`fixed left-0 top-0 h-screen w-80 bg-base-100 border-r border-base-300 shadow-xl transform transition-transform duration-300 ease-in-out z-40 ${showCommentsSidebar ? 'translate-x-0' : '-translate-x-full'
+                }`}>
+                {/* Sidebar Header */}
+                <div className="border-b border-base-300 px-4 py-4 flex items-center justify-between sticky top-0 bg-base-100 z-10">
+                    <h2 className="font-bold text-lg">💬 Comments</h2>
+                    <button
+                        onClick={() => setShowCommentsSidebar(false)}
+                        className="btn btn-ghost btn-sm rounded-lg"
+                        title="Close comments"
+                    >
+                        <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                        >
+                            <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M6 18L18 6M6 6l12 12"
+                            />
+                        </svg>
+                    </button>
+                </div>
+
+                {/* Comments Content */}
+                <div className="overflow-y-auto h-[calc(100vh-70px)]">
+                    <CommentsPanel
+                        projectId={id}
+                        isReadOnly={false}
+                        activeFilePath={activeFilePath}
+                        onHighlightLine={handleHighlightLine}
+                        deleteModalRef={deleteCommentModalRef}
+                        onDeleteComment={setDeleteCommentId}
+                    />
+                </div>
+            </div>
+
+            {/* Sidebar Overlay/Backdrop */}
+            {showCommentsSidebar && (
+                <div
+                    className="fixed inset-0 bg-black/20 z-30 lg:hidden"
+                    onClick={() => setShowCommentsSidebar(false)}
+                />
+            )}
 
             {/* Delete Confirmation Modal */}
             <input
@@ -583,6 +745,56 @@ export default function ProjectViewerPage() {
             </dialog>
 
             <ErrorModal open={showErrorModal} title="Error" message={errorMessage} onClose={() => setShowErrorModal(false)} />
+
+            {/* Delete Comment Modal */}
+            <dialog ref={deleteCommentModalRef} className="modal">
+                <div className="modal-box">
+                    <h3 className="font-bold text-lg">Delete Comment?</h3>
+                    <p className="py-4 text-base-content/70">
+                        Are you sure you want to delete this comment? This action cannot be undone.
+                    </p>
+                    <div className="modal-action">
+                        <form method="dialog">
+                            <button className="btn btn-ghost rounded-xl">Cancel</button>
+                        </form>
+                        <button
+                            onClick={async () => {
+                                if (deleteCommentId) {
+                                    try {
+                                        setDeletingCommentId(deleteCommentId)
+                                        const response = await fetch(`/api/projects/${id}/comments/${deleteCommentId}`, {
+                                            method: 'DELETE',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({}),
+                                        })
+                                        if (!response.ok) throw new Error('Failed to delete comment')
+                                        setDeleteCommentId(null)
+                                        setDeletingCommentId(null)
+                                        deleteCommentModalRef.current?.close()
+                                    } catch (err) {
+                                        console.error('Delete error:', err)
+                                        setDeletingCommentId(null)
+                                    }
+                                }
+                            }}
+                            disabled={deletingCommentId !== null}
+                            className="btn btn-error text-white rounded-xl"
+                        >
+                            {deletingCommentId ? (
+                                <>
+                                    <span className="loading loading-spinner loading-xs"></span>
+                                    Deleting...
+                                </>
+                            ) : (
+                                'Delete'
+                            )}
+                        </button>
+                    </div>
+                </div>
+                <form method="dialog" className="modal-backdrop">
+                    <button />
+                </form>
+            </dialog>
         </div>
     )
 }

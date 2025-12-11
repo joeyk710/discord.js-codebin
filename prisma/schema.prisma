@@ -19,8 +19,72 @@ model Project {
   isPublic      Boolean   @default(true)
   deletionToken String?
   expiresAt     DateTime?
+  
+  comments      Comment[]
+  revisions     FileRevision[]
 
   @@index([createdAt])
   @@index([isPublic])
   @@index([expiresAt])
+}
+
+model User {
+  id              String   @id
+  username        String   @unique
+  avatar          String?
+  email           String?
+  discordId       String   @unique
+  
+  comments        Comment[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([discordId])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  /// Line number in the file where the comment is attached (optional)
+  line      Int?
+  /// File path being commented on
+  filePath  String?
+  /// For anonymous comments (when user is null)
+  authorName String @default("Anonymous")
+  /// Comment text content
+  content   String
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model FileRevision {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  
+  /// File path being tracked
+  filePath  String
+  /// Previous content before the edit
+  previousContent String?
+  /// New content after the edit
+  newContent String
+  /// Summary of what changed (e.g. "Added error handling")
+  summary   String?
+  
+  createdAt DateTime @default(now())
+
+  @@index([projectId])
+  @@index([filePath])
+  @@index([createdAt])
 }

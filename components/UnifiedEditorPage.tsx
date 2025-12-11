@@ -8,7 +8,6 @@ import MultiFileEditor from './MultiFileEditor'
 import SaveModal from './SaveModal'
 import ShareModal from './ShareModal'
 import Footer from './Footer'
-
 interface FileData {
     id: string
     path: string
@@ -85,6 +84,24 @@ function clearDraftCookie() {
     document.cookie = `${DRAFT_COOKIE_NAME}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; SameSite=Lax`
 }
 
+function inferLanguageFromPath(filePath: string): string {
+    const ext = filePath.split('.').pop()?.toLowerCase() || ''
+    const languageMap: Record<string, string> = {
+        js: 'javascript',
+        jsx: 'javascript',
+        ts: 'typescript',
+        tsx: 'typescript',
+        py: 'python',
+        json: 'json',
+        css: 'css',
+        html: 'html',
+        md: 'markdown',
+        yml: 'yaml',
+        yaml: 'yaml',
+    }
+    return languageMap[ext] || 'javascript'
+}
+
 export default function UnifiedEditorPage() {
     // Use a stable default file constant so effects and initial state are consistent
     const [projectTitle, setProjectTitle] = useState('My Project')
@@ -100,6 +117,7 @@ export default function UnifiedEditorPage() {
     const [showErrorModal, setShowErrorModal] = useState(false)
     const [errorMessage, setErrorMessage] = useState<string | null>(null)
     const [showMetadataModal, setShowMetadataModal] = useState(false)
+    const [projectId, setProjectId] = useState<string | null>(null)
     const [metadataDraftTitle, setMetadataDraftTitle] = useState(projectTitle)
     const [metadataDraftDescription, setMetadataDraftDescription] = useState(projectDescription)
     const metadataOriginalRef = useRef<{ title: string; description: string }>({ title: projectTitle, description: projectDescription })
@@ -117,6 +135,27 @@ export default function UnifiedEditorPage() {
 
     useEffect(() => {
         setIsMounted(true)
+        // Restore projectId from sessionStorage if available, but verify it exists first
+        const savedProjectId = sessionStorage.getItem('currentProjectId')
+        if (savedProjectId) {
+            // Verify project exists before restoring
+            fetch(`/api/projects/${savedProjectId}`)
+                .then(res => {
+                    if (res.ok) {
+                        setProjectId(savedProjectId)
+                    } else {
+                        // Project doesn't exist (404 or other error), clear the stale ID
+                        console.warn(`Stored projectId ${savedProjectId} no longer exists, clearing...`)
+                        sessionStorage.removeItem('currentProjectId')
+                    }
+                })
+                .catch(err => {
+                    // Network error or other issue, log and clear to be safe
+                    console.error(`Failed to verify stored projectId ${savedProjectId}:`, err)
+                    sessionStorage.removeItem('currentProjectId')
+                })
+        }
+
         // Check for draft and *don't* auto-restore it. Offer explicit restore to avoid
         // overwriting content when opening the editor from another context (e.g., viewing a paste).
         const draft = getDraftFromCookie()
@@ -279,20 +318,26 @@ export default function UnifiedEditorPage() {
                 expirationDaysToSend = Math.ceil(metadata.expirationMinutes / 1440)
             }
 
-            const response = await fetch('/api/projects', {
-                method: 'POST',
+            const projectData = {
+                title: projectTitle.trim(),
+                description: projectDescription.trim(),
+                files: files.map(f => ({
+                    path: f.path,
+                    code: f.code,
+                    language: f.language,
+                })),
+                isPublic: metadata.isPublic,
+                expirationDays: expirationDaysToSend || expirationDays,
+            }
+
+            // Use PUT if updating existing project, POST if creating new
+            const method = projectId ? 'PUT' : 'POST'
+            const url = projectId ? `/api/projects/${projectId}` : '/api/projects'
+
+            const response = await fetch(url, {
+                method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    title: projectTitle.trim(),
-                    description: projectDescription.trim(),
-                    files: files.map(f => ({
-                        path: f.path,
-                        code: f.code,
-                        language: f.language,
-                    })),
-                    isPublic: metadata.isPublic,
-                    expirationDays: expirationDaysToSend || expirationDays,
-                }),
+                body: JSON.stringify(projectData),
             })
             const data = await response.json()
 
@@ -309,6 +354,9 @@ export default function UnifiedEditorPage() {
             }
 
             if (data.id) {
+                setProjectId(data.id)
+                // Persist projectId to sessionStorage so it survives page refresh
+                sessionStorage.setItem('currentProjectId', data.id)
                 // Clear the draft cookie after successful save
                 clearDraftCookie()
 

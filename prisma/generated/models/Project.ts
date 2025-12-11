@@ -252,6 +252,8 @@ export type ProjectWhereInput = {
   isPublic?: Prisma.BoolFilter<"Project"> | boolean
   deletionToken?: Prisma.StringNullableFilter<"Project"> | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"Project"> | Date | string | null
+  comments?: Prisma.CommentListRelationFilter
+  revisions?: Prisma.FileRevisionListRelationFilter
 }
 
 export type ProjectOrderByWithRelationInput = {
@@ -265,6 +267,8 @@ export type ProjectOrderByWithRelationInput = {
   isPublic?: Prisma.SortOrder
   deletionToken?: Prisma.SortOrderInput | Prisma.SortOrder
   expiresAt?: Prisma.SortOrderInput | Prisma.SortOrder
+  comments?: Prisma.CommentOrderByRelationAggregateInput
+  revisions?: Prisma.FileRevisionOrderByRelationAggregateInput
 }
 
 export type ProjectWhereUniqueInput = Prisma.AtLeast<{
@@ -281,6 +285,8 @@ export type ProjectWhereUniqueInput = Prisma.AtLeast<{
   isPublic?: Prisma.BoolFilter<"Project"> | boolean
   deletionToken?: Prisma.StringNullableFilter<"Project"> | string | null
   expiresAt?: Prisma.DateTimeNullableFilter<"Project"> | Date | string | null
+  comments?: Prisma.CommentListRelationFilter
+  revisions?: Prisma.FileRevisionListRelationFilter
 }, "id">
 
 export type ProjectOrderByWithAggregationInput = {
@@ -328,6 +334,8 @@ export type ProjectCreateInput = {
   isPublic?: boolean
   deletionToken?: string | null
   expiresAt?: Date | string | null
+  comments?: Prisma.CommentCreateNestedManyWithoutProjectInput
+  revisions?: Prisma.FileRevisionCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUncheckedCreateInput = {
@@ -341,6 +349,8 @@ export type ProjectUncheckedCreateInput = {
   isPublic?: boolean
   deletionToken?: string | null
   expiresAt?: Date | string | null
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutProjectInput
+  revisions?: Prisma.FileRevisionUncheckedCreateNestedManyWithoutProjectInput
 }
 
 export type ProjectUpdateInput = {
@@ -354,6 +364,8 @@ export type ProjectUpdateInput = {
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletionToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  comments?: Prisma.CommentUpdateManyWithoutProjectNestedInput
+  revisions?: Prisma.FileRevisionUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectUncheckedUpdateInput = {
@@ -367,6 +379,8 @@ export type ProjectUncheckedUpdateInput = {
   isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
   deletionToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutProjectNestedInput
+  revisions?: Prisma.FileRevisionUncheckedUpdateManyWithoutProjectNestedInput
 }
 
 export type ProjectCreateManyInput = {
@@ -453,6 +467,11 @@ export type ProjectSumOrderByAggregateInput = {
   views?: Prisma.SortOrder
 }
 
+export type ProjectScalarRelationFilter = {
+  is?: Prisma.ProjectWhereInput
+  isNot?: Prisma.ProjectWhereInput
+}
+
 export type StringFieldUpdateOperationsInput = {
   set?: string
 }
@@ -481,6 +500,216 @@ export type NullableDateTimeFieldUpdateOperationsInput = {
   set?: Date | string | null
 }
 
+export type ProjectCreateNestedOneWithoutCommentsInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutCommentsInput, Prisma.ProjectUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutCommentsInput
+  connect?: Prisma.ProjectWhereUniqueInput
+}
+
+export type ProjectUpdateOneRequiredWithoutCommentsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutCommentsInput, Prisma.ProjectUncheckedCreateWithoutCommentsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutCommentsInput
+  upsert?: Prisma.ProjectUpsertWithoutCommentsInput
+  connect?: Prisma.ProjectWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutCommentsInput, Prisma.ProjectUpdateWithoutCommentsInput>, Prisma.ProjectUncheckedUpdateWithoutCommentsInput>
+}
+
+export type ProjectCreateNestedOneWithoutRevisionsInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutRevisionsInput, Prisma.ProjectUncheckedCreateWithoutRevisionsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutRevisionsInput
+  connect?: Prisma.ProjectWhereUniqueInput
+}
+
+export type ProjectUpdateOneRequiredWithoutRevisionsNestedInput = {
+  create?: Prisma.XOR<Prisma.ProjectCreateWithoutRevisionsInput, Prisma.ProjectUncheckedCreateWithoutRevisionsInput>
+  connectOrCreate?: Prisma.ProjectCreateOrConnectWithoutRevisionsInput
+  upsert?: Prisma.ProjectUpsertWithoutRevisionsInput
+  connect?: Prisma.ProjectWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProjectUpdateToOneWithWhereWithoutRevisionsInput, Prisma.ProjectUpdateWithoutRevisionsInput>, Prisma.ProjectUncheckedUpdateWithoutRevisionsInput>
+}
+
+export type ProjectCreateWithoutCommentsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  views?: number
+  isPublic?: boolean
+  deletionToken?: string | null
+  expiresAt?: Date | string | null
+  revisions?: Prisma.FileRevisionCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectUncheckedCreateWithoutCommentsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  views?: number
+  isPublic?: boolean
+  deletionToken?: string | null
+  expiresAt?: Date | string | null
+  revisions?: Prisma.FileRevisionUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectCreateOrConnectWithoutCommentsInput = {
+  where: Prisma.ProjectWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutCommentsInput, Prisma.ProjectUncheckedCreateWithoutCommentsInput>
+}
+
+export type ProjectUpsertWithoutCommentsInput = {
+  update: Prisma.XOR<Prisma.ProjectUpdateWithoutCommentsInput, Prisma.ProjectUncheckedUpdateWithoutCommentsInput>
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutCommentsInput, Prisma.ProjectUncheckedCreateWithoutCommentsInput>
+  where?: Prisma.ProjectWhereInput
+}
+
+export type ProjectUpdateToOneWithWhereWithoutCommentsInput = {
+  where?: Prisma.ProjectWhereInput
+  data: Prisma.XOR<Prisma.ProjectUpdateWithoutCommentsInput, Prisma.ProjectUncheckedUpdateWithoutCommentsInput>
+}
+
+export type ProjectUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  views?: Prisma.IntFieldUpdateOperationsInput | number
+  isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletionToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revisions?: Prisma.FileRevisionUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectUncheckedUpdateWithoutCommentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  views?: Prisma.IntFieldUpdateOperationsInput | number
+  isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletionToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  revisions?: Prisma.FileRevisionUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectCreateWithoutRevisionsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  views?: number
+  isPublic?: boolean
+  deletionToken?: string | null
+  expiresAt?: Date | string | null
+  comments?: Prisma.CommentCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectUncheckedCreateWithoutRevisionsInput = {
+  id?: string
+  title: string
+  description?: string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  views?: number
+  isPublic?: boolean
+  deletionToken?: string | null
+  expiresAt?: Date | string | null
+  comments?: Prisma.CommentUncheckedCreateNestedManyWithoutProjectInput
+}
+
+export type ProjectCreateOrConnectWithoutRevisionsInput = {
+  where: Prisma.ProjectWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutRevisionsInput, Prisma.ProjectUncheckedCreateWithoutRevisionsInput>
+}
+
+export type ProjectUpsertWithoutRevisionsInput = {
+  update: Prisma.XOR<Prisma.ProjectUpdateWithoutRevisionsInput, Prisma.ProjectUncheckedUpdateWithoutRevisionsInput>
+  create: Prisma.XOR<Prisma.ProjectCreateWithoutRevisionsInput, Prisma.ProjectUncheckedCreateWithoutRevisionsInput>
+  where?: Prisma.ProjectWhereInput
+}
+
+export type ProjectUpdateToOneWithWhereWithoutRevisionsInput = {
+  where?: Prisma.ProjectWhereInput
+  data: Prisma.XOR<Prisma.ProjectUpdateWithoutRevisionsInput, Prisma.ProjectUncheckedUpdateWithoutRevisionsInput>
+}
+
+export type ProjectUpdateWithoutRevisionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  views?: Prisma.IntFieldUpdateOperationsInput | number
+  isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletionToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  comments?: Prisma.CommentUpdateManyWithoutProjectNestedInput
+}
+
+export type ProjectUncheckedUpdateWithoutRevisionsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  files?: Prisma.JsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  views?: Prisma.IntFieldUpdateOperationsInput | number
+  isPublic?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  deletionToken?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  expiresAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  comments?: Prisma.CommentUncheckedUpdateManyWithoutProjectNestedInput
+}
+
+
+/**
+ * Count Type ProjectCountOutputType
+ */
+
+export type ProjectCountOutputType = {
+  comments: number
+  revisions: number
+}
+
+export type ProjectCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  comments?: boolean | ProjectCountOutputTypeCountCommentsArgs
+  revisions?: boolean | ProjectCountOutputTypeCountRevisionsArgs
+}
+
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ProjectCountOutputType
+   */
+  select?: Prisma.ProjectCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountCommentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.CommentWhereInput
+}
+
+/**
+ * ProjectCountOutputType without action
+ */
+export type ProjectCountOutputTypeCountRevisionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.FileRevisionWhereInput
+}
 
 
 export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -494,6 +723,9 @@ export type ProjectSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   isPublic?: boolean
   deletionToken?: boolean
   expiresAt?: boolean
+  comments?: boolean | Prisma.Project$commentsArgs<ExtArgs>
+  revisions?: boolean | Prisma.Project$revisionsArgs<ExtArgs>
+  _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["project"]>
 
 export type ProjectSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -536,10 +768,20 @@ export type ProjectSelectScalar = {
 }
 
 export type ProjectOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "title" | "description" | "files" | "createdAt" | "updatedAt" | "views" | "isPublic" | "deletionToken" | "expiresAt", ExtArgs["result"]["project"]>
+export type ProjectInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  comments?: boolean | Prisma.Project$commentsArgs<ExtArgs>
+  revisions?: boolean | Prisma.Project$revisionsArgs<ExtArgs>
+  _count?: boolean | Prisma.ProjectCountOutputTypeDefaultArgs<ExtArgs>
+}
+export type ProjectIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
+export type ProjectIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
 
 export type $ProjectPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Project"
-  objects: {}
+  objects: {
+    comments: Prisma.$CommentPayload<ExtArgs>[]
+    revisions: Prisma.$FileRevisionPayload<ExtArgs>[]
+  }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     title: string
@@ -948,6 +1190,8 @@ readonly fields: ProjectFieldRefs;
  */
 export interface Prisma__ProjectClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  comments<T extends Prisma.Project$commentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$commentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$CommentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  revisions<T extends Prisma.Project$revisionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Project$revisionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$FileRevisionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1004,6 +1248,10 @@ export type ProjectFindUniqueArgs<ExtArgs extends runtime.Types.Extensions.Inter
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
+  /**
    * Filter, which Project to fetch.
    */
   where: Prisma.ProjectWhereUniqueInput
@@ -1022,6 +1270,10 @@ export type ProjectFindUniqueOrThrowArgs<ExtArgs extends runtime.Types.Extension
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
+  /**
    * Filter, which Project to fetch.
    */
   where: Prisma.ProjectWhereUniqueInput
@@ -1039,6 +1291,10 @@ export type ProjectFindFirstArgs<ExtArgs extends runtime.Types.Extensions.Intern
    * Omit specific fields from the Project
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
   /**
    * Filter, which Project to fetch.
    */
@@ -1088,6 +1344,10 @@ export type ProjectFindFirstOrThrowArgs<ExtArgs extends runtime.Types.Extensions
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
+  /**
    * Filter, which Project to fetch.
    */
   where?: Prisma.ProjectWhereInput
@@ -1136,6 +1396,10 @@ export type ProjectFindManyArgs<ExtArgs extends runtime.Types.Extensions.Interna
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
+  /**
    * Filter, which Projects to fetch.
    */
   where?: Prisma.ProjectWhereInput
@@ -1178,6 +1442,10 @@ export type ProjectCreateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Omit specific fields from the Project
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
   /**
    * The data needed to create a Project.
    */
@@ -1226,6 +1494,10 @@ export type ProjectUpdateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Omit specific fields from the Project
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
   /**
    * The data needed to update a Project.
    */
@@ -1293,6 +1565,10 @@ export type ProjectUpsertArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
+  /**
    * The filter to search for the Project to update in case it exists.
    */
   where: Prisma.ProjectWhereUniqueInput
@@ -1319,6 +1595,10 @@ export type ProjectDeleteArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
   /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
+  /**
    * Filter which Project to delete.
    */
   where: Prisma.ProjectWhereUniqueInput
@@ -1339,6 +1619,54 @@ export type ProjectDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Inter
 }
 
 /**
+ * Project.comments
+ */
+export type Project$commentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Comment
+   */
+  select?: Prisma.CommentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Comment
+   */
+  omit?: Prisma.CommentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.CommentInclude<ExtArgs> | null
+  where?: Prisma.CommentWhereInput
+  orderBy?: Prisma.CommentOrderByWithRelationInput | Prisma.CommentOrderByWithRelationInput[]
+  cursor?: Prisma.CommentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.CommentScalarFieldEnum | Prisma.CommentScalarFieldEnum[]
+}
+
+/**
+ * Project.revisions
+ */
+export type Project$revisionsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the FileRevision
+   */
+  select?: Prisma.FileRevisionSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the FileRevision
+   */
+  omit?: Prisma.FileRevisionOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.FileRevisionInclude<ExtArgs> | null
+  where?: Prisma.FileRevisionWhereInput
+  orderBy?: Prisma.FileRevisionOrderByWithRelationInput | Prisma.FileRevisionOrderByWithRelationInput[]
+  cursor?: Prisma.FileRevisionWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.FileRevisionScalarFieldEnum | Prisma.FileRevisionScalarFieldEnum[]
+}
+
+/**
  * Project without action
  */
 export type ProjectDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1350,4 +1678,8 @@ export type ProjectDefaultArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Omit specific fields from the Project
    */
   omit?: Prisma.ProjectOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ProjectInclude<ExtArgs> | null
 }

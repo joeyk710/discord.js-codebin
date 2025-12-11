@@ -45,6 +45,7 @@ export default function Navbar({
 				{/* Controls placed next to branding for tighter grouping */}
 				<div className="flex items-center gap-2 sm:gap-3 ml-3 overflow-visible">
 					<ThemeSwitcher />
+					<div className="w-0.5 h-8 bg-base-content/20"></div>
 
 					{/* Editor page buttons (Save/Metadata) */}
 					{showEditorButtons && (
@@ -67,20 +68,20 @@ export default function Navbar({
 								<button
 									onClick={onSaveShare}
 									disabled={isSaving}
-									className="btn btn-primary rounded-xl gap-2 sm:gap-3 h-auto p-2 sm:p-3 flex-col sm:flex-row"
+									className="btn rounded-xl gap-2 sm:gap-3 h-auto p-2 sm:p-3 flex-col sm:flex-row btn-primary"
 									aria-label="Save and share your project"
 								>
 									<div className="flex flex-col items-center gap-2 sm:flex-row">
 										<PlusIcon className="size-6" />
 
-										<span className="hidden sm:inline">{isSaving ? "Saving..." : "Save"}</span>
+										<span className="hidden sm:inline">
+											{isSaving ? 'Saving...' : 'Save'}
+										</span>
 									</div>
 								</button>
 							</div>
 						</>
-					)}
-
-					{/* Project view actions: Edit/Delete (or Cancel/Save when editing) */}
+					)}					{/* Project view actions: Edit/Delete (or Cancel/Save when editing) */}
 					{isViewPage && (
 						<div className="flex items-center gap-2">
 							{!isEditMode ? (
