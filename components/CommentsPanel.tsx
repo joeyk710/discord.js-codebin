@@ -1,24 +1,13 @@
 'use client'
 
 import React, { useState, useEffect, useRef } from 'react'
-import { getDiscordAvatarUrl } from '@/lib/auth'
+import { getBrowserId, getBrowserName, setBrowserName } from '@/lib/auth'
 import { useCurrentUser } from '@/lib/useCurrentUser'
-
-interface User {
-    id: string
-    username: string
-    avatar: string | null
-    email?: string | null
-    discordId: string
-    createdAt?: string
-    updatedAt?: string
-}
 
 interface Comment {
     id: string
     projectId: string
-    userId?: string | null
-    user?: User | null
+    browserId?: string | null
     line?: number | null
     filePath?: string | null
     authorName: string
@@ -34,19 +23,6 @@ interface CommentsPanelProps {
     onHighlightLine?: (filePath: string, lineNumber: number) => void
     deleteModalRef?: React.RefObject<HTMLDialogElement | null>
     onDeleteComment?: (commentId: string) => void
-}
-
-const BROWSER_ID_KEY = 'djs-codebin-browser-id'
-
-function getBrowserId(): string {
-    if (typeof window === 'undefined') return ''
-
-    let id = localStorage.getItem(BROWSER_ID_KEY)
-    if (!id) {
-        id = `browser-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
-        localStorage.setItem(BROWSER_ID_KEY, id)
-    }
-    return id
 }
 
 export default function CommentsPanel({
@@ -65,6 +41,7 @@ export default function CommentsPanel({
     const [error, setError] = useState<string | null>(null)
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [browserId, setBrowserId] = useState('')
+    const [username, setUsername] = useState(getBrowserName())
     const [lineNumber, setLineNumber] = useState<number | null>(null)
     const [filePath, setFilePath] = useState(activeFilePath || '')
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
@@ -109,8 +86,8 @@ export default function CommentsPanel({
             return
         }
 
-        if (!currentUser) {
-            setError('You must be logged in to post comments')
+        if (!username.trim()) {
+            setError('Please enter your name')
             return
         }
 
@@ -118,13 +95,16 @@ export default function CommentsPanel({
             setIsSubmitting(true)
             setError(null)
 
+            // Save username to localStorage
+            setBrowserName(username)
+
             const response = await fetch(`/api/projects/${projectId}/comments`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    userId: currentUser.userId,
-                    username: currentUser.username,
-                    avatar: currentUser.avatar,
+                    browserId: browserId,
+                    username: username.trim(),
+                    avatar: null,
                     content: newComment.trim(),
                     line: lineNumber || null,
                     filePath: filePath.trim() || null,
@@ -138,7 +118,7 @@ export default function CommentsPanel({
             }
 
             const comment = await response.json()
-            console.log('Posted comment:', comment) // DEBUG: Check if filePath and line are included
+            console.log('Posted comment:', comment)
             setComments([comment, ...comments])
             setNewComment('')
             setLineNumber(null)
@@ -216,118 +196,102 @@ export default function CommentsPanel({
                         </div>
                     )}
 
-                    {!currentUser ? (
-                        <a href="/api/auth/discord/login" className="btn btn-xs btn-primary gap-2">
-                            <img
-                                src="https://cdn.prod.website-files.com/6257adef93867e50d84d30e2/66e3d7f4ef6498ac018f2c55_Symbol.svg"
-                                alt="Discord"
-                                className="w-3 h-3"
-                            />
-                            Login with Discord
-                        </a>
-                    ) : (
-                        <>
-                            <div className="flex items-center gap-2 justify-between">
-                                <div className="flex items-center gap-2 text-xs text-base-content/70">
-                                    <img
-                                        src={getDiscordAvatarUrl(currentUser.userId, currentUser.avatar)}
-                                        alt={currentUser.username}
-                                        className="w-6 h-6 rounded-full"
-                                    />
-                                    <span className="font-medium">{currentUser.username}</span>
-                                </div>
-                                <a href="/api/auth/discord/logout" className="btn btn-xs btn-ghost">
-                                    Logout
-                                </a>
-                            </div>
+                    {/* Username Input */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-base-content/70">Your Name</label>
+                        <input
+                            type="text"
+                            placeholder="Enter your name"
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            className="input input-xs input-bordered w-full"
+                            maxLength={50}
+                        />
+                    </div>
 
-                            <textarea
-                                placeholder="Add a comment..."
-                                value={newComment}
-                                onChange={(e) => setNewComment(e.target.value)}
-                                className="textarea textarea-xs textarea-bordered w-full resize-none"
-                                rows={2}
-                                maxLength={1000}
-                            />
+                    <textarea
+                        placeholder="Add a comment..."
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        className="textarea textarea-xs textarea-bordered w-full resize-none"
+                        rows={2}
+                        maxLength={1000}
+                    />
 
-                            {/* Line Reference Section */}
-                            <div className="bg-base-200/50 rounded p-3 space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <label className="text-xs font-semibold text-base-content/70">
-                                        Reference (optional)
-                                    </label>
-                                    {(filePath || lineNumber) && (
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setFilePath('')
-                                                setLineNumber(null)
-                                            }}
-                                            className="btn btn-ghost btn-xs text-xs"
-                                        >
-                                            Clear
-                                        </button>
-                                    )}
-                                </div>
+                    {/* Line Reference Section */}
+                    <div className="bg-base-200/50 rounded p-3 space-y-2">
+                        <div className="flex items-center justify-between">
+                            <label className="text-xs font-semibold text-base-content/70">
+                                Reference (optional)
+                            </label>
+                            {(filePath || lineNumber) && (
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setFilePath('')
+                                        setLineNumber(null)
+                                    }}
+                                    className="btn btn-ghost btn-xs text-xs"
+                                >
+                                    Clear
+                                </button>
+                            )}
+                        </div>
 
-                                {/* Current Reference Display */}
-                                {(filePath || lineNumber) && (
-                                    <div className="flex flex-wrap gap-2 mb-2">
-                                        {filePath && (
-                                            <span className="badge badge-sm badge-primary text-[11px] font-mono">
-                                                {filePath.split('/').pop()}
-                                            </span>
-                                        )}
-                                        {lineNumber && (
-                                            <span className="badge badge-sm badge-secondary text-[11px] font-mono">
-                                                Line {lineNumber}
-                                            </span>
-                                        )}
-                                    </div>
+                        {/* Current Reference Display */}
+                        {(filePath || lineNumber) && (
+                            <div className="flex flex-wrap gap-2 mb-2">
+                                {filePath && (
+                                    <span className="badge badge-sm badge-primary text-[11px] font-mono">
+                                        {filePath.split('/').pop()}
+                                    </span>
                                 )}
-
-                                {/* Input Fields */}
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="File path"
-                                        value={filePath}
-                                        onChange={(e) => setFilePath(e.target.value)}
-                                        className="input input-xs input-bordered flex-1 min-w-32"
-                                    />
-                                    <input
-                                        type="number"
-                                        placeholder="Line #"
-                                        value={lineNumber || ''}
-                                        onChange={(e) =>
-                                            setLineNumber(e.target.value ? parseInt(e.target.value) : null)
-                                        }
-                                        className="input input-xs input-bordered w-24"
-                                        min="1"
-                                    />
-                                </div>
-                            </div>
-
-                            <button
-                                type="submit"
-                                disabled={isSubmitting || !newComment.trim()}
-                                className="btn btn-xs btn-primary w-full"
-                            >
-                                {isSubmitting ? (
-                                    <>
-                                        <span className="loading loading-spinner loading-xs"></span>
-                                        Posting...
-                                    </>
-                                ) : (
-                                    'Post Comment'
+                                {lineNumber && (
+                                    <span className="badge badge-sm badge-secondary text-[11px] font-mono">
+                                        Line {lineNumber}
+                                    </span>
                                 )}
-                            </button>
-                        </>
-                    )}
+                            </div>
+                        )}
+
+                        {/* Input Fields */}
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                placeholder="File path"
+                                value={filePath}
+                                onChange={(e) => setFilePath(e.target.value)}
+                                className="input input-xs input-bordered flex-1 min-w-32"
+                            />
+                            <input
+                                type="number"
+                                placeholder="Line #"
+                                value={lineNumber || ''}
+                                onChange={(e) =>
+                                    setLineNumber(e.target.value ? parseInt(e.target.value) : null)
+                                }
+                                className="input input-xs input-bordered w-24"
+                                min="1"
+                            />
+                        </div>
+                    </div>
+
+                    <button
+                        type="submit"
+                        disabled={isSubmitting || !newComment.trim()}
+                        className="btn btn-xs btn-primary w-full"
+                    >
+                        {isSubmitting ? (
+                            <>
+                                <span className="loading loading-spinner loading-xs"></span>
+                                Posting...
+                            </>
+                        ) : (
+                            'Post Comment'
+                        )}
+                    </button>
                 </form>
             )}
-
-            {/* Header */}
             <div className="px-4 py-3 border-b border-base-300 bg-base-100">
                 <h2 className="font-bold text-sm flex items-center gap-2 text-base-content/80">
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -361,16 +325,8 @@ export default function CommentsPanel({
                             <div key={comment.id} className="chat chat-start group">
                                 {/* Avatar */}
                                 <div className="chat-image avatar">
-                                    <div className="w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                                        {comment.user ? (
-                                            <img
-                                                src={getDiscordAvatarUrl(comment.user.id, comment.user.avatar)}
-                                                alt={comment.user.username}
-                                                className="w-full h-full rounded-full"
-                                            />
-                                        ) : (
-                                            <div className="w-full h-full rounded-full bg-base-300" />
-                                        )}
+                                    <div className="w-8 rounded-full bg-primary flex items-center justify-center text-primary-content text-xs font-bold">
+                                        {(comment.authorName || 'A').charAt(0).toUpperCase()}
                                     </div>
                                 </div>
 
@@ -380,7 +336,7 @@ export default function CommentsPanel({
                                     <div className="px-4 pt-3 pb-1">
                                         <div className="flex items-center gap-2">
                                             <p className="font-semibold text-sm">
-                                                {comment.user?.username || comment.authorName}
+                                                {comment.authorName}
                                             </p>
                                             <p className="text-xs opacity-75">{formatDate(comment.createdAt)}</p>
                                         </div>
@@ -418,7 +374,7 @@ export default function CommentsPanel({
                                     </div>
 
                                     {/* Footer - Delete Button */}
-                                    {currentUser && comment.user?.id === currentUser?.userId && !isReadOnly && (
+                                    {currentUser && comment.browserId === currentUser.userId && !isReadOnly && (
                                         <div className="px-4 pb-2 pt-0">
                                             <button
                                                 onClick={(e) => {

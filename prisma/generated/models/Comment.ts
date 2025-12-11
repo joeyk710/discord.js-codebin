@@ -38,6 +38,7 @@ export type CommentMinAggregateOutputType = {
   id: string | null
   projectId: string | null
   userId: string | null
+  browserId: string | null
   line: number | null
   filePath: string | null
   authorName: string | null
@@ -50,6 +51,7 @@ export type CommentMaxAggregateOutputType = {
   id: string | null
   projectId: string | null
   userId: string | null
+  browserId: string | null
   line: number | null
   filePath: string | null
   authorName: string | null
@@ -62,6 +64,7 @@ export type CommentCountAggregateOutputType = {
   id: number
   projectId: number
   userId: number
+  browserId: number
   line: number
   filePath: number
   authorName: number
@@ -84,6 +87,7 @@ export type CommentMinAggregateInputType = {
   id?: true
   projectId?: true
   userId?: true
+  browserId?: true
   line?: true
   filePath?: true
   authorName?: true
@@ -96,6 +100,7 @@ export type CommentMaxAggregateInputType = {
   id?: true
   projectId?: true
   userId?: true
+  browserId?: true
   line?: true
   filePath?: true
   authorName?: true
@@ -108,6 +113,7 @@ export type CommentCountAggregateInputType = {
   id?: true
   projectId?: true
   userId?: true
+  browserId?: true
   line?: true
   filePath?: true
   authorName?: true
@@ -207,6 +213,7 @@ export type CommentGroupByOutputType = {
   id: string
   projectId: string
   userId: string | null
+  browserId: string | null
   line: number | null
   filePath: string | null
   authorName: string
@@ -242,6 +249,7 @@ export type CommentWhereInput = {
   id?: Prisma.StringFilter<"Comment"> | string
   projectId?: Prisma.StringFilter<"Comment"> | string
   userId?: Prisma.StringNullableFilter<"Comment"> | string | null
+  browserId?: Prisma.StringNullableFilter<"Comment"> | string | null
   line?: Prisma.IntNullableFilter<"Comment"> | number | null
   filePath?: Prisma.StringNullableFilter<"Comment"> | string | null
   authorName?: Prisma.StringFilter<"Comment"> | string
@@ -256,6 +264,7 @@ export type CommentOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   projectId?: Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
+  browserId?: Prisma.SortOrderInput | Prisma.SortOrder
   line?: Prisma.SortOrderInput | Prisma.SortOrder
   filePath?: Prisma.SortOrderInput | Prisma.SortOrder
   authorName?: Prisma.SortOrder
@@ -273,6 +282,7 @@ export type CommentWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.CommentWhereInput | Prisma.CommentWhereInput[]
   projectId?: Prisma.StringFilter<"Comment"> | string
   userId?: Prisma.StringNullableFilter<"Comment"> | string | null
+  browserId?: Prisma.StringNullableFilter<"Comment"> | string | null
   line?: Prisma.IntNullableFilter<"Comment"> | number | null
   filePath?: Prisma.StringNullableFilter<"Comment"> | string | null
   authorName?: Prisma.StringFilter<"Comment"> | string
@@ -287,6 +297,7 @@ export type CommentOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   projectId?: Prisma.SortOrder
   userId?: Prisma.SortOrderInput | Prisma.SortOrder
+  browserId?: Prisma.SortOrderInput | Prisma.SortOrder
   line?: Prisma.SortOrderInput | Prisma.SortOrder
   filePath?: Prisma.SortOrderInput | Prisma.SortOrder
   authorName?: Prisma.SortOrder
@@ -307,6 +318,7 @@ export type CommentScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Comment"> | string
   projectId?: Prisma.StringWithAggregatesFilter<"Comment"> | string
   userId?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
+  browserId?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
   line?: Prisma.IntNullableWithAggregatesFilter<"Comment"> | number | null
   filePath?: Prisma.StringNullableWithAggregatesFilter<"Comment"> | string | null
   authorName?: Prisma.StringWithAggregatesFilter<"Comment"> | string
@@ -317,6 +329,7 @@ export type CommentScalarWhereWithAggregatesInput = {
 
 export type CommentCreateInput = {
   id?: string
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -331,6 +344,7 @@ export type CommentUncheckedCreateInput = {
   id?: string
   projectId: string
   userId?: string | null
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -341,6 +355,7 @@ export type CommentUncheckedCreateInput = {
 
 export type CommentUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -355,6 +370,7 @@ export type CommentUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -367,6 +383,7 @@ export type CommentCreateManyInput = {
   id?: string
   projectId: string
   userId?: string | null
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -377,6 +394,7 @@ export type CommentCreateManyInput = {
 
 export type CommentUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -389,6 +407,7 @@ export type CommentUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -411,6 +430,7 @@ export type CommentCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   projectId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  browserId?: Prisma.SortOrder
   line?: Prisma.SortOrder
   filePath?: Prisma.SortOrder
   authorName?: Prisma.SortOrder
@@ -427,6 +447,7 @@ export type CommentMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   projectId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  browserId?: Prisma.SortOrder
   line?: Prisma.SortOrder
   filePath?: Prisma.SortOrder
   authorName?: Prisma.SortOrder
@@ -439,6 +460,7 @@ export type CommentMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   projectId?: Prisma.SortOrder
   userId?: Prisma.SortOrder
+  browserId?: Prisma.SortOrder
   line?: Prisma.SortOrder
   filePath?: Prisma.SortOrder
   authorName?: Prisma.SortOrder
@@ -545,6 +567,7 @@ export type NullableIntFieldUpdateOperationsInput = {
 
 export type CommentCreateWithoutProjectInput = {
   id?: string
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -557,6 +580,7 @@ export type CommentCreateWithoutProjectInput = {
 export type CommentUncheckedCreateWithoutProjectInput = {
   id?: string
   userId?: string | null
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -598,6 +622,7 @@ export type CommentScalarWhereInput = {
   id?: Prisma.StringFilter<"Comment"> | string
   projectId?: Prisma.StringFilter<"Comment"> | string
   userId?: Prisma.StringNullableFilter<"Comment"> | string | null
+  browserId?: Prisma.StringNullableFilter<"Comment"> | string | null
   line?: Prisma.IntNullableFilter<"Comment"> | number | null
   filePath?: Prisma.StringNullableFilter<"Comment"> | string | null
   authorName?: Prisma.StringFilter<"Comment"> | string
@@ -608,6 +633,7 @@ export type CommentScalarWhereInput = {
 
 export type CommentCreateWithoutUserInput = {
   id?: string
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -620,6 +646,7 @@ export type CommentCreateWithoutUserInput = {
 export type CommentUncheckedCreateWithoutUserInput = {
   id?: string
   projectId: string
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -657,6 +684,7 @@ export type CommentUpdateManyWithWhereWithoutUserInput = {
 export type CommentCreateManyProjectInput = {
   id?: string
   userId?: string | null
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -667,6 +695,7 @@ export type CommentCreateManyProjectInput = {
 
 export type CommentUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -679,6 +708,7 @@ export type CommentUpdateWithoutProjectInput = {
 export type CommentUncheckedUpdateWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -690,6 +720,7 @@ export type CommentUncheckedUpdateWithoutProjectInput = {
 export type CommentUncheckedUpdateManyWithoutProjectInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   userId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -701,6 +732,7 @@ export type CommentUncheckedUpdateManyWithoutProjectInput = {
 export type CommentCreateManyUserInput = {
   id?: string
   projectId: string
+  browserId?: string | null
   line?: number | null
   filePath?: string | null
   authorName?: string
@@ -711,6 +743,7 @@ export type CommentCreateManyUserInput = {
 
 export type CommentUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -723,6 +756,7 @@ export type CommentUpdateWithoutUserInput = {
 export type CommentUncheckedUpdateWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -734,6 +768,7 @@ export type CommentUncheckedUpdateWithoutUserInput = {
 export type CommentUncheckedUpdateManyWithoutUserInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   projectId?: Prisma.StringFieldUpdateOperationsInput | string
+  browserId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   line?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   filePath?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   authorName?: Prisma.StringFieldUpdateOperationsInput | string
@@ -748,6 +783,7 @@ export type CommentSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   id?: boolean
   projectId?: boolean
   userId?: boolean
+  browserId?: boolean
   line?: boolean
   filePath?: boolean
   authorName?: boolean
@@ -762,6 +798,7 @@ export type CommentSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   projectId?: boolean
   userId?: boolean
+  browserId?: boolean
   line?: boolean
   filePath?: boolean
   authorName?: boolean
@@ -776,6 +813,7 @@ export type CommentSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exten
   id?: boolean
   projectId?: boolean
   userId?: boolean
+  browserId?: boolean
   line?: boolean
   filePath?: boolean
   authorName?: boolean
@@ -790,6 +828,7 @@ export type CommentSelectScalar = {
   id?: boolean
   projectId?: boolean
   userId?: boolean
+  browserId?: boolean
   line?: boolean
   filePath?: boolean
   authorName?: boolean
@@ -798,7 +837,7 @@ export type CommentSelectScalar = {
   updatedAt?: boolean
 }
 
-export type CommentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "userId" | "line" | "filePath" | "authorName" | "content" | "createdAt" | "updatedAt", ExtArgs["result"]["comment"]>
+export type CommentOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "projectId" | "userId" | "browserId" | "line" | "filePath" | "authorName" | "content" | "createdAt" | "updatedAt", ExtArgs["result"]["comment"]>
 export type CommentInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   project?: boolean | Prisma.ProjectDefaultArgs<ExtArgs>
   user?: boolean | Prisma.Comment$userArgs<ExtArgs>
@@ -822,6 +861,10 @@ export type $CommentPayload<ExtArgs extends runtime.Types.Extensions.InternalArg
     id: string
     projectId: string
     userId: string | null
+    /**
+     * Browser-based anonymous identifier
+     */
+    browserId: string | null
     /**
      * Line number in the file where the comment is attached (optional)
      */
@@ -1268,6 +1311,7 @@ export interface CommentFieldRefs {
   readonly id: Prisma.FieldRef<"Comment", 'String'>
   readonly projectId: Prisma.FieldRef<"Comment", 'String'>
   readonly userId: Prisma.FieldRef<"Comment", 'String'>
+  readonly browserId: Prisma.FieldRef<"Comment", 'String'>
   readonly line: Prisma.FieldRef<"Comment", 'Int'>
   readonly filePath: Prisma.FieldRef<"Comment", 'String'>
   readonly authorName: Prisma.FieldRef<"Comment", 'String'>

@@ -9,9 +9,6 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         const comments = await prisma.comment.findMany({
             where: { projectId },
             orderBy: { createdAt: 'desc' },
-            include: {
-                user: true,
-            },
         })
 
         return NextResponse.json(comments)
@@ -24,10 +21,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id: projectId } = await params
-        const { line, filePath, userId, username, avatar, content } = await request.json()
+        const { line, filePath, browserId, username, content } = await request.json()
 
         if (!content || typeof content !== 'string' || content.trim() === '') {
             return NextResponse.json({ error: 'Comment content is required' }, { status: 400 })
+        }
+
+        if (!username || typeof username !== 'string' || username.trim() === '') {
+            return NextResponse.json({ error: 'Username is required' }, { status: 400 })
         }
 
         // Verify project exists
@@ -36,39 +37,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
             return NextResponse.json({ error: 'Project not found' }, { status: 404 })
         }
 
-        // If userId provided, create user if doesn't exist
-        if (userId) {
-            try {
-                await prisma.user.upsert({
-                    where: { discordId: userId },
-                    update: {
-                        username,
-                        avatar,
-                    },
-                    create: {
-                        id: userId,
-                        discordId: userId,
-                        username,
-                        avatar,
-                    },
-                })
-            } catch (userError) {
-                // Log but continue - comment can still be created even if user upsert fails
-                console.error('User upsert error:', userError instanceof Error ? userError.message : String(userError))
-            }
-        }
-
         const comment = await prisma.comment.create({
             data: {
                 projectId,
-                userId: userId || null,
+                browserId: browserId || null,
                 line: line || null,
                 filePath: filePath || null,
-                authorName: username || 'Anonymous',
+                authorName: username.trim() || 'Anonymous',
                 content: content.trim(),
-            },
-            include: {
-                user: true,
             },
         })
 

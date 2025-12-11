@@ -775,6 +775,7 @@ export const CommentScalarFieldEnum = {
   id: 'id',
   projectId: 'projectId',
   userId: 'userId',
+  browserId: 'browserId',
   line: 'line',
   filePath: 'filePath',
   authorName: 'authorName',
