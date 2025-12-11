@@ -10,8 +10,8 @@ export function parseSessionToken(token: string | undefined): DiscordUser | null
     try {
         if (!token) return null
         // Use browser-compatible base64 decoding instead of Buffer
-        const decodedString = typeof window !== 'undefined' 
-            ? atob(token) 
+        const decodedString = typeof window !== 'undefined'
+            ? atob(token)
             : Buffer.from(token, 'base64').toString('utf-8')
         const sessionData = JSON.parse(decodedString)
         return sessionData as DiscordUser
