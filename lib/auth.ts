@@ -13,6 +13,10 @@ export function parseSessionToken(token: string | undefined): DiscordUser | null
         return sessionData as DiscordUser
     } catch (error) {
         console.error('Failed to parse session:', error)
+        // Clear the bad cookie by setting it to expire
+        if (typeof window !== 'undefined') {
+            document.cookie = 'discord_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+        }
         return null
     }
 }
