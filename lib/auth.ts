@@ -9,12 +9,17 @@ export interface DiscordUser {
 export function parseSessionToken(token: string | undefined): DiscordUser | null {
     try {
         if (!token) return null
-        const sessionData = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'))
+        // Use browser-compatible base64 decoding instead of Buffer
+        const decodedString = typeof window !== 'undefined' 
+            ? atob(token) 
+            : Buffer.from(token, 'base64').toString('utf-8')
+        const sessionData = JSON.parse(decodedString)
         return sessionData as DiscordUser
     } catch (error) {
-        console.error('Failed to parse session:', error)
-        // Clear the bad cookie by setting it to expire
+        // Silently return null for invalid sessions (don't log errors)
+        // This can happen if the cookie is corrupted or from an old format
         if (typeof window !== 'undefined') {
+            // Clear the bad cookie
             document.cookie = 'discord_session=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
         }
         return null

@@ -8,6 +8,14 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const code = searchParams.get('code')
     const state = searchParams.get('state')
+    const error = searchParams.get('error')
+    const errorDescription = searchParams.get('error_description')
+
+    // Check for Discord OAuth errors
+    if (error) {
+        console.error('Discord OAuth error:', error, errorDescription)
+        return NextResponse.redirect(new URL(`/?error=discord_oauth&details=${encodeURIComponent(error)}: ${encodeURIComponent(errorDescription || '')}`, request.url))
+    }
 
     console.log('OAuth callback initiated')
     console.log('Code:', code)
