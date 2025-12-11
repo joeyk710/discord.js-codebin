@@ -96,7 +96,7 @@ export default function Footer() {
           </div>
           <p className="text-sm font-semibold">discord.js Code Bin</p>
           <p className="text-xs text-base-content/60 max-w-xs">
-            Share, analyze, and review discord.js code snippets with intelligent suggestions and syntax highlighting.
+            Share, analyze, and review discord.js code snippets with and syntax highlighting.
           </p>
         </aside>
 
