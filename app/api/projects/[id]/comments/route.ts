@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
 
+// In-memory rate limiting store: Map<browserId, timestamp>
+const commentRateLimits = new Map<string, number>()
+const RATE_LIMIT_SECONDS = 3 // Same as client-side limit
+
+// Clean up old rate limit entries every 5 minutes to prevent memory leak
+setInterval(() => {
+    const now = Date.now()
+    const maxAge = 5 * 60 * 1000 // 5 minutes
+
+    for (const [browserId, timestamp] of commentRateLimits.entries()) {
+        if (now - timestamp > maxAge) {
+            commentRateLimits.delete(browserId)
+        }
+    }
+}, 5 * 60 * 1000)
+
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const { id: projectId } = await params
@@ -29,6 +45,35 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
         if (!username || typeof username !== 'string' || username.trim() === '') {
             return NextResponse.json({ error: 'Username is required' }, { status: 400 })
+        }
+
+        // Check rate limiting by browserId
+        if (browserId) {
+            const lastCommentTime = commentRateLimits.get(browserId)
+            const now = Date.now()
+
+            if (lastCommentTime) {
+                const secondsSinceLastComment = (now - lastCommentTime) / 1000
+
+                if (secondsSinceLastComment < RATE_LIMIT_SECONDS) {
+                    const waitSeconds = Math.ceil(RATE_LIMIT_SECONDS - secondsSinceLastComment)
+                    return NextResponse.json(
+                        {
+                            error: `You're posting too fast. Please wait ${waitSeconds} second${waitSeconds !== 1 ? 's' : ''}`,
+                            retryAfter: waitSeconds,
+                        },
+                        {
+                            status: 429,
+                            headers: {
+                                'Retry-After': waitSeconds.toString(),
+                            },
+                        }
+                    )
+                }
+            }
+
+            // Update the rate limit timestamp
+            commentRateLimits.set(browserId, now)
         }
 
         // Verify project exists

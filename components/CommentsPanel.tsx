@@ -23,6 +23,7 @@ interface CommentsPanelProps {
     onHighlightLine?: (filePath: string, lineNumber: number) => void
     deleteModalRef?: React.RefObject<HTMLDialogElement | null>
     onDeleteComment?: (commentId: string) => void
+    files?: Array<{ path: string; code: string }>
 }
 
 export default function CommentsPanel({
@@ -32,6 +33,7 @@ export default function CommentsPanel({
     onHighlightLine,
     deleteModalRef: externalDeleteModalRef,
     onDeleteComment,
+    files = [],
 }: CommentsPanelProps) {
     const currentUser = useCurrentUser()
     const [comments, setComments] = useState<Comment[]>([])
@@ -45,6 +47,9 @@ export default function CommentsPanel({
     const [lineNumber, setLineNumber] = useState<number | null>(null)
     const [filePath, setFilePath] = useState(activeFilePath || '')
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+    const [lastCommentTime, setLastCommentTime] = useState<number>(0)
+    const [rateLimitCountdown, setRateLimitCountdown] = useState<number>(0)
+    const RATE_LIMIT_SECONDS = 3 // 1 comment per 3 seconds
 
     // Initialize browser ID
     useEffect(() => {
@@ -78,8 +83,25 @@ export default function CommentsPanel({
         fetchComments()
     }, [projectId])
 
+    // Countdown timer for rate limiting
+    useEffect(() => {
+        if (rateLimitCountdown <= 0) return
+
+        const interval = setInterval(() => {
+            setRateLimitCountdown((prev) => Math.max(0, prev - 1))
+        }, 1000)
+
+        return () => clearInterval(interval)
+    }, [rateLimitCountdown])
+
     const handleAddComment = async (e: React.FormEvent) => {
         e.preventDefault()
+
+        // Check rate limiting
+        if (rateLimitCountdown > 0) {
+            setError(`Please wait ${rateLimitCountdown} second${rateLimitCountdown !== 1 ? 's' : ''} before posting another comment`)
+            return
+        }
 
         if (!newComment.trim()) {
             setError('Comment cannot be empty')
@@ -89,6 +111,20 @@ export default function CommentsPanel({
         if (!username.trim()) {
             setError('Please enter your name')
             return
+        }
+
+        // Validate line number if a file and line are referenced
+        if (filePath.trim() && lineNumber) {
+            if (!isValidLineNumber(filePath.trim(), lineNumber)) {
+                const fileObj = files.find((f) => f.path === filePath.trim())
+                if (!fileObj) {
+                    setError(`File "${filePath}" not found`)
+                } else {
+                    const maxLine = fileObj.code.split('\n').length
+                    setError(`Line ${lineNumber} does not exist (file has ${maxLine} lines)`)
+                }
+                return
+            }
         }
 
         try {
@@ -114,6 +150,14 @@ export default function CommentsPanel({
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}))
                 console.error('Comment submission error:', errorData)
+
+                // Handle rate limiting from server
+                if (response.status === 429) {
+                    const retryAfter = errorData.retryAfter || RATE_LIMIT_SECONDS
+                    setRateLimitCountdown(retryAfter)
+                    throw new Error(errorData.error || `Please wait ${retryAfter} seconds before posting`)
+                }
+
                 throw new Error(errorData.error || 'Failed to post comment')
             }
 
@@ -123,6 +167,10 @@ export default function CommentsPanel({
             setNewComment('')
             setLineNumber(null)
             // Don't clear filePath - let it stay as the current file reference
+
+            // Set rate limit countdown
+            setLastCommentTime(Date.now())
+            setRateLimitCountdown(RATE_LIMIT_SECONDS)
         } catch (err) {
             const message = err instanceof Error ? err.message : 'Failed to post comment'
             console.error('Comment error:', message)
@@ -161,15 +209,26 @@ export default function CommentsPanel({
 
     const formatDate = (dateString: string) => {
         try {
-            return new Date(dateString).toLocaleString(undefined, {
+            const date = new Date(dateString)
+            return date.toLocaleString(undefined, {
                 month: 'short',
                 day: 'numeric',
                 hour: '2-digit',
                 minute: '2-digit',
+                hour12: true,
             })
         } catch {
             return dateString
         }
+    }
+
+    // Validate that a line number exists in the file
+    const isValidLineNumber = (file: string, line: number | null): boolean => {
+        if (!line || line < 1) return true // null or 0 is valid (no line reference)
+        const fileObj = files.find((f) => f.path === file)
+        if (!fileObj) return false // file doesn't exist
+        const lineCount = fileObj.code.split('\n').length
+        return line <= lineCount
     }
 
     return (
@@ -267,18 +326,28 @@ export default function CommentsPanel({
                                 type="number"
                                 placeholder="Line #"
                                 value={lineNumber || ''}
-                                onChange={(e) =>
-                                    setLineNumber(e.target.value ? parseInt(e.target.value) : null)
-                                }
+                                onChange={(e) => {
+                                    const value = e.target.value
+                                    if (value === '') {
+                                        setLineNumber(null)
+                                    } else {
+                                        const num = parseInt(value, 10)
+                                        if (!isNaN(num) && num > 0) {
+                                            setLineNumber(num)
+                                        }
+                                    }
+                                }}
                                 className="input input-xs input-bordered w-24"
                                 min="1"
+                                inputMode="numeric"
+                                pattern="[0-9]*"
                             />
                         </div>
                     </div>
 
                     <button
                         type="submit"
-                        disabled={isSubmitting || !newComment.trim()}
+                        disabled={isSubmitting || !newComment.trim() || rateLimitCountdown > 0}
                         className="btn btn-xs btn-primary w-full"
                     >
                         {isSubmitting ? (
@@ -286,6 +355,8 @@ export default function CommentsPanel({
                                 <span className="loading loading-spinner loading-xs"></span>
                                 Posting...
                             </>
+                        ) : rateLimitCountdown > 0 ? (
+                            `Wait ${rateLimitCountdown}s...`
                         ) : (
                             'Post Comment'
                         )}
@@ -309,7 +380,7 @@ export default function CommentsPanel({
             </div>
 
             {/* Comments List */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
                 {loading ? (
                     <div className="flex justify-center py-8">
                         <div className="loading loading-spinner loading-sm"></div>
@@ -320,90 +391,56 @@ export default function CommentsPanel({
                         <p className="text-xs mt-1">Be the first to share feedback!</p>
                     </div>
                 ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                         {comments.map((comment) => (
-                            <div key={comment.id} className="chat chat-start group">
+                            <div key={comment.id} className="chat chat-start">
                                 {/* Avatar */}
                                 <div className="chat-image avatar">
-                                    <div className="w-8 rounded-full bg-primary flex items-center justify-center text-primary-content text-xs font-bold">
+                                    <div className="w-8 sm:w-10 rounded-full bg-primary flex items-center justify-center text-primary-content text-xs sm:text-sm font-bold">
                                         {(comment.authorName || 'A').charAt(0).toUpperCase()}
                                     </div>
                                 </div>
 
+                                {/* Header with Name and Time */}
+                                <div className="chat-header flex items-center gap-2 whitespace-nowrap overflow-hidden">
+                                    <span className="font-semibold">{comment.authorName}</span>
+                                    <time className="text-xs opacity-50">{formatDate(comment.createdAt)}</time>
+                                </div>
+
                                 {/* Chat Bubble */}
-                                <div className="chat-bubble bg-primary text-primary-content p-0 flex flex-col">
-                                    {/* Header */}
-                                    <div className="px-4 pt-3 pb-1">
-                                        <div className="flex items-center gap-2">
-                                            <p className="font-semibold text-sm">
-                                                {comment.authorName}
-                                            </p>
-                                            <p className="text-xs opacity-75">{formatDate(comment.createdAt)}</p>
-                                        </div>
-                                        {(comment.filePath || comment.line) && (
-                                            <div className="flex items-center gap-2 mt-2 flex-wrap">
-                                                {comment.filePath && (
-                                                    <button
-                                                        onClick={() => onHighlightLine?.(comment.filePath!, comment.line || 1)}
-                                                        className="badge badge-outline badge-sm text-[11px] font-mono bg-white/10 border-white/40 text-white hover:bg-white/20 hover:border-white/60 cursor-pointer transition-all"
-                                                        title="Click to highlight in editor"
-                                                    >
-                                                        <span className="mr-1">📄</span>
-                                                        {comment.filePath.split('/').pop()}
-                                                    </button>
-                                                )}
-                                                {comment.line && (
-                                                    <button
-                                                        onClick={() => onHighlightLine?.(comment.filePath || '', comment.line!)}
-                                                        className="badge badge-outline badge-sm text-[11px] font-mono bg-white/10 border-white/40 text-white hover:bg-white/20 hover:border-white/60 cursor-pointer transition-all"
-                                                        title="Click to highlight in editor"
-                                                    >
-                                                        <span className="mr-1">📍</span>
-                                                        Line {comment.line}
-                                                    </button>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="px-4 pb-3 pt-1">
-                                        <p className="text-sm break-words leading-relaxed whitespace-pre-wrap">
-                                            {comment.content}
-                                        </p>
-                                    </div>
-
-                                    {/* Footer - Delete Button */}
-                                    {currentUser && comment.browserId === currentUser.userId && !isReadOnly && (
-                                        <div className="px-4 pb-2 pt-0">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation()
-                                                    onDeleteComment?.(comment.id)
-                                                    externalDeleteModalRef?.current?.showModal()
-                                                }}
-                                                disabled={deletingId === comment.id}
-                                                className="btn btn-ghost btn-xs gap-1 text-error hover:text-error-content hover:bg-error/20"
-                                                title="Delete comment"
-                                            >
-                                                <svg
-                                                    className="w-3 h-3"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
+                                <div className="chat-bubble bg-base-200 text-base-content text-sm sm:text-base">
+                                    {/* File/Line References */}
+                                    {(comment.filePath || comment.line) && (
+                                        <div className="flex items-center gap-2 flex-wrap mb-2">
+                                            {comment.filePath && (
+                                                <button
+                                                    onClick={() => onHighlightLine?.(comment.filePath!, comment.line || 1)}
+                                                    className="badge badge-sm badge-primary text-[11px] font-mono hover:badge-primary/80 cursor-pointer transition-all"
+                                                    title="Click to highlight in editor"
                                                 >
-                                                    <path
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                        strokeWidth={2}
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                                    />
-                                                </svg>
-                                                Delete
-                                            </button>
+                                                    {comment.filePath.split('/').pop()}
+                                                </button>
+                                            )}
+                                            {comment.line && (
+                                                <button
+                                                    onClick={() => onHighlightLine?.(comment.filePath || '', comment.line!)}
+                                                    className="badge badge-sm badge-secondary text-[11px] font-mono hover:badge-secondary/80 cursor-pointer transition-all"
+                                                    title="Click to highlight in editor"
+                                                >
+                                                    Line {comment.line}
+                                                </button>
+                                            )}
                                         </div>
                                     )}
+
+                                    {/* Content */}
+                                    <p className="break-words leading-relaxed whitespace-pre-wrap">
+                                        {comment.content}
+                                    </p>
                                 </div>
+
+                                {/* Footer */}
+                                <div className="chat-footer opacity-50 text-xs">Sent</div>
                             </div>
                         ))}
                     </div>
