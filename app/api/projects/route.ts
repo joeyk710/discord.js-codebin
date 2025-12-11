@@ -220,13 +220,36 @@ export async function GET(request: NextRequest) {
                 }
             }
 
-            // Increment views only for public views (or when allowed)
-            await prisma.project.update({ where: { id }, data: { views: { increment: 1 } } })
+            // Increment views only once per unique browser (tracked via cookie)
+            const response = NextResponse.json(project)
 
-            return NextResponse.json({ ...project, views: project.views + 1 })
+            // Set a cookie to track this view as coming from this browser
+            // The cookie is set for this specific project ID
+            const viewCookieName = `viewed_${id}`
+            const existingCookie = request.cookies.get(viewCookieName)
+
+            if (!existingCookie) {
+                // First view from this browser - increment the counter
+                await prisma.project.update({ where: { id }, data: { views: { increment: 1 } } })
+                // Set cookie to expire in 24 hours
+                response.cookies.set(viewCookieName, 'true', {
+                    maxAge: 24 * 60 * 60, // 24 hours
+                    path: '/',
+                })
+            }
+
+            return response
         }
 
-        // Paginated listing path (safe numeric parsing to avoid quoted OFFSET)
+        // Paginated listing path - REQUIRE API TOKEN
+        const hasApiToken = verifyToken(request)
+        if (!hasApiToken) {
+            return NextResponse.json(
+                { error: 'Unauthorized: listing projects requires an API token' },
+                { status: 403 }
+            )
+        }
+
         const rawLimit = searchParams.get('limit')
         const rawOffset = searchParams.get('offset') || searchParams.get('page')
 
@@ -238,25 +261,12 @@ export async function GET(request: NextRequest) {
         const isPublicParam = searchParams.get('isPublic')
         const where: any = {}
 
-        // Only show public projects by default to unauthenticated callers.
-        // If a client supplies `isPublic` explicitly and requests private results
-        // (`isPublic=false`), require a valid API token. If a client supplies
-        // `isPublic=true` that's allowed without auth.
-        const hasApiToken = verifyToken(request)
         if (isPublicParam !== null) {
             // coerce to boolean if possible
             if (isPublicParam === 'true' || isPublicParam === '1') {
                 where.isPublic = true
             } else if (isPublicParam === 'false' || isPublicParam === '0') {
-                if (!hasApiToken) {
-                    return NextResponse.json({ error: 'Unauthorized: listing private projects requires an API token' }, { status: 401 })
-                }
                 where.isPublic = false
-            }
-        } else {
-            // no explicit filter provided -> only show public projects to unauthenticated requests
-            if (!hasApiToken) {
-                where.isPublic = true
             }
         }
 
