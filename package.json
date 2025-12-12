@@ -18,10 +18,10 @@
     "daisyui": "^5.5.13",
     "discord-api-types": "^0.38.37",
     "nanoid": "^5.1.6",
-    "next": "^16.0.9",
+    "next": "^16.0.10",
     "prisma": "^7.1.0",
-    "react": "^19.2.2",
-    "react-dom": "^19.2.2",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
     "tailwindcss": "^4.1.18"
   },
