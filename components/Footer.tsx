@@ -32,14 +32,14 @@ export default function Footer() {
               <nav>
                 <h6 className="footer-title text-xs">Services</h6>
                 <div className="flex flex-col gap-2">
-                  <a href="https://discord.js.org" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
+                  <a href="https://discord.js.org" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
                     discord.js Documentation
                   </a>
-                  <a href="https://discordjs.guide" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
+                  <a href="https://discordjs.guide" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
                     discord.js Guide
                   </a>
-                  <a href="https://discord.com/developers" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
-                    Discord Developer Portal
+                  <a href="https://discord.gg/djs" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
+                    Discord Server
                   </a>
                 </div>
               </nav>
@@ -48,14 +48,11 @@ export default function Footer() {
               <nav>
                 <h6 className="footer-title text-xs">Company</h6>
                 <div className="flex flex-col gap-2">
-                  <a href="https://github.com/joeyk710/discord.js-codebin" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
+                  <a href="https://github.com/joeyk710/discord.js-codebin" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
                     GitHub
                   </a>
-                  <a href="https://github.com/joeyk710/discord.js-codebin/issues" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
+                  <a href="https://github.com/joeyk710/discord.js-codebin/issues" target="_blank" rel="noopener noreferrer" className="link link-hover text-sm">
                     Report Issues
-                  </a>
-                  <a href="https://discord.gg/djs" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
-                    Discord Community
                   </a>
                 </div>
               </nav>
@@ -64,17 +61,8 @@ export default function Footer() {
               <nav>
                 <h6 className="footer-title text-xs">Legal</h6>
                 <div className="flex flex-col gap-2">
-                  <a href="https://discord.com/terms" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
-                    Terms of Service
-                  </a>
-                  <a href="/privacy" className="link link-hover text-xs">
+                  <a href="/privacy" className="link link-hover text-sm">
                     Privacy & Analytics
-                  </a>
-                  <a href="https://discord.com/privacy" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
-                    Privacy Policy
-                  </a>
-                  <a href="https://github.com/joeyk710/discord.js-codebin/LICENSE" target="_blank" rel="noopener noreferrer" className="link link-hover text-xs">
-                    License
                   </a>
                 </div>
               </nav>
